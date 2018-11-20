@@ -43,7 +43,7 @@ Change `config/gateways.php` fields to your specifications.
 ### Step 1:
 
 Get instance of Gateway from Gateway Facade `Gateway::of('mellat')`
-Or create one yourself: `new Mellat(app(), config('gateway.mellat'));` Or
+Or create one yourself: `new Mellat(app(), config('gateways.mellat'));` Or
 ```php
 new Mellat(app(), [
     'username'     => '',
@@ -58,17 +58,19 @@ Then to create new payment transaction you can do like this:
 
 ``` php
 try {
-    $gateway = Gateway::of('zarinpal');
+    $gateway = Gateway::of('zarinpal'); // $gateway = new Zarinpal(app(), config('gateways.zarinpal')); 
     $gateway->callbackUrl(route('callback')); // You can change the callback
     
     // You can make it stateless.
-    // in default mode it uses session to store and retrieve transaction id
+    // in default mode it uses session to store and retrieve transaction id 
+    // (and other gateway specific or user provided (using $gateway->with) required parameters)
     // but in stateless mode it get transaction id and other required parameters from callback url
     // Caution: you should use same stateless value in callback too
     $gateway->stateless();
 
+    // Then you should create a transaction to be processed by the gateway
     // Amount is in `Toman` by default but you can set the currency in second argument as well. IRR (for `Riyal`)
-    $transaction = new RequestTransaction(new Amount(12000));
+    $transaction = new RequestTransaction(new Amount(12000)); // 12000 Toman
     $transaction->setExtra([
         'mobile' => '9122628796', // mobile of payer (for zarinpal)
         'email'  => 'ali@gmail.com', // email of payer (for zarinpal)
@@ -98,7 +100,7 @@ And in callback
 ```php
 try {
 
-    $settledTransaction = Gateway::settle(true);
+    $settledTransaction = Gateway::settle(true); // true argument for stateless
     $trackingCode = $settledTransaction->getTrackingCode();
     $refId = $settledTransaction->getReferenceId();
     $cardNumber = $settledTransaction->getCardNumber();

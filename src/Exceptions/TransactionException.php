@@ -18,7 +18,7 @@ abstract class TransactionException extends \Exception {
     /**
      * Get error code's associate message if exist and code itself otherwise
      *
-     * @param int $code
+     * @param mixed $code
      * @param null|string $message
      * @return string
      */
@@ -32,9 +32,17 @@ abstract class TransactionException extends \Exception {
         return Arr::get($this->getErrors(), $code, $code);
     }
 
+    /**
+     * TransactionException constructor.
+     *
+     * @param mixed $code
+     * @param null|string $message
+     * @param Throwable|null $previous
+     */
     public function __construct($code = 0, $message = null, Throwable $previous = null)
     {
-        $message = $this->getMessageFromCode($code, $message);
-        parent::__construct($message, $code, $previous);
+        parent::__construct($message, 0, $previous);
+        $this->code = $code;
+        $this->message = $this->getMessageFromCode($code, $message);
     }
 }

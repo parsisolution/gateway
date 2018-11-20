@@ -71,6 +71,7 @@ class AuthorizedTransaction extends AbstractTransaction {
     {
         $instance = new self();
         $instance->setRaw($transaction);
+        $instance['referenceId'] = $transaction['ref_id'];
         $amount = new Amount($transaction['amount'], $transaction['currency']);
         $instance->map([
             'id'          => $transaction['id'],

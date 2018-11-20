@@ -34,7 +34,7 @@ class SettledTransaction extends AbstractTransaction {
         $this->map([
             'amount'       => $transaction->getAmount(),
             'extra'        => $transaction->getExtra(),
-            'id'           => $transaction['id'],
+            'id'           => $transaction->getId(),
             'referenceId'  => $transaction->getReferenceId(),
             'trackingCode' => $trackingCode,
             'cardNumber'   => $cardNumber,

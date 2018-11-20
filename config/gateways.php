@@ -89,7 +89,7 @@ return [
     // PayIr gateway
     //--------------------------------
     'payir'        => [
-        'api'          => 'xxxxxxxxxxxxxxxxxxxx',
+        'api'          => env('PAY_IR_API_KEY'),
         'callback-url' => '/'
     ],
 
@@ -97,7 +97,7 @@ return [
     // Pardano gateway
     //--------------------------------
     'pardano'      => [
-        'api'          => 'test', // use test or your api key
+        'api'          => env('PARDANO_API_KEY', 'test'), // use test or your api key
         'callback-url' => '/'
     ],
 
@@ -105,7 +105,7 @@ return [
     // Zarinpal gateway
     //--------------------------------
     'zarinpal'     => [
-        'merchant-id'  => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+        'merchant-id'  => env('ZARINPAL_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'type'         => 'normal',             // Types: [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
         'server'       => 'test',                // Servers: [germany || iran || test]
         'description'  => 'description',
@@ -116,7 +116,7 @@ return [
     // NextPay gateway
     //--------------------------------
     'nextpay'      => [
-        'api'          => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+        'api'          => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'callback-url' => '/'
     ],
 
@@ -124,7 +124,7 @@ return [
     //--------------------------------
     'jibit'        => [
         'merchant-id'  => 'xxxx',
-        'password'     => 'xxxxxxxxxx',
+        'password'     => env('JIBIT_PASS'),
         'callback-url' => '/',
         'user-mobile'  => '09xxxxxxxxx'
     ],
