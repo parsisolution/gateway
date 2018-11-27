@@ -140,6 +140,7 @@ class NextPay extends AbstractProvider {
     {
         $order_id = $request->input('order_id');
         $trans_id = $request->input('trans_id');
+        $card_holder = $request->input('card_holder');
 
         switch ($this->api_type)
         {
@@ -158,7 +159,7 @@ class NextPay extends AbstractProvider {
                     $response = json_decode(curl_exec($curl));
                     curl_close($curl);
 
-                    return $this->verifyVerificationResponse($transaction, $response);
+                    return $this->verifyVerificationResponse($transaction, $response, $card_holder);
                     break;
                 }
             case ApiType::SoapClient:
@@ -174,7 +175,7 @@ class NextPay extends AbstractProvider {
                         ]);
                     $response = $response->PaymentVerificationResult;
 
-                    return $this->verifyVerificationResponse($transaction, $response);
+                    return $this->verifyVerificationResponse($transaction, $response, $card_holder);
                     break;
                 }
         }
@@ -207,17 +208,18 @@ class NextPay extends AbstractProvider {
     /**
      * @param AuthorizedTransaction $transaction
      * @param $response
+     * @param $card_holder
      * @return SettledTransaction
      * @throws NextPayException
      */
-    protected function verifyVerificationResponse(AuthorizedTransaction $transaction, $response)
+    protected function verifyVerificationResponse(AuthorizedTransaction $transaction, $response, $card_holder)
     {
         if (! empty($response) && is_object($response))
         {
             $code = intval($response->code);
             if ($code == 0)
             {
-                return new SettledTransaction($transaction, $transaction->getReferenceId());
+                return new SettledTransaction($transaction, $transaction->getReferenceId(), $card_holder?:'');
             } else
             {
                 throw new NextPayException($code);
