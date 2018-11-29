@@ -133,7 +133,7 @@ return [
     // SabaPay gateway
     //--------------------------------
     'sabapay'      => [
-        'api'          => env('SABA_API_KEY', ''),
+        'api'          => env('SABAPAY_API_KEY'),
         'callback-url' => '/'
     ],
 ];
