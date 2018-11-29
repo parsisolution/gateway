@@ -76,14 +76,17 @@ class GatewayManager extends Manager implements Contracts\Factory {
     }
 
     /**
+     * retrieve respective transaction from request
+     *
      * @param bool $stateless
-     * @return \Parsisolution\Gateway\AbstractProvider
+     *
+     * @return \stdClass
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
+     * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
      * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
      * @throws \Parsisolution\Gateway\Exceptions\RetryException
-     * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
      */
-    public function fromSettleRequest($stateless = false)
+    public function transactionFromSettleRequest($stateless = false)
     {
         $request = $this->app['request'];
         $parameters = [];
@@ -130,16 +133,35 @@ class GatewayManager extends Manager implements Contracts\Factory {
         if (in_array($transaction->status, [Transaction::STATE_SUCCEEDED, Transaction::STATE_FAILED]))
             throw new RetryException;
 
+        return $transaction;
+    }
+
+    /**
+     * retrieve respective driver instance from request
+     *
+     * @param bool $stateless
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
+     * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
+     * @throws \Parsisolution\Gateway\Exceptions\RetryException
+     * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
+     */
+    public function fromSettleRequest($stateless = false)
+    {
+        $transaction = $this->transactionFromSettleRequest($stateless);
+
         $driver = $this->of(strtoupper($transaction->provider));
-        $driver->setTransactionId($id);
+        $driver->setTransactionId($transaction->id);
 
         return $driver;
     }
 
     /**
-     * Verify the callback request
+     * Verify and Settle the callback request and get the settled transaction instance.
      *
      * @param bool $stateless
+     *
      * @return \Parsisolution\Gateway\Transactions\SettledTransaction
      * @throws \Parsisolution\Gateway\Exceptions\TransactionException
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
