@@ -18,6 +18,7 @@ use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Pardano\Pardano;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
 use Parsisolution\Gateway\Providers\Payir\Payir;
+use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saderat\Saderat;
 use Parsisolution\Gateway\Providers\Saman\Saman;

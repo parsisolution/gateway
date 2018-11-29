@@ -28,7 +28,7 @@ class SabaPay extends AbstractProvider {
      *
      * @var string
      */
-    const SERVER_VERIFY_URL = 'http://pay.sabanovin.com/invoice/check';
+    const SERVER_VERIFY_URL = 'http://pay.sabanovin.com/invoice/check/';
 
     /**
      * Address of gate for redirect
@@ -62,8 +62,8 @@ class SabaPay extends AbstractProvider {
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api_key'      => $this->config['api'],
-            'amount'   => $transaction->getAmount()->getToman(),
+            'api_key'    => $this->config['api'],
+            'amount'     => $transaction->getAmount()->getToman(),
             'return_url' => urlencode($this->getCallback($transaction)),
         ];
 
@@ -128,11 +128,11 @@ class SabaPay extends AbstractProvider {
         $cardNumber = $request->input('card_number');
 
         $fields = [
-            'api'     => $this->config['api'],
+            'api' => $this->config['api'],
         ];
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, self::SERVER_VERIFY_URL.'/'.$request->input('invoice_key'));
+        curl_setopt($ch, CURLOPT_URL, self::SERVER_VERIFY_URL . $request->input('invoice_key'));
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
