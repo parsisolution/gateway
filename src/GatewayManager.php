@@ -13,6 +13,7 @@ use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
+use Parsisolution\Gateway\Providers\Mabna\Mabna;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Pardano\Pardano;
@@ -28,7 +29,7 @@ use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
 class GatewayManager extends Manager implements Contracts\Factory {
 
     const CONFIG_FILE_NAME = 'gateways';
-
+    const MABNA = 'MABNA';
     const MELLAT = 'MELLAT';
     const SADAD = 'SADAD';
     const SAMAN = 'SAMAN';
@@ -51,6 +52,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
     public static function availableDrivers()
     {
         return [
+            self::MABNA,
             self::MELLAT,
             self::SADAD,
             self::SAMAN,
@@ -179,6 +181,18 @@ class GatewayManager extends Manager implements Contracts\Factory {
             $driver->stateless();
 
         return $driver->settle();
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     */
+    protected function createMabnaDriver()
+    {
+        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.mabna'];
+
+        return $this->buildProvider(Mabna::class, $config);
     }
 
     /**

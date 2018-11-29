@@ -12,6 +12,7 @@ Available PSPs (Bank):
 5. Mabna (SADERAT)
 6. Asan Pardakht
 7. IranKish
+8. Mabna2 (MABNA)
 
 Available 3rd-parties:
 1. Pay.ir
@@ -19,6 +20,7 @@ Available 3rd-parties:
 3. Pardano
 4. ZarinPal
 5. NextPay
+6. SabaPay
 
 ## Install
  
