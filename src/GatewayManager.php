@@ -40,6 +40,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
     const ZARINPAL = 'ZARINPAL';
     const NEXTPAY = 'NEXTPAY';
     const JIBIT = 'JIBIT';
+    const SABAPAY = 'SABAPAY';
 
     /**
      * Get all of the available "drivers".
@@ -61,6 +62,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
             self::ZARINPAL,
             self::NEXTPAY,
             self::JIBIT,
+            self::SABAPAY,
         ];
     }
 
@@ -320,6 +322,18 @@ class GatewayManager extends Manager implements Contracts\Factory {
         $config = $this->app['config'][self::CONFIG_FILE_NAME . '.jibit'];
 
         return $this->buildProvider(JiBit::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     */
+    protected function createSabapayDriver()
+    {
+        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.sabapay'];
+
+        return $this->buildProvider(SabaPay::class, $config);
     }
 
     /**

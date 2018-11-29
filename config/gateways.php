@@ -128,4 +128,12 @@ return [
         'callback-url' => '/',
         'user-mobile'  => '09xxxxxxxxx'
     ],
+
+    //--------------------------------
+    // SabaPay gateway
+    //--------------------------------
+    'sabapay'      => [
+        'api'          => env('SABA_API_KEY', ''),
+        'callback-url' => '/'
+    ],
 ];
