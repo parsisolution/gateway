@@ -71,6 +71,31 @@ class GatewayManager extends Manager implements Contracts\Factory
     }
 
     /**
+     * Get all of the active "drivers" with their names and in specified order.
+     *
+     * @param string $name_prefix
+     * @return array
+     */
+    public function activeDrivers($name_prefix = 'درگاه ')
+    {
+        $activeDrivers = [];
+        $configsOfDrivers = $this->app['config'][self::CONFIG_FILE_NAME];
+
+        foreach ($configsOfDrivers as $driverKey => $driverConfig) {
+            if (Arr::get($driverConfig, 'active', false)) {
+                $activeDrivers[$driverConfig['order']] = [
+                    'key'  => $driverKey,
+                    'name' => $name_prefix.$driverConfig['name'],
+                ];
+            }
+        }
+
+        ksort($activeDrivers);
+
+        return array_values($activeDrivers);
+    }
+
+    /**
      * Get a driver instance.
      *
      * @param  string $driver
