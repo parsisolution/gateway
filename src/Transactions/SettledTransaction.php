@@ -25,15 +25,16 @@ class SettledTransaction extends AbstractTransaction
      * @param AuthorizedTransaction $transaction
      * @param string $trackingCode
      * @param string $cardNumber
+     * @param array $extraFields
      */
-    public function __construct(AuthorizedTransaction $transaction, $trackingCode, $cardNumber = '')
+    public function __construct(AuthorizedTransaction $transaction, $trackingCode, $cardNumber = '', $extraFields = [])
     {
         $this->setRaw($transaction->getRaw());
         $this['trackingCode'] = $trackingCode;
         $this['cardNumber'] = $cardNumber;
         $this->map([
             'amount'       => $transaction->getAmount(),
-            'extra'        => $transaction->getExtra(),
+            'extra'        => array_merge($transaction->getExtra(), $extraFields),
             'id'           => $transaction->getId(),
             'referenceId'  => $transaction->getReferenceId(),
             'trackingCode' => $trackingCode,

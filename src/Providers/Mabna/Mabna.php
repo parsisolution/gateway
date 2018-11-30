@@ -68,10 +68,11 @@ class Mabna extends AbstractProvider
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
+        $url = self::URL_GATE;
         $callback = $this->getCallback($transaction->generateUnAuthorized());
         $terminalId = $this->config['terminalId'];
 
-        return $this->view('gateway::mabna-redirector')->with(compact('transaction', 'terminalId', 'callback'));
+        return $this->view('gateway::mabna-redirector')->with(compact('url', 'transaction', 'terminalId', 'callback'));
     }
 
     /**
@@ -126,7 +127,10 @@ class Mabna extends AbstractProvider
 
 
         if ($response['Status'] == 'OK') {
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+            return new SettledTransaction($transaction, $trackingCode, $cardNumber, [
+                'RRN'             => $rrn,
+                'digital_receipt' => $digitalreceipt,
+            ]);
         }
 
         throw new MabnaException($response['ReturnId']);

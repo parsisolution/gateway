@@ -182,6 +182,7 @@ class Transaction
             'status'        => self::STATE_SUCCEEDED,
             'tracking_code' => $transaction->getTrackingCode(),
             'card_number'   => $transaction->getCardNumber(),
+            'extra'         => json_encode($transaction->getExtra()),
             'payment_date'  => Carbon::now(),
             'updated_at'    => Carbon::now(),
         ]);

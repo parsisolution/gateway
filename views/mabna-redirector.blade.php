@@ -3,7 +3,7 @@
 <script>
     var form = document.createElement("form");
     form.setAttribute("method", "POST");
-    form.setAttribute("action", "https://mabna.shaparak.ir:8080/Pay/");
+    form.setAttribute("action", "{{ $url }}");
     form.setAttribute("target", "_self");
 
     var hiddenField = document.createElement("input");
