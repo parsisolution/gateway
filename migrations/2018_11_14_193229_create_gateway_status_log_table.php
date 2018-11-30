@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateGatewayStatusLogTable extends Migration {
+class CreateGatewayStatusLogTable extends Migration
+{
 
     private function getTable()
     {
@@ -13,7 +14,7 @@ class CreateGatewayStatusLogTable extends Migration {
 
     private function getLogTable()
     {
-        return $this->getTable() . '_logs';
+        return $this->getTable().'_logs';
     }
 
     /**

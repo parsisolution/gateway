@@ -1,6 +1,6 @@
 <?php
 
-namespace Parsisolution\Gateway\Providers\Saderat;
+namespace Parsisolution\Gateway\Providers\MabnaOld;
 
 use Exception;
 use Illuminate\Container\Container;
@@ -13,9 +13,9 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
-class Saderat extends AbstractProvider
+class MabnaOld extends AbstractProvider
 {
+
     /**
      * Address of main SOAP server
      *
@@ -59,11 +59,11 @@ class Saderat extends AbstractProvider
     protected function setKeys()
     {
         $pub_key = file_get_contents($this->config['public-key']);
-        $pub_key = '-----BEGIN PUBLIC KEY-----' . PHP_EOL . $pub_key. PHP_EOL ."-----END PUBLIC KEY-----";
+        $pub_key = '-----BEGIN PUBLIC KEY-----'.PHP_EOL.$pub_key.PHP_EOL."-----END PUBLIC KEY-----";
         $this->publicKey = openssl_pkey_get_public($pub_key);
 
         $pri_key = file_get_contents($this->config['private-key']);
-        $pri_key = "-----BEGIN PRIVATE KEY-----" . PHP_EOL . $pri_key. PHP_EOL ."-----END PRIVATE KEY-----";
+        $pri_key = "-----BEGIN PRIVATE KEY-----".PHP_EOL.$pri_key.PHP_EOL."-----END PRIVATE KEY-----";
         $this->privateKey = openssl_pkey_get_private($pri_key);
     }
 
@@ -75,7 +75,8 @@ class Saderat extends AbstractProvider
      */
     protected function encryptData($data)
     {
-        openssl_public_encrypt($data,$crypted, $this->publicKey);
+        openssl_public_encrypt($data, $crypted, $this->publicKey);
+
         return base64_encode($crypted);
     }
 
@@ -92,6 +93,7 @@ class Saderat extends AbstractProvider
             $this->config['terminal-id'];
 
         openssl_sign($data, $signature, $this->privateKey, OPENSSL_ALGO_SHA1);
+
         return base64_encode($signature);
     }
 
@@ -106,6 +108,7 @@ class Saderat extends AbstractProvider
         $data = $this->config['merchant-id'].$transaction->getTrackingCode().$transaction->getId();
 
         openssl_sign($data, $signature, $this->privateKey, OPENSSL_ALGO_SHA1);
+
         return base64_encode($signature);
     }
 
@@ -118,7 +121,7 @@ class Saderat extends AbstractProvider
      */
     protected function getProviderName()
     {
-        return GatewayManager::SADERAT;
+        return GatewayManager::MABNA_OLD;
     }
 
     /**
@@ -134,33 +137,41 @@ class Saderat extends AbstractProvider
     {
         $fields = [
             "Token_param" => [
-                "AMOUNT" => $this->encryptData($transaction->getAmount()->getRiyal()),
-                "CRN" => $this->encryptData($transaction->getId()),
-                "MID" => $this->encryptData($this->config['merchant-id']),
+                "AMOUNT"        => $this->encryptData($transaction->getAmount()->getRiyal()),
+                "CRN"           => $this->encryptData($transaction->getId()),
+                "MID"           => $this->encryptData($this->config['merchant-id']),
                 "REFERALADRESS" => $this->encryptData($this->getCallback($transaction)),
-                "SIGNATURE" => $this->createSignature($transaction),
-                "TID" => $this->encryptData($this->config['terminal-id'])
-            ]
+                "SIGNATURE"     => $this->createSignature($transaction),
+                "TID"           => $this->encryptData($this->config['terminal-id']),
+            ],
         ];
 
         // Disable SSL
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig(), ["stream_context" => stream_context_create(
-            [
-                'ssl' => [
-                    'verify_peer'       => false,
-                    'verify_peer_name'  => false,
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig(), [
+            "stream_context" => stream_context_create(
+                [
+                    'ssl' => [
+                        'verify_peer'      => false,
+                        'verify_peer_name' => false,
+                    ],
                 ]
-            ]
-        )]);
+            ),
+        ]);
         $response = $soap->reservation($fields);
 
-        if ($response->return->result != 0)
-            throw new SaderatException($response->return->result);
+        if ($response->return->result != 0) {
+            throw new MabnaOldException($response->return->result);
+        }
 
-        $result = openssl_verify($response->return->token, base64_decode($response->return->signature), $this->publicKey);
+        $result = openssl_verify(
+            $response->return->token,
+            base64_decode($response->return->signature),
+            $this->publicKey
+        );
 
-        if ($result != 1)
-            throw new SaderatException('gateway-faild-signature-verify');
+        if ($result != 1) {
+            throw new MabnaOldException('gateway-faild-signature-verify');
+        }
 
         $refId = $response->return->token;
 
@@ -177,7 +188,7 @@ class Saderat extends AbstractProvider
     {
         $token = $transaction->getReferenceId();
 
-        return $this->view('gateway::saderat-redirector')->with(compact('token'));
+        return $this->view('gateway::mabna-old-redirector')->with(compact('token'));
     }
 
     /**
@@ -189,8 +200,9 @@ class Saderat extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (empty($_POST) || $request->input('RESCODE') != '00')
-            throw new SaderatException($request->input('RESCODE'));
+        if (empty($_POST) || $request->input('RESCODE') != '00') {
+            throw new MabnaOldException($request->input('RESCODE'));
+        }
 
         return true;
     }
@@ -212,37 +224,42 @@ class Saderat extends AbstractProvider
 
         $fields = [
             "SaleConf_req" => [
-                "CRN" => $this->encryptData($transaction->getId()),
-                "MID" => $this->encryptData($this->config['merchant-id']),
-                "TRN" => $this->encryptData($trackingCode),
+                "CRN"       => $this->encryptData($transaction->getId()),
+                "MID"       => $this->encryptData($this->config['merchant-id']),
+                "TRN"       => $this->encryptData($trackingCode),
                 "SIGNATURE" => $this->createSignature($transaction->generateUnAuthorized()),
-            ]
+            ],
         ];
 
         // Disable SSL
-        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->SoapConfig(), ["stream_context" => stream_context_create(
-            [
-                'ssl' => [
-                    'verify_peer'       => false,
-                    'verify_peer_name'  => false,
+        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig(), [
+            "stream_context" => stream_context_create(
+                [
+                    'ssl' => [
+                        'verify_peer'      => false,
+                        'verify_peer_name' => false,
+                    ],
                 ]
-            ]
-        )]);
+            ),
+        ]);
         $response = $soap->sendConfirmation($fields);
 
-        if (empty($_POST) || $request->input('RESCODE') != '00')
-            throw new SaderatException($request->input('RESCODE'));
+        if (empty($_POST) || $request->input('RESCODE') != '00') {
+            throw new MabnaOldException($request->input('RESCODE'));
+        }
 
-        if ($response->return->RESCODE != '00')
-            throw new SaderatException($response->return->RESCODE);
+        if ($response->return->RESCODE != '00') {
+            throw new MabnaOldException($response->return->RESCODE);
+        }
 
         $data = $response->return->RESCODE.$response->return->REPETETIVE.$response->return->AMOUNT.
             $response->return->DATE.$response->return->TIME.$response->return->TRN.$response->return->STAN;
 
         $result = openssl_verify($data, base64_decode($response->return->SIGNATURE), $this->publicKey);
 
-        if ($result != 1)
-            throw new SaderatException('gateway-faild-signature-verify');
+        if ($result != 1) {
+            throw new MabnaOldException('gateway-faild-signature-verify');
+        }
 
         return new SettledTransaction($transaction, $trackingCode);
     }

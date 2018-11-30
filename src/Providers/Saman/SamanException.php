@@ -4,7 +4,6 @@ namespace Parsisolution\Gateway\Providers\Saman;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
 class SamanException extends TransactionException
 {
 
@@ -51,7 +50,7 @@ class SamanException extends TransactionException
             -15 => "مبلغ برگشتی به صورت اعشاری داده شده است",
             -16 => "خطای داخلی سیستم",
             -17 => "برگشت زدن جزئی تراکنشی که با کارت بانکی غیر از بانک سامان انجام پذیرفته است",
-            -18 => "IP Address فروشنده نا معتبر است"
+            -18 => "IP Address فروشنده نا معتبر است",
         ];
     }
 }

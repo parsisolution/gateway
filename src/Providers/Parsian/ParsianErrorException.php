@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\Parsian;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class ParsianErrorException extends TransactionException {
+class ParsianErrorException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`

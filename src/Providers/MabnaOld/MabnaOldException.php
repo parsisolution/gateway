@@ -1,11 +1,11 @@
 <?php
 
-namespace Parsisolution\Gateway\Providers\Saderat;
+namespace Parsisolution\Gateway\Providers\MabnaOld;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class SaderatException extends TransactionException {
+class MabnaOldException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`

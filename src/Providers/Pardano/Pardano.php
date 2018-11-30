@@ -15,8 +15,8 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
-class Pardano extends AbstractProvider {
+class Pardano extends AbstractProvider
+{
 
     const SERVER_MAIN = 'http://pardano.com/p/webservice/?wsdl';
     const SERVER_TEST = 'http://pardano.com/p/webservice-test/?wsdl';
@@ -32,12 +32,10 @@ class Pardano extends AbstractProvider {
         parent::__construct($app, $config);
 
         $api = $this->config['api'];
-        if ($api == 'test')
-        {
+        if ($api == 'test') {
             $this->server_url = self::SERVER_TEST;
             $this->gate_url = self::GATE_URL_TEST;
-        } else
-        {
+        } else {
             $this->server_url = self::SERVER_MAIN;
             $this->gate_url = self::GATE_URL;
         }
@@ -66,7 +64,7 @@ class Pardano extends AbstractProvider {
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        $client = new SoapClient($this->server_url, $this->SoapConfig());
+        $client = new SoapClient($this->server_url, $this->soapConfig());
         $api = $this->config['api'];
         $amount = $transaction->getAmount()->getToman();
         $callbackUrl = $this->getCallback($transaction);
@@ -85,7 +83,7 @@ class Pardano extends AbstractProvider {
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse($this->gate_url . $transaction->getReferenceId());
+        return new RedirectResponse($this->gate_url.$transaction->getReferenceId());
     }
 
     /**
@@ -100,8 +98,9 @@ class Pardano extends AbstractProvider {
         $orderId = $request->input('order_id');
         $authority = $request->input('au');
 
-        if (isset($orderId) && isset($authority))
+        if (isset($orderId) && isset($authority)) {
             return true;
+        }
 
         throw new InvalidRequestException();
     }
@@ -122,14 +121,12 @@ class Pardano extends AbstractProvider {
         $authority = $request->input('au');
         $api = $this->config['api'];
         $amount = $transaction->getAmount()->getToman();
-        $client = new SoapClient($this->server_url, $this->SoapConfig());
+        $client = new SoapClient($this->server_url, $this->soapConfig());
         $result = $client->verification($api, $amount, $authority);
 
-        if (! empty($result) and $result == 1)
-        {
+        if (! empty($result) and $result == 1) {
             return new SettledTransaction($transaction, $authority);
-        } else
-        {
+        } else {
             throw new PardanoException($result);
         }
     }

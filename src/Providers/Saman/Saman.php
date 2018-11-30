@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Saman;
 use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\SoapClient;
@@ -13,8 +12,8 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
-class Saman extends AbstractProvider {
+class Saman extends AbstractProvider
+{
 
     /**
      * Address of main SOAP server
@@ -38,7 +37,7 @@ class Saman extends AbstractProvider {
      * @param array $data an array of data
      *
      */
-    function setOptionalData(Array $data)
+    public function setOptionalData(Array $data)
     {
         $this->optional_data = $data;
     }
@@ -81,7 +80,7 @@ class Saman extends AbstractProvider {
             'amount'      => $transaction->getAmount()->getRiyal(),
             'merchant'    => $this->config['merchant'],
             'resNum'      => $transaction->getId(),
-            'callBackUrl' => $this->getCallback($transaction->generateUnAuthorized())
+            'callBackUrl' => $this->getCallback($transaction->generateUnAuthorized()),
         ];
 
         $data = array_merge($main_data, $this->optional_data);
@@ -94,7 +93,7 @@ class Saman extends AbstractProvider {
      *
      * @param Request $request
      * @return bool
-     * @throws InvalidRequestException|TransactionException
+     * @throws TransactionException
      */
     protected function validateSettlementRequest(Request $request)
     {
@@ -102,8 +101,9 @@ class Saman extends AbstractProvider {
         $payRequestRes = $request->input('State');
         $payRequestResCode = $request->input('StateCode');
 
-        if ($payRequestRes == 'OK')
+        if ($payRequestRes == 'OK') {
             return true;
+        }
 
         throw new SamanException($payRequestRes);
     }
@@ -130,19 +130,24 @@ class Saman extends AbstractProvider {
             "RefNum"     => $transaction->getReferenceId(),
         ];
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->VerifyTransaction($fields["RefNum"], $fields["merchantID"]);
 
         $response = intval($response);
 
-        if ($response == $transaction->getAmount()->getRiyal())
+        if ($response == $transaction->getAmount()->getRiyal()) {
             return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        }
 
         //Reverse Transaction
-        if ($response > 0)
-        {
-            $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
-            $response = $soap->ReverseTransaction($fields["RefNum"], $fields["merchantID"], $fields["password"], $response);
+        if ($response > 0) {
+            $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
+            $response = $soap->ReverseTransaction(
+                $fields["RefNum"],
+                $fields["merchantID"],
+                $fields["password"],
+                $response
+            );
         }
 
         throw new SamanException($response);

@@ -9,10 +9,10 @@ Available PSPs (Bank):
 2. SADAD (MELLI)
 3. SEP (SAMAN)
 4. PEC (PARSIAN)
-5. Mabna (SADERAT)
-6. Asan Pardakht
-7. IranKish
-8. Mabna2 (MABNA)
+5. Mabna **V1** `old method`
+6. Mabna **V2** `new method`
+7. Asan Pardakht
+8. IranKish
 
 Available 3rd-parties:
 1. Pay.ir

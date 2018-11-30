@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\Payir;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class PayirReceiveException extends TransactionException {
+class PayirReceiveException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`

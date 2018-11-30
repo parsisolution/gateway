@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\Pardano;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class PardanoException extends TransactionException {
+class PardanoException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`

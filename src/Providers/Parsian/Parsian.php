@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Parsian;
 use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\SoapClient;
@@ -15,26 +14,27 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Parsian extends AbstractProvider
 {
-	/**
-	 * Url of parsian gateway web service
-	 *
-	 * @var string
-	 */
-	const SERVER_URL = 'https://pec.shaparak.ir/NewIPGServices/Sale/SaleService.asmx?wsdl';
 
-	/**
-	 * Address of gate for redirect
-	 *
-	 * @var string
-	 */
-	const URL_GATE = 'https://pec.shaparak.ir/NewIPG/?Token=';
+    /**
+     * Url of parsian gateway web service
+     *
+     * @var string
+     */
+    const SERVER_URL = 'https://pec.shaparak.ir/NewIPGServices/Sale/SaleService.asmx?wsdl';
 
-	/**
-	 * Address of SOAP server for verify payment
-	 *
-	 * @var string
-	 */
-	const SERVER_VERIFY_URL = 'https://pec.shaparak.ir/NewIPGServices/Confirm/ConfirmService.asmx?wsdl';
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const URL_GATE = 'https://pec.shaparak.ir/NewIPG/?Token=';
+
+    /**
+     * Address of SOAP server for verify payment
+     *
+     * @var string
+     */
+    const SERVER_VERIFY_URL = 'https://pec.shaparak.ir/NewIPGServices/Confirm/ConfirmService.asmx?wsdl';
 
     /**
      * Get this provider name to save on transaction table.
@@ -61,18 +61,22 @@ class Parsian extends AbstractProvider
     {
         $params = [
             'LoginAccount' => $this->config['pin'],
-            'Amount' => intval($transaction->getAmount()->getRiyal()),
-            'OrderId' => intval($transaction->getId()),
-            'CallBackUrl' => $this->getCallback($transaction)
+            'Amount'       => intval($transaction->getAmount()->getRiyal()),
+            'OrderId'      => intval($transaction->getId()),
+            'CallBackUrl'  => $this->getCallback($transaction),
         ];
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->SalePaymentRequest(array('requestData' => $params));
 
-        if ($response->SalePaymentRequestResult->Status === 0)
+        if ($response->SalePaymentRequestResult->Status === 0) {
             return AuthorizedTransaction::make($transaction, $response->SalePaymentRequestResult->Token);
+        }
 
-        throw new ParsianErrorException($response->SalePaymentRequestResult->Status, $response->SalePaymentRequestResult->Message);
+        throw new ParsianErrorException(
+            $response->SalePaymentRequestResult->Status,
+            $response->SalePaymentRequestResult->Message
+        );
     }
 
     /**
@@ -83,7 +87,7 @@ class Parsian extends AbstractProvider
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $url = self::URL_GATE . $transaction->getReferenceId();
+        $url = self::URL_GATE.$transaction->getReferenceId();
 
         return $this->view('gateway::parsian-redirector')->with(compact('url'));
     }
@@ -93,15 +97,16 @@ class Parsian extends AbstractProvider
      *
      * @param Request $request
      * @return bool
-     * @throws InvalidRequestException|TransactionException
+     * @throws TransactionException
      */
     protected function validateSettlementRequest(Request $request)
     {
 //        $refId = $request->input('Token');
         $payRequestResCode = $request->input('status');
 
-        if ($payRequestResCode == 0)
+        if ($payRequestResCode == 0) {
             return true;
+        }
 
         throw new ParsianErrorException($payRequestResCode);
     }
@@ -123,17 +128,19 @@ class Parsian extends AbstractProvider
 
         $params = array(
             'LoginAccount' => $this->config['pin'],
-            'Token' => $transaction->getReferenceId(),
+            'Token'        => $transaction->getReferenceId(),
         );
 
-        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
         $result = $soap->ConfirmPayment(array('requestData' => $params));
 
-        if ($result === false || !isset($result->ConfirmPaymentResult->Status))
+        if ($result === false || ! isset($result->ConfirmPaymentResult->Status)) {
             throw new ParsianErrorException(-1);
+        }
 
-        if ($result->ConfirmPaymentResult->Status !== 0)
+        if ($result->ConfirmPaymentResult->Status !== 0) {
             throw new ParsianErrorException($result->ConfirmPaymentResult->Status);
+        }
 
         $cardNumber = $result->ConfirmPaymentResult->CardNumberMasked;
 

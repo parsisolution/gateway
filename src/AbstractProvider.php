@@ -15,8 +15,8 @@ use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 use RuntimeException;
 
-abstract class AbstractProvider implements ProviderContract {
-
+abstract class AbstractProvider implements ProviderContract
+{
 
 
     /**
@@ -79,7 +79,7 @@ abstract class AbstractProvider implements ProviderContract {
 
         $this->request = $app->make('request');
 
-        $table_name = Arr::get($this->app['config'], GatewayManager::CONFIG_FILE_NAME . '.table', 'gateway_transactions');
+        $table_name = Arr::get($this->app['config'], GatewayManager::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
         $this->transaction = new Transaction($app->make('db'), $table_name);
 
         return $this;
@@ -119,8 +119,9 @@ abstract class AbstractProvider implements ProviderContract {
      */
     public function getCallback(UnAuthorizedTransaction $transaction)
     {
-        if (! $this->callbackUrl)
+        if (! $this->callbackUrl) {
             $this->callbackUrl = Arr::get($this->config, 'callback-url');
+        }
 
         return $this->makeCallback($transaction);
     }
@@ -152,17 +153,15 @@ abstract class AbstractProvider implements ProviderContract {
     {
         $id = $this->transaction->create($transaction, $this->getProviderName(), $this->request->getClientIp());
 
-        try
-        {
+        try {
             $authorizedTransaction = $this->authorizeTransaction(new UnAuthorizedTransaction($transaction, $id));
 
             $this->transaction->updateReferenceId($authorizedTransaction->getReferenceId());
 
             return $authorizedTransaction;
-        } catch (Exception $e)
-        {
+        } catch (Exception $e) {
             $this->transaction->failed();
-            $this->transaction->createLog(get_class($e) . ' : ' . $e->getCode(), $e->getMessage());
+            $this->transaction->createLog(get_class($e).' : '.$e->getCode(), $e->getMessage());
             throw $e;
         }
     }
@@ -210,8 +209,7 @@ abstract class AbstractProvider implements ProviderContract {
      */
     final public function settle()
     {
-        try
-        {
+        try {
             $this->validateSettlementRequest($this->request);
 
             $transaction = $this->transaction->get();
@@ -223,16 +221,14 @@ abstract class AbstractProvider implements ProviderContract {
             $this->transaction->createLog(Transaction::STATE_SUCCEEDED, Transaction::MESSAGE_SUCCEEDED);
 
             return $settledTransaction;
-        } catch (TransactionException $exception)
-        {
+        } catch (TransactionException $exception) {
             $this->transaction->failed();
             $this->transaction->createLog($exception->getCode(), $exception->getMessage());
 
             throw $exception;
-        } catch (Exception $e)
-        {
+        } catch (Exception $e) {
             $this->transaction->failed();
-            $this->transaction->createLog(get_class($e) . ' : ' . $e->getCode(), $e->getMessage());
+            $this->transaction->createLog(get_class($e).' : '.$e->getCode(), $e->getMessage());
 
             throw $e;
         }
@@ -245,8 +241,7 @@ abstract class AbstractProvider implements ProviderContract {
      */
     protected function hasInvalidState()
     {
-        if ($this->isStateless())
-        {
+        if ($this->isStateless()) {
             return false;
         }
 
@@ -330,12 +325,11 @@ abstract class AbstractProvider implements ProviderContract {
      *
      * @throws \RuntimeException
      */
-    protected function csrf_token()
+    protected function csrfToken()
     {
         $session = $this->app->make('session');
 
-        if (isset($session))
-        {
+        if (isset($session)) {
             return $session->token();
         }
 
@@ -351,34 +345,36 @@ abstract class AbstractProvider implements ProviderContract {
      */
     private function makeCallback(UnAuthorizedTransaction $transaction, $url = null)
     {
-        if ($url == null && $this->callbackUrl == null)
+        if ($url == null && $this->callbackUrl == null) {
             throw new \InvalidArgumentException('callback url is not set');
+        }
 
         $this->with(array_merge(
             $this->parameters,
             ['transaction_id' => $transaction->getId()]
         ));
 
-        if ($this->usesState())
-        {
+        if ($this->usesState()) {
             $this->with(array_merge(
                 $this->parameters,
                 ['_state' => $this->getState()]
             ));
 
-            $changes = ['_token' => $this->csrf_token(), '_state' => $this->parameters['_state']];
-            foreach ($this->parameters as $key => $value)
-                $this->request->session()->put('gateway_' . $key, $value);
-
-        } else
+            $changes = ['_token' => $this->csrfToken(), '_state' => $this->parameters['_state']];
+            foreach ($this->parameters as $key => $value) {
+                $this->request->session()->put('gateway_'.$key, $value);
+            }
+        } else {
             $changes = array_merge(
-                ['_token' => $this->csrf_token()],
+                ['_token' => $this->csrfToken()],
                 $this->parameters
             );
+        }
 
-        return $this->url_modify(
+        return $this->modifyUrl(
             $changes,
-            $this->app->make('url')->to($url ?: $this->callbackUrl));
+            $this->app->make('url')->to($url ?: $this->callbackUrl)
+        );
     }
 
     /**
@@ -388,33 +384,31 @@ abstract class AbstractProvider implements ProviderContract {
      * @param  string $url
      * @return string
      */
-    protected function url_modify($changes, $url)
+    protected function modifyUrl($changes, $url)
     {
         // Parse the url into pieces
         $url_array = parse_url($url);
 
         // The original URL had a query string, modify it.
-        if (! empty($url_array['query']))
-        {
+        if (! empty($url_array['query'])) {
             parse_str($url_array['query'], $query_array);
             $query_array = array_merge($query_array, $changes);
-        } // The original URL didn't have a query string, add it.
-        else
-        {
+        } else {
+            // The original URL didn't have a query string, add it.
             $query_array = $changes;
         }
 
-        return (! empty($url_array['scheme']) ? $url_array['scheme'] . '://' : null) .
-            (! empty($url_array['host']) ? $url_array['host'] : null) .
-            (! empty($url_array['port']) ? ':' . $url_array['port'] : null) .
-            (! empty($url_array['path']) ? $url_array['path'] : '') .
-            '?' . http_build_query($query_array);
+        return (! empty($url_array['scheme']) ? $url_array['scheme'].'://' : null).
+            (! empty($url_array['host']) ? $url_array['host'] : null).
+            (! empty($url_array['port']) ? ':'.$url_array['port'] : null).
+            (! empty($url_array['path']) ? $url_array['path'] : '').
+            '?'.http_build_query($query_array);
     }
 
     /**
      * @return array
      */
-    protected function SoapConfig()
+    protected function soapConfig()
     {
         return Arr::get($this->config, 'settings.soap');
     }
@@ -431,8 +425,7 @@ abstract class AbstractProvider implements ProviderContract {
     {
         $factory = $this->app->make(\Illuminate\Contracts\View\Factory::class);
 
-        if (func_num_args() === 0)
-        {
+        if (func_num_args() === 0) {
             return $factory;
         }
 

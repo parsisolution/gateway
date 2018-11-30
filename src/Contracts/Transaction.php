@@ -2,8 +2,8 @@
 
 namespace Parsisolution\Gateway\Contracts;
 
-
-interface Transaction {
+interface Transaction
+{
 
     /**
      * Get the amount of transaction.

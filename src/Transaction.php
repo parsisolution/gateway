@@ -7,8 +7,8 @@ use Illuminate\Database\DatabaseManager;
 use Parsisolution\Gateway\Transactions\RequestTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 
-
-class Transaction {
+class Transaction
+{
 
     const STATE_INIT = 'INIT';
     const MESSAGE_INIT = 'تراکنش ایجاد شد.';
@@ -99,7 +99,7 @@ class Transaction {
      */
     protected function getLogTable()
     {
-        return $this->db->table($this->table_name . '_logs');
+        return $this->db->table($this->table_name.'_logs');
     }
 
     private function generateTimeID()
@@ -108,8 +108,9 @@ class Transaction {
             return substr(str_pad(str_replace('.', '', microtime(true)), 12, 0), 0, 12);
         };
         $uid = $generateUid();
-        while ($this->getTable()->where('id', $uid)->first())
+        while ($this->getTable()->where('id', $uid)->first()) {
             $uid = $generateUid();
+        }
 
         return $uid;
     }
@@ -195,8 +196,8 @@ class Transaction {
     public function failed()
     {
         return $this->getTable()->where('id', $this->id)->update([
-            'status'       => self::STATE_FAILED,
-            'updated_at'   => Carbon::now(),
+            'status'     => self::STATE_FAILED,
+            'updated_at' => Carbon::now(),
         ]);
     }
 

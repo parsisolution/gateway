@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\NextPay;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class NextPayException extends TransactionException {
+class NextPayException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`

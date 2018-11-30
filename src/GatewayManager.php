@@ -14,6 +14,7 @@ use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
 use Parsisolution\Gateway\Providers\Mabna\Mabna;
+use Parsisolution\Gateway\Providers\MabnaOld\MabnaOld;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Pardano\Pardano;
@@ -21,20 +22,20 @@ use Parsisolution\Gateway\Providers\Parsian\Parsian;
 use Parsisolution\Gateway\Providers\Payir\Payir;
 use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
-use Parsisolution\Gateway\Providers\Saderat\Saderat;
 use Parsisolution\Gateway\Providers\Saman\Saman;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
 
-
-class GatewayManager extends Manager implements Contracts\Factory {
+class GatewayManager extends Manager implements Contracts\Factory
+{
 
     const CONFIG_FILE_NAME = 'gateways';
-    const MABNA = 'MABNA';
+
     const MELLAT = 'MELLAT';
     const SADAD = 'SADAD';
     const SAMAN = 'SAMAN';
     const PARSIAN = 'PARSIAN';
-    const SADERAT = 'SADERAT';
+    const MABNA = 'MABNA';
+    const MABNA_OLD = 'MABNA_OLD';
     const IRANKISH = 'IRANKISH';
     const ASANPARDAKHT = 'ASANPARDAKHT';
     const PAYIR = 'PAYIR';
@@ -52,12 +53,12 @@ class GatewayManager extends Manager implements Contracts\Factory {
     public static function availableDrivers()
     {
         return [
-            self::MABNA,
             self::MELLAT,
             self::SADAD,
             self::SAMAN,
             self::PARSIAN,
-            self::SADERAT,
+            self::MABNA,
+            self::MABNA_OLD,
             self::IRANKISH,
             self::ASANPARDAKHT,
             self::PAYIR,
@@ -96,17 +97,15 @@ class GatewayManager extends Manager implements Contracts\Factory {
         $request = $this->app['request'];
         $parameters = [];
 
-        if (! $stateless)
-        {
-            if ($this->hasInvalidState($stateless))
+        if (! $stateless) {
+            if ($this->hasInvalidState($stateless)) {
                 throw new InvalidStateException;
+            }
 
             $all = $request->session()->all();
             $to_forgets = [];
-            foreach ($all as $key => $value)
-            {
-                if (starts_with($key, 'gateway_'))
-                {
+            foreach ($all as $key => $value) {
+                if (starts_with($key, 'gateway_')) {
                     $name = substr($key, 8);
 
                     $parameters [$name] = $value;
@@ -114,29 +113,29 @@ class GatewayManager extends Manager implements Contracts\Factory {
                 }
             }
             $request->session()->forget($to_forgets);
-        } else
-        {
+        } else {
             $parameters = $request->input();
         }
 
-        if (! key_exists('transaction_id', $parameters) && ! key_exists('iN', $parameters))
+        if (! key_exists('transaction_id', $parameters) && ! key_exists('iN', $parameters)) {
             throw new InvalidRequestException;
-        if (key_exists('transaction_id', $parameters))
-        {
+        }
+        if (key_exists('transaction_id', $parameters)) {
             $id = $parameters['transaction_id'];
-        } else
-        {
+        } else {
             $id = $parameters['iN'];
         }
 
         $db = $this->app['db'];
         $transaction = $db->table($this->getTable())->where('id', $id)->first();
 
-        if (! $transaction)
+        if (! $transaction) {
             throw new NotFoundTransactionException;
+        }
 
-        if (in_array($transaction->status, [Transaction::STATE_SUCCEEDED, Transaction::STATE_FAILED]))
+        if (in_array($transaction->status, [Transaction::STATE_SUCCEEDED, Transaction::STATE_FAILED])) {
             throw new RetryException;
+        }
 
         return $transaction;
     }
@@ -177,8 +176,9 @@ class GatewayManager extends Manager implements Contracts\Factory {
     public function settle($stateless = false)
     {
         $driver = $this->fromSettleRequest($stateless);
-        if ($stateless)
+        if ($stateless) {
             $driver->stateless();
+        }
 
         return $driver->settle();
     }
@@ -188,21 +188,9 @@ class GatewayManager extends Manager implements Contracts\Factory {
      *
      * @return \Parsisolution\Gateway\AbstractProvider
      */
-    protected function createMabnaDriver()
-    {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.mabna'];
-
-        return $this->buildProvider(Mabna::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     */
     protected function createMellatDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.mellat'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.mellat'];
 
         return $this->buildProvider(Mellat::class, $config);
     }
@@ -214,7 +202,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createSadadDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.sadad'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.sadad'];
 
         return $this->buildProvider(Sadad::class, $config);
     }
@@ -226,7 +214,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createSamanDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.saman'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.saman'];
 
         return $this->buildProvider(Saman::class, $config);
     }
@@ -238,7 +226,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createParsianDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.parsian'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.parsian'];
 
         return $this->buildProvider(Parsian::class, $config);
     }
@@ -248,11 +236,23 @@ class GatewayManager extends Manager implements Contracts\Factory {
      *
      * @return \Parsisolution\Gateway\AbstractProvider
      */
-    protected function createSaderatDriver()
+    protected function createMabnaDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.saderat'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.mabna'];
 
-        return $this->buildProvider(Saderat::class, $config);
+        return $this->buildProvider(Mabna::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     */
+    protected function createMabnaOldDriver()
+    {
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.mabna-old'];
+
+        return $this->buildProvider(MabnaOld::class, $config);
     }
 
     /**
@@ -262,7 +262,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createIrankishDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.irankish'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.irankish'];
 
         return $this->buildProvider(Irankish::class, $config);
     }
@@ -274,7 +274,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createAsanpardakhtDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.asanpardakht'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.asanpardakht'];
 
         return $this->buildProvider(Asanpardakht::class, $config);
     }
@@ -286,7 +286,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createPayirDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.payir'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.payir'];
 
         return $this->buildProvider(Payir::class, $config);
     }
@@ -298,7 +298,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createPardanoDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.pardano'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.pardano'];
 
         return $this->buildProvider(Pardano::class, $config);
     }
@@ -310,7 +310,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createZarinpalDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.zarinpal'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.zarinpal'];
 
         return $this->buildProvider(Zarinpal::class, $config);
     }
@@ -322,7 +322,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createNextpayDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.nextpay'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.nextpay'];
 
         return $this->buildProvider(NextPay::class, $config);
     }
@@ -334,7 +334,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createJibitDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.jibit'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.jibit'];
 
         return $this->buildProvider(JiBit::class, $config);
     }
@@ -346,7 +346,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function createSabapayDriver()
     {
-        $config = $this->app['config'][self::CONFIG_FILE_NAME . '.sabapay'];
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.sabapay'];
 
         return $this->buildProvider(SabaPay::class, $config);
     }
@@ -358,7 +358,7 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     private function getTable()
     {
-        return Arr::get($this->app['config'], self::CONFIG_FILE_NAME . '.table', 'gateway_transactions');
+        return Arr::get($this->app['config'], self::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
     }
 
     /**
@@ -384,8 +384,8 @@ class GatewayManager extends Manager implements Contracts\Factory {
         return array_merge([
             'callback-url' => $this->formatCallbackUrl($config),
             'settings'     => [
-                'soap' => Arr::get($this->app['config'], 'soap', [])
-            ]
+                'soap' => Arr::get($this->app['config'], 'soap', []),
+            ],
         ], $config);
     }
 
@@ -412,8 +412,9 @@ class GatewayManager extends Manager implements Contracts\Factory {
      */
     protected function hasInvalidState($stateless = false)
     {
-        if ($stateless)
+        if ($stateless) {
             return false;
+        }
 
         $state = $this->app['request']->session()->pull('gateway__state');
 

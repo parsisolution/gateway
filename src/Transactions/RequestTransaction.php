@@ -2,13 +2,14 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-
 use Illuminate\Support\Arr;
 
-class RequestTransaction extends AbstractTransaction {
+class RequestTransaction extends AbstractTransaction
+{
 
     /**
      * RequestTransaction constructor.
+     *
      * @param Amount $amount
      */
     public function __construct(Amount $amount)

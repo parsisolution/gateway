@@ -6,7 +6,8 @@ use Closure;
 use Illuminate\Support\Arr;
 use SoapClient as MainSoapClient;
 
-class SoapClient {
+class SoapClient
+{
 
     /**
      * Main soap class
@@ -50,19 +51,18 @@ class SoapClient {
      */
     protected function attempt($attempts, Closure $statements)
     {
-        while ($attempts > 0)
-        {
-            try
-            {
+        while ($attempts > 0) {
+            try {
                 return $statements();
-            } catch (\SoapFault $e)
-            {
+            } catch (\SoapFault $e) {
                 $attempts--;
 
-                if ($attempts == 0)
+                if ($attempts == 0) {
                     throw $e;
+                }
             }
         }
+
         return false;
     }
 

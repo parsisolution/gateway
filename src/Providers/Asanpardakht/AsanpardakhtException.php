@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\Asanpardakht;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class AsanpardakhtException extends TransactionException {
+class AsanpardakhtException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`
@@ -151,7 +151,7 @@ class AsanpardakhtException extends TransactionException {
             1100 => "موفق",
             1101 => "هویت درخواست کننده نامعتبر است",
             1102 => "خطا در پردازش",
-            1103 => "تراکنشی یافت نشد"
+            1103 => "تراکنشی یافت نشد",
 
         ];
     }

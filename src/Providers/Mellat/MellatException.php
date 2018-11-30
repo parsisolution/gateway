@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\Mellat;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class MellatException extends TransactionException {
+class MellatException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`
@@ -58,7 +58,7 @@ class MellatException extends TransactionException {
             51  => 'تراکنش تکراری است',
             54  => 'تراکنش مرجع موجود نیست',
             55  => 'تراکنش نامعتبر است',
-            61  => 'خطا در واریز'
+            61  => 'خطا در واریز',
         ];
     }
 }

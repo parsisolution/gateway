@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Irankish;
 use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\SoapClient;
@@ -13,7 +12,8 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-class Irankish extends AbstractProvider {
+class Irankish extends AbstractProvider
+{
 
     /**
      * Address of main server
@@ -62,11 +62,12 @@ class Irankish extends AbstractProvider {
             'revertURL'        => $this->getCallback($transaction),
         );
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig(), array('soap_version' => SOAP_1_1));
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig(), array('soap_version' => SOAP_1_1));
         $response = $soap->MakeToken($fields);
 
-        if ($response->MakeTokenResult->result == false)
+        if ($response->MakeTokenResult->result == false) {
             throw new IrankishException($response->MakeTokenResult->result, $response->MakeTokenResult->message);
+        }
 
         return AuthorizedTransaction::make($transaction, $response->MakeTokenResult->token);
     }
@@ -90,15 +91,16 @@ class Irankish extends AbstractProvider {
      *
      * @param Request $request
      * @return bool
-     * @throws InvalidRequestException|TransactionException
+     * @throws TransactionException
      */
     protected function validateSettlementRequest(Request $request)
     {
 //        $refId = $request->input('token');
         $resultCode = $request->input('resultCode');
 
-        if ($resultCode == '100')
+        if ($resultCode == '100') {
             return true;
+        }
 
         throw new IrankishException($resultCode);
     }
@@ -122,16 +124,17 @@ class Irankish extends AbstractProvider {
             'token'           => $transaction->getReferenceId(),
             'referenceNumber' => $trackingCode,
             'merchantId'      => $this->config['merchant-id'],
-            'sha1Key'         => $this->config['sha1-key']
+            'sha1Key'         => $this->config['sha1-key'],
         );
 
-        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
         $response = $soap->KicccPaymentsVerification($fields);
 
         $response = floatval($response->KicccPaymentsVerificationResult);
 
-        if ($response > 0)
+        if ($response > 0) {
             return new SettledTransaction($transaction, $trackingCode);
+        }
 
         throw new IrankishException($response);
     }

@@ -12,8 +12,8 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
-class Sadad extends AbstractProvider {
+class Sadad extends AbstractProvider
+{
 
     /**
      * Url of sadad gateway web service
@@ -54,7 +54,7 @@ class Sadad extends AbstractProvider {
     {
         $this->form = '';
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
 
         $response = $soap->PaymentUtility(
             $this->config['merchant'],
@@ -65,8 +65,9 @@ class Sadad extends AbstractProvider {
             $this->getCallback($transaction)
         );
 
-        if (! isset($response['RequestKey']) || ! isset($response['PaymentUtilityResult']))
+        if (! isset($response['RequestKey']) || ! isset($response['PaymentUtilityResult'])) {
             throw new SadadException(SadadResult::INVALID_RESPONSE_CODE, SadadResult::INVALID_RESPONSE_MESSAGE);
+        }
 
         $this->form = $response['PaymentUtilityResult'];
 
@@ -110,7 +111,7 @@ class Sadad extends AbstractProvider {
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
 
         $result = $soap->CheckRequestStatusResult(
             $transaction->getId(),
@@ -121,14 +122,14 @@ class Sadad extends AbstractProvider {
             $transaction->getAmount()->getRiyal()
         );
 
-        if (empty($result) || ! isset($result->AppStatusCode))
+        if (empty($result) || ! isset($result->AppStatusCode)) {
             throw new SadadException(SadadResult::INVALID_RESPONSE_CODE, SadadResult::INVALID_RESPONSE_MESSAGE);
+        }
 
         $statusResult = strval($result->AppStatusCode);
         $appStatus = strtolower($result->AppStatusDescription);
 
-        if ($statusResult == 0 && $appStatus === 'commit')
-        {
+        if ($statusResult == 0 && $appStatus === 'commit') {
             $trackingCode = $result->TraceNo;
             $cardNumber = $result->CustomerCardNumber;
 

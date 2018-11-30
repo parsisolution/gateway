@@ -12,8 +12,8 @@ use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-
-class JiBit extends AbstractProvider {
+class JiBit extends AbstractProvider
+{
 
     /**
      * Address of main CURL server
@@ -68,26 +68,25 @@ class JiBit extends AbstractProvider {
             'callBackUrl'     => $this->getCallback($transaction),
             'userIdentity'    => $this->config['user-mobile'],
             'merchantOrderId' => $this->config['merchant-id'],
-            'additionalData' => $transaction->getExtraField('additional'),
-            'description' => $transaction->getExtraField('description'),
+            'additionalData'  => $transaction->getExtraField('additional'),
+            'description'     => $transaction->getExtraField('description'),
         );
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL . self::URL_INITIATE);
+        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL.self::URL_INITIATE);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json'
+            'Authorization: Bearer '.$token,
+            'Content-Type: application/json',
         ));
 
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
-        if (isset($response['errorCode']) && $response['errorCode'] === 0)
-        {
+        if (isset($response['errorCode']) && $response['errorCode'] === 0) {
             $this->gateUrl = $response['result']['redirectUrl'];
             $refId = $response['result']['orderId'];
 
@@ -119,8 +118,9 @@ class JiBit extends AbstractProvider {
     {
         $status = $request->input('status');
 
-        if ($status == 'PURCHASE_BY_USER')
+        if ($status == 'PURCHASE_BY_USER') {
             return true;
+        }
 
         throw new JiBitException($status);
     }
@@ -142,20 +142,21 @@ class JiBit extends AbstractProvider {
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL . self::URL_VERIFY . $transaction->getReferenceId());
+        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL.self::URL_VERIFY.$transaction->getReferenceId());
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json'
+            'Authorization: Bearer '.$token,
+            'Content-Type: application/json',
         ));
 
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
-        if (isset($response['errorCode']) && $response['errorCode'] == 0)
+        if (isset($response['errorCode']) && $response['errorCode'] == 0) {
             return new SettledTransaction($transaction, $transaction->getReferenceId());
+        }
 
         throw new JiBitException(@$response['message'], @$response['errorCode']);
     }
@@ -174,13 +175,13 @@ class JiBit extends AbstractProvider {
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL . self::URL_INQUIRY . $transaction->getReferenceId());
+        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL.self::URL_INQUIRY.$transaction->getReferenceId());
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json'
+            'Authorization: Bearer '.$token,
+            'Content-Type: application/json',
         ));
 
         $response = json_decode(curl_exec($ch), true);
@@ -205,19 +206,18 @@ class JiBit extends AbstractProvider {
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL . self::URL_AUTHENTICATE);
+        curl_setopt($ch, CURLOPT_URL, self::SERVER_URL.self::URL_AUTHENTICATE);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json'
+            'Content-Type: application/json',
         ));
 
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
-        if (isset($response['errorCode']) && $response['errorCode'] === 0)
-        {
+        if (isset($response['errorCode']) && $response['errorCode'] === 0) {
             $token = $response['result']['token'];
 
             return $token;

@@ -8,8 +8,6 @@
 
 namespace Parsisolution\Gateway\Providers\Mabna;
 
-
-use DateTime;
 use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
@@ -19,9 +17,9 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
 class Mabna extends AbstractProvider
 {
+
     /**
      * Address of gate for redirect
      *
@@ -70,8 +68,9 @@ class Mabna extends AbstractProvider
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $callback = $this->getCallback($transaction);
+        $callback = $this->getCallback($transaction->generateUnAuthorized());
         $terminalId = $this->config['terminalId'];
+
         return $this->view('gateway::mabna-redirector')->with(compact('transaction', 'terminalId', 'callback'));
     }
 
@@ -80,13 +79,14 @@ class Mabna extends AbstractProvider
      *
      * @param Request $request
      * @return bool
-     * @throws InvalidRequestException|TransactionException
+     * @throws TransactionException
      */
     protected function validateSettlementRequest(Request $request)
     {
         $status = $request->input('respcode');
-        if ($status == 0)
+        if ($status == 0) {
             return true;
+        }
 
         throw new MabnaException(-7);
     }
@@ -111,7 +111,7 @@ class Mabna extends AbstractProvider
 
         $data = [
             "digitalreceipt" => $digitalreceipt,
-            "Tid" => $this->config['terminalId'],
+            "Tid"            => $this->config['terminalId'],
         ];
         $data = http_build_query($data);
 
@@ -125,10 +125,10 @@ class Mabna extends AbstractProvider
         curl_close($curl);
 
 
-        if ($response['Status'] == 'OK')
+        if ($response['Status'] == 'OK') {
             return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        }
 
-        throw new SabaPayException($response['ReturnId']);
+        throw new MabnaException($response['ReturnId']);
     }
-
 }

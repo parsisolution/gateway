@@ -2,7 +2,6 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-
 /**
  * Class Amount
  *
@@ -11,7 +10,8 @@ namespace Parsisolution\Gateway\Transactions;
  * @property string currency
  * @property float total
  */
-class Amount {
+class Amount
+{
 
     /**
      * @var string
@@ -29,7 +29,8 @@ class Amount {
      * in currency use
      * `IRR` for `Riyal` and `IRT` for `Toman`
      * <p></p>
-     * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies). each Gateway does not support all currencies.
+     * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies).
+     * each Gateway does not support all currencies.
      *
      * @param float $amount
      * @param string $currency default to Iran Toman
@@ -47,7 +48,8 @@ class Amount {
     /**
      * `IRR` for `Riyal` and `IRT` for `Toman`
      * <p></p>
-     * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies). each Gateway does not support all currencies.
+     * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies).
+     * each Gateway does not support all currencies.
      *
      * @param string $currency
      *
@@ -63,7 +65,8 @@ class Amount {
     /**
      * `IRR` for `Riyal` and `IRT` for `Toman`
      * <p></p>
-     * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies). each Gateway does not support all currencies.
+     * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies).
+     * each Gateway does not support all currencies.
      *
      * @return string
      */
@@ -73,7 +76,9 @@ class Amount {
     }
 
     /**
-     * Total amount charged from the payer to the payee. In case of a refund, this is the refunded amount to the original payer from the payee. 10 characters max with support for 2 decimal places.
+     * Total amount charged from the payer to the payee.
+     * In case of a refund, this is the refunded amount to the original payer from the payee.
+     * 10 characters max with support for 2 decimal places.
      *
      * @param float $total
      *
@@ -87,7 +92,9 @@ class Amount {
     }
 
     /**
-     * Total amount charged from the payer to the payee. In case of a refund, this is the refunded amount to the original payer from the payee. 10 characters max with support for 2 decimal places.
+     * Total amount charged from the payer to the payee.
+     * In case of a refund, this is the refunded amount to the original payer from the payee.
+     * 10 characters max with support for 2 decimal places.
      *
      * @return float
      */
@@ -104,8 +111,7 @@ class Amount {
      */
     public function getRiyal()
     {
-        switch ($this->currency)
-        {
+        switch ($this->currency) {
             case 'IRR':
                 return floor($this->total);
             case 'IRT':
@@ -122,8 +128,7 @@ class Amount {
      */
     public function getToman()
     {
-        switch ($this->currency)
-        {
+        switch ($this->currency) {
             case 'IRR':
                 return floor($this->total / 10);
             case 'IRT':

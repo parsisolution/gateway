@@ -6,8 +6,8 @@ use ArrayAccess;
 use Illuminate\Support\Arr;
 use Parsisolution\Gateway\Contracts\Transaction;
 
-
-abstract class AbstractTransaction implements ArrayAccess, Transaction {
+abstract class AbstractTransaction implements ArrayAccess, Transaction
+{
 
     /**
      * The Transaction's amount.
@@ -85,8 +85,7 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction {
      */
     public function map(array $attributes)
     {
-        foreach ($attributes as $key => $value)
-        {
+        foreach ($attributes as $key => $value) {
             $this->{$key} = $value;
         }
 

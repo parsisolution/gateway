@@ -2,7 +2,8 @@
 
 namespace Parsisolution\Gateway\Providers\Sadad;
 
-class SadadResult {
+class SadadResult
+{
 
     const ERROR_CONNECT = -2542;
     const ERROR_CONNECT_MESSAGE = 'unable_to_connect';
@@ -19,14 +20,14 @@ class SadadResult {
             'message' => SadadResult::ERROR_CONNECT_MESSAGE,
             'fa'      => 'خطا در اتصال به درگاه سداد',
             'en'      => 'Error in connect to sadad',
-            'retry'   => false
+            'retry'   => false,
         ),
         array(
             'code'    => SadadResult::INVALID_RESPONSE_CODE,
             'message' => SadadResult::INVALID_RESPONSE_MESSAGE,
             'fa'      => 'جواب نامعتبر',
             'en'      => 'Invalid Response',
-            'retry'   => false
+            'retry'   => false,
         ),
         array(
             'code'    => -1,
@@ -174,10 +175,10 @@ class SadadResult {
     {
         $code = intval($code);
 
-        foreach (self::$results as $v)
-        {
-            if ($v['message'] == $message && $v['code'] == $code)
+        foreach (self::$results as $v) {
+            if ($v['message'] == $message && $v['code'] == $code) {
                 return $v;
+            }
         }
 
         return null;

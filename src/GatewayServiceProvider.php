@@ -5,7 +5,8 @@ namespace Parsisolution\Gateway;
 use Illuminate\Support\ServiceProvider;
 use Parsisolution\Gateway\Contracts\Factory;
 
-class GatewayServiceProvider extends ServiceProvider {
+class GatewayServiceProvider extends ServiceProvider
+{
 
     /**
      * Indicates if loading of the provider is deferred.
@@ -21,9 +22,9 @@ class GatewayServiceProvider extends ServiceProvider {
      */
     public function boot()
     {
-        $config = __DIR__ . '/../config/'.GatewayManager::CONFIG_FILE_NAME.'.php';
-        $migrations = __DIR__ . '/../migrations/';
-        $views = __DIR__ . '/../views/';
+        $config = __DIR__.'/../config/'.GatewayManager::CONFIG_FILE_NAME.'.php';
+        $migrations = __DIR__.'/../migrations/';
+        $views = __DIR__.'/../views/';
 
         //php artisan vendor:publish --provider="Parsisolution\Gateway\GatewayServiceProvider" --tag=config
         $this->publishes([
@@ -34,7 +35,7 @@ class GatewayServiceProvider extends ServiceProvider {
 
         // php artisan vendor:publish --provider="Parsisolution\Gateway\GatewayServiceProvider" --tag=migrations
         $this->publishes([
-            $migrations => base_path('database/migrations')
+            $migrations => base_path('database/migrations'),
         ], 'migrations');
 
         $this->loadViewsFrom($views, 'gateway');
@@ -43,7 +44,6 @@ class GatewayServiceProvider extends ServiceProvider {
         $this->publishes([
             $views => base_path('resources/views/vendor/gateway'),
         ], 'views');
-
     }
 
     /**

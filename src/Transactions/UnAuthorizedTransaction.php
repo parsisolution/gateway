@@ -2,8 +2,8 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-
-class UnAuthorizedTransaction extends AbstractTransaction {
+class UnAuthorizedTransaction extends AbstractTransaction
+{
 
     /**
      * The unique identifier for the transaction.
@@ -38,5 +38,4 @@ class UnAuthorizedTransaction extends AbstractTransaction {
     {
         return $this->id;
     }
-
 }

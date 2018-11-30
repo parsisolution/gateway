@@ -2,8 +2,8 @@
 
 namespace Parsisolution\Gateway\Contracts;
 
-
-interface Provider {
+interface Provider
+{
 
     /**
      * Set the callback url. (Optional)

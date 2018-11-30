@@ -15,8 +15,8 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
-class Zarinpal extends AbstractProvider implements ProviderInterface {
+class Zarinpal extends AbstractProvider implements ProviderInterface
+{
 
     /**
      * Address of germany SOAP server
@@ -134,8 +134,7 @@ class Zarinpal extends AbstractProvider implements ProviderInterface {
     protected function setServer()
     {
         $server = Arr::get($this->config, 'server', 'germany');
-        switch ($server)
-        {
+        switch ($server) {
             case 'iran':
                 $this->serverUrl = self::SERVER_IRAN;
                 $this->gateUrl = self::GATE_URL;
@@ -226,11 +225,12 @@ class Zarinpal extends AbstractProvider implements ProviderInterface {
             'Mobile'      => $transaction->getExtraField('mobile'),
         );
 
-        $soap = new SoapClient($this->serverUrl, $this->SoapConfig(), ['encoding' => 'UTF-8']);
+        $soap = new SoapClient($this->serverUrl, $this->soapConfig(), ['encoding' => 'UTF-8']);
         $response = $soap->PaymentRequest($fields);
 
-        if ($response->Status != 100)
+        if ($response->Status != 100) {
             throw new ZarinpalException($response->Status);
+        }
 
         return AuthorizedTransaction::make($transaction, $response->Authority);
     }
@@ -243,26 +243,32 @@ class Zarinpal extends AbstractProvider implements ProviderInterface {
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        if (! $this->type)
+        if (! $this->type) {
             $this->type = Arr::get($this->config, 'type');
+        }
 
-        switch ($this->type)
-        {
+        switch ($this->type) {
             case 'zarin-gate':
-                return new RedirectResponse(str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_ZARIN));
+                return new RedirectResponse(
+                    str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_ZARIN)
+                );
                 break;
 
             case 'zarin-gate-sep':
-                return new RedirectResponse(str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SEP));
+                return new RedirectResponse(
+                    str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SEP)
+                );
                 break;
 
             case 'zarin-gate-sad':
-                return new RedirectResponse(str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SAD));
+                return new RedirectResponse(
+                    str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SAD)
+                );
                 break;
 
             case 'normal':
             default:
-                return new RedirectResponse($this->gateUrl . $transaction->getReferenceId());
+                return new RedirectResponse($this->gateUrl.$transaction->getReferenceId());
                 break;
         }
     }
@@ -274,8 +280,9 @@ class Zarinpal extends AbstractProvider implements ProviderInterface {
     {
         $status = $request->input('Status');
 
-        if ($status == 'OK')
+        if ($status == 'OK') {
             return true;
+        }
 
         throw new InvalidRequestException();
     }
@@ -293,11 +300,12 @@ class Zarinpal extends AbstractProvider implements ProviderInterface {
             'Amount'     => $transaction->getAmount()->getToman(),
         ];
 
-        $soap = new SoapClient($this->serverUrl, $this->SoapConfig(), ['encoding' => 'UTF-8']);
+        $soap = new SoapClient($this->serverUrl, $this->soapConfig(), ['encoding' => 'UTF-8']);
         $response = $soap->PaymentVerification($fields);
 
-        if ($response->Status != 100 && $response->Status != 101)
+        if ($response->Status != 100 && $response->Status != 101) {
             throw new ZarinpalException($response->Status);
+        }
 
         return new SettledTransaction($transaction, $response->RefID);
     }

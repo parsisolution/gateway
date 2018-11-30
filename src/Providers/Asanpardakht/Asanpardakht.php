@@ -13,8 +13,8 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
-class Asanpardakht extends AbstractProvider {
+class Asanpardakht extends AbstractProvider
+{
 
     /**
      * Address of main SOAP server
@@ -59,16 +59,17 @@ class Asanpardakht extends AbstractProvider {
         $encryptedRequest = $this->encrypt($req);
         $params = array(
             'merchantConfigurationID' => $this->config['merchantConfigId'],
-            'encryptedRequest'        => $encryptedRequest
+            'encryptedRequest'        => $encryptedRequest,
         );
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->RequestOperation($params);
 
         $response = $response->RequestOperationResult;
         $responseCode = explode(",", $response)[0];
-        if ($responseCode != '0')
+        if ($responseCode != '0') {
             throw new AsanpardakhtException($response);
+        }
 
         return AuthorizedTransaction::make($transaction, substr($response, 2));
     }
@@ -82,7 +83,7 @@ class Asanpardakht extends AbstractProvider {
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
         return $this->view('gateway::asan-pardakht-redirector')->with([
-            'refId' => $transaction->getReferenceId()
+            'refId' => $transaction->getReferenceId(),
         ]);
     }
 
@@ -97,8 +98,9 @@ class Asanpardakht extends AbstractProvider {
     {
         $ReturningParams = $request->input('ReturningParams');
 
-        if (isset($ReturningParams))
+        if (isset($ReturningParams)) {
             return true;
+        }
 
         throw new InvalidRequestException();
     }
@@ -131,8 +133,9 @@ class Asanpardakht extends AbstractProvider {
 
         $settledTransaction = new SettledTransaction($transaction, $PayGateTranID, $LastFourDigitOfPAN);
 
-        if (! ($ResCode == '0' || $ResCode == '00'))
+        if (! ($ResCode == '0' || $ResCode == '00')) {
             throw new AsanpardakhtException($ResCode);
+        }
 
 
         $username = $this->config['username'];
@@ -142,22 +145,24 @@ class Asanpardakht extends AbstractProvider {
         $params = array(
             'merchantConfigurationID' => $this->config['merchantConfigId'],
             'encryptedCredentials'    => $encryptedCredintials,
-            'payGateTranID'           => $settledTransaction->getTrackingCode()
+            'payGateTranID'           => $settledTransaction->getTrackingCode(),
         );
 
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->RequestVerification($params);
         $response = $response->RequestVerificationResult;
 
-        if ($response != '500')
+        if ($response != '500') {
             throw new AsanpardakhtException($response);
+        }
 
         $response = $soap->RequestReconciliation($params);
         $response = $response->RequestReconciliationResult;
 
-        if ($response != '600')
+        if ($response != '600') {
             throw new AsanpardakhtException($response);
+        }
 
         return $settledTransaction;
     }
@@ -174,22 +179,18 @@ class Asanpardakht extends AbstractProvider {
         $key = $this->config['key'];
         $iv = $this->config['iv'];
 
-        try
-        {
-
-            $soap = new SoapClient(self::SERVER_UTILS, $this->SoapConfig());
+        try {
+            $soap = new SoapClient(self::SERVER_UTILS, $this->soapConfig());
             $params = array(
                 'aesKey'        => $key,
                 'aesVector'     => $iv,
-                'toBeEncrypted' => $string
+                'toBeEncrypted' => $string,
             );
 
             $response = $soap->EncryptInAES($params);
 
             return $response->EncryptInAESResult;
-
-        } catch (\SoapFault $e)
-        {
+        } catch (\SoapFault $e) {
             return "";
         }
     }
@@ -205,22 +206,18 @@ class Asanpardakht extends AbstractProvider {
         $key = $this->config['key'];
         $iv = $this->config['iv'];
 
-        try
-        {
-
-            $soap = new SoapClient(self::SERVER_UTILS, $this->SoapConfig());
+        try {
+            $soap = new SoapClient(self::SERVER_UTILS, $this->soapConfig());
             $params = array(
                 'aesKey'        => $key,
                 'aesVector'     => $iv,
-                'toBeDecrypted' => $string
+                'toBeDecrypted' => $string,
             );
 
             $response = $soap->DecryptInAES($params);
 
             return $response->DecryptInAESResult;
-
-        } catch (\SoapFault $e)
-        {
+        } catch (\SoapFault $e) {
             return "";
         }
     }

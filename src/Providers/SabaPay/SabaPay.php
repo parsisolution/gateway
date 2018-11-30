@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\SabaPay;
 use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -13,8 +12,8 @@ use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-
-class SabaPay extends AbstractProvider {
+class SabaPay extends AbstractProvider
+{
 
     /**
      * Address of main CURL server
@@ -77,8 +76,9 @@ class SabaPay extends AbstractProvider {
         $response = json_decode($response, true);
         curl_close($ch);
 
-        if ($response['status'] == 1)
+        if ($response['status'] == 1) {
             return AuthorizedTransaction::make($transaction, $response['invoice_key']);
+        }
 
         throw new SabaPayException($response['errorCode']);
     }
@@ -91,7 +91,7 @@ class SabaPay extends AbstractProvider {
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse(self::URL_GATE . $transaction->getReferenceId());
+        return new RedirectResponse(self::URL_GATE.$transaction->getReferenceId());
     }
 
     /**
@@ -99,14 +99,15 @@ class SabaPay extends AbstractProvider {
      *
      * @param Request $request
      * @return bool
-     * @throws InvalidRequestException|TransactionException
+     * @throws TransactionException
      */
     protected function validateSettlementRequest(Request $request)
     {
         $status = $request->input('status');
 
-        if ($status == 0)
+        if ($status == 0) {
             return true;
+        }
 
         throw new SabaPayException($status);
     }
@@ -132,7 +133,7 @@ class SabaPay extends AbstractProvider {
         ];
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, self::SERVER_VERIFY_URL . $request->input('invoice_key'));
+        curl_setopt($ch, CURLOPT_URL, self::SERVER_VERIFY_URL.$request->input('invoice_key'));
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -140,8 +141,9 @@ class SabaPay extends AbstractProvider {
         $response = json_decode($response, true);
         curl_close($ch);
 
-        if ($response['status'] == 1)
+        if ($response['status'] == 1) {
             return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        }
 
         throw new SabaPayException($response['errorCode']);
     }

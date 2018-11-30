@@ -2,9 +2,8 @@
 
 namespace Parsisolution\Gateway;
 
-
-class ApiType {
-
-    const SoapClient = 1;
-    const Http = 2;
+class ApiType
+{
+    const SOAP_CLIENT = 1;
+    const HTTP = 2;
 }

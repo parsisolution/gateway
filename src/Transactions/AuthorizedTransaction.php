@@ -2,8 +2,8 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-
-class AuthorizedTransaction extends AbstractTransaction {
+class AuthorizedTransaction extends AbstractTransaction
+{
 
     /**
      * The transaction's reference id.

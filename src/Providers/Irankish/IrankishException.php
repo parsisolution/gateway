@@ -4,7 +4,6 @@ namespace Parsisolution\Gateway\Providers\Irankish;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
 class IrankishException extends TransactionException
 {
 
@@ -54,7 +53,7 @@ class IrankishException extends TransactionException
             -51 => 'در در خواست خطا وجود دارد',
             -80 => 'تراکنش مورد نظر یافت نشد',
             -81 => ' خطای داخلی بانک',
-            -90 => 'تراکنش قبلا تایید شده است'
+            -90 => 'تراکنش قبلا تایید شده است',
         ];
     }
 }

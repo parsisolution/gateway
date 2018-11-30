@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\JiBit;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class JiBitException extends TransactionException {
+class JiBitException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`

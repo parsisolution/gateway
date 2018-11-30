@@ -13,15 +13,15 @@ use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-
 class Mellat extends AbstractProvider
 {
-	/**
-	 * Address of main SOAP server
-	 *
-	 * @var string
-	 */
-	const SERVER_URL = 'https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl';
+
+    /**
+     * Address of main SOAP server
+     *
+     * @var string
+     */
+    const SERVER_URL = 'https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl';
 
     /**
      * Get this provider name to save on transaction table.
@@ -49,19 +49,19 @@ class Mellat extends AbstractProvider
         $dateTime = new DateTime();
 
         $fields = array(
-            'terminalId' => $this->config['terminalId'],
-            'userName' => $this->config['username'],
-            'userPassword' => $this->config['password'],
-            'orderId' => $transaction->getId(),
-            'amount' => $transaction->getAmount()->getRiyal(),
-            'localDate' => $dateTime->format('Ymd'),
-            'localTime' => $dateTime->format('His'),
+            'terminalId'     => $this->config['terminalId'],
+            'userName'       => $this->config['username'],
+            'userPassword'   => $this->config['password'],
+            'orderId'        => $transaction->getId(),
+            'amount'         => $transaction->getAmount()->getRiyal(),
+            'localDate'      => $dateTime->format('Ymd'),
+            'localTime'      => $dateTime->format('His'),
             'additionalData' => $transaction->getExtraField('description'),
-            'callBackUrl' => $this->getCallback($transaction),
-            'payerId' => $transaction->getExtraField('payer.id', 0),
+            'callBackUrl'    => $this->getCallback($transaction),
+            'payerId'        => $transaction->getExtraField('payer.id', 0),
         );
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpPayRequest($fields);
 
         $response = explode(',', $response->return);
@@ -97,8 +97,9 @@ class Mellat extends AbstractProvider
     {
         $payRequestResCode = $request->input('ResCode');
 
-        if ($payRequestResCode == '0')
+        if ($payRequestResCode == '0') {
             return true;
+        }
 
         throw new MellatException($payRequestResCode);
     }
@@ -115,19 +116,20 @@ class Mellat extends AbstractProvider
     protected function verifyPayment(SettledTransaction $transaction)
     {
         $fields = [
-            'terminalId' => $this->config['terminalId'],
-            'userName' => $this->config['username'],
-            'userPassword' => $this->config['password'],
-            'orderId' => $transaction->getId(),
-            'saleOrderId' => $transaction->getId(),
-            'saleReferenceId' => $transaction->getTrackingCode()
+            'terminalId'      => $this->config['terminalId'],
+            'userName'        => $this->config['username'],
+            'userPassword'    => $this->config['password'],
+            'orderId'         => $transaction->getId(),
+            'saleOrderId'     => $transaction->getId(),
+            'saleReferenceId' => $transaction->getTrackingCode(),
         ];
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpVerifyRequest($fields);
 
-        if ($response->return != '0')
+        if ($response->return != '0') {
             throw new MellatException($response->return);
+        }
 
         return true;
     }
@@ -135,6 +137,7 @@ class Mellat extends AbstractProvider
     /**
      * Send settle request
      *
+     * @param SettledTransaction $transaction
      * @return bool
      *
      * @throws MellatException
@@ -143,19 +146,20 @@ class Mellat extends AbstractProvider
     protected function settleRequest(SettledTransaction $transaction)
     {
         $fields = [
-            'terminalId' => $this->config['terminalId'],
-            'userName' => $this->config['username'],
-            'userPassword' => $this->config['password'],
-            'orderId' => $transaction->getId(),
-            'saleOrderId' => $transaction->getId(),
-            'saleReferenceId' => $transaction->getTrackingCode()
+            'terminalId'      => $this->config['terminalId'],
+            'userName'        => $this->config['username'],
+            'userPassword'    => $this->config['password'],
+            'orderId'         => $transaction->getId(),
+            'saleOrderId'     => $transaction->getId(),
+            'saleReferenceId' => $transaction->getTrackingCode(),
         ];
 
-        $soap = new SoapClient(self::SERVER_URL, $this->SoapConfig());
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpSettleRequest($fields);
 
-        if ($response->return == '0' || $response->return == '45')
+        if ($response->return == '0' || $response->return == '45') {
             return true;
+        }
 
         throw new MellatException($response->return);
     }

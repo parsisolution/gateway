@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateGatewayTransactionsTable extends Migration {
+class CreateGatewayTransactionsTable extends Migration
+{
 
     private function getTable()
     {

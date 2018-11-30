@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Payir;
 use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -13,8 +12,8 @@ use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-
-class Payir extends AbstractProvider {
+class Payir extends AbstractProvider
+{
 
     /**
      * Address of main CURL server
@@ -82,7 +81,8 @@ class Payir extends AbstractProvider {
             'redirect' => urlencode($this->getCallback($transaction)),
         ];
 
-        $fields['factorNumber'] = isset($this->factorNumber) ? $this->factorNumber : $transaction->getExtraField('factor.number');
+        $fields['factorNumber'] =
+            isset($this->factorNumber) ? $this->factorNumber : $transaction->getExtraField('factor.number');
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, self::SERVER_URL);
@@ -93,8 +93,9 @@ class Payir extends AbstractProvider {
         $response = json_decode($response, true);
         curl_close($ch);
 
-        if (is_numeric($response['status']) && $response['status'] > 0)
+        if (is_numeric($response['status']) && $response['status'] > 0) {
             return AuthorizedTransaction::make($transaction, $response['transId']);
+        }
 
         throw new PayirSendException($response['errorCode']);
     }
@@ -107,7 +108,7 @@ class Payir extends AbstractProvider {
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse(self::URL_GATE . $transaction->getReferenceId());
+        return new RedirectResponse(self::URL_GATE.$transaction->getReferenceId());
     }
 
     /**
@@ -115,15 +116,16 @@ class Payir extends AbstractProvider {
      *
      * @param Request $request
      * @return bool
-     * @throws InvalidRequestException|TransactionException
+     * @throws TransactionException
      */
     protected function validateSettlementRequest(Request $request)
     {
         $status = $request->input('status');
         $message = $request->input('message');
 
-        if (is_numeric($status) && $status > 0)
+        if (is_numeric($status) && $status > 0) {
             return true;
+        }
 
         throw new PayirReceiveException(-5, $message);
     }
@@ -158,8 +160,9 @@ class Payir extends AbstractProvider {
         $response = json_decode($response, true);
         curl_close($ch);
 
-        if ($response['status'] == 1)
+        if ($response['status'] == 1) {
             return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        }
 
         throw new PayirReceiveException($response['errorCode']);
     }

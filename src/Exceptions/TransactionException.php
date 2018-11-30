@@ -5,8 +5,8 @@ namespace Parsisolution\Gateway\Exceptions;
 use Illuminate\Support\Arr;
 use Throwable;
 
-
-abstract class TransactionException extends \Exception {
+abstract class TransactionException extends \Exception
+{
 
     /**
      * returns an associative array of `code` => `message`
@@ -24,8 +24,9 @@ abstract class TransactionException extends \Exception {
      */
     protected function getMessageFromCode($code, $message)
     {
-        if (isset($message))
+        if (isset($message)) {
             return $message;
+        }
 
         $code = strval($code);
 

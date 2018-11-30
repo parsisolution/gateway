@@ -2,8 +2,8 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-
-class SettledTransaction extends AbstractTransaction {
+class SettledTransaction extends AbstractTransaction
+{
 
     /**
      * The transaction's tracking code.

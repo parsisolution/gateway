@@ -4,8 +4,8 @@ namespace Parsisolution\Gateway\Providers\SabaPay;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-
-class SabaPayException extends TransactionException {
+class SabaPayException extends TransactionException
+{
 
     /**
      * returns an associative array of `code` => `message`
@@ -22,7 +22,7 @@ class SabaPayException extends TransactionException {
             201 => 'پرداخت انجام نشده است.',
             202 => 'پرداخت کنسل شده است یا در مراحل پرداخت خطایی رخ داده است.',
             200 => 'شناسه پرداخت صحیح نیست.',
-            301 => 'خطایی در برقراری ارتباط با سرور بانک رخ داده است.'
+            301 => 'خطایی در برقراری ارتباط با سرور بانک رخ داده است.',
         ];
     }
 }
