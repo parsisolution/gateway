@@ -5,70 +5,99 @@ return [
     //-------------------------------
     // Tables names
     //--------------------------------
-    'table'        => 'gateway_transactions',
+    'table' => 'gateway_transactions',
 
     //--------------------------------
     // Soap configuration
     //--------------------------------
-    'soap'         => [
+    'soap' => [
         'attempts' => 2 // Attempts if soap connection is fail
+    ],
+
+    //--------------------------------
+    // Mabna gateway
+    //--------------------------------
+    'mabna' => [
+        'name' => '',
+        'active' => false,
+        'order' => 1,
+        'terminalId' => 00000000,
+        'callback-url' => '/'
     ],
 
     //--------------------------------
     // Mellat gateway
     //--------------------------------
-    'mellat'       => [
-        'username'     => '',
-        'password'     => '',
-        'terminalId'   => 0000000,
+    'mellat' => [
+        'name' => '',
+        'active' => false,
+        'order' => 2,
+        'username' => '',
+        'password' => '',
+        'terminalId' => 0000000,
         'callback-url' => '/'
     ],
 
     //--------------------------------
     // Sadad gateway
     //--------------------------------
-    'sadad'        => [
-        'merchant'       => '',
+    'sadad' => [
+        'name' => '',
+        'active' => false,
+        'order' => 3,
+        'merchant' => '',
         'transactionKey' => '',
-        'terminalId'     => 000000000,
-        'callback-url'   => '/'
+        'terminalId' => 000000000,
+        'callback-url' => '/'
     ],
 
     //--------------------------------
     // Saman gateway
     //--------------------------------
-    'saman'        => [
-        'merchant'     => '',
-        'password'     => '',
+    'saman' => [
+        'name' => '',
+        'active' => false,
+        'order' => 4,
+        'merchant' => '',
+        'password' => '',
         'callback-url' => '/',
     ],
 
     //--------------------------------
     // Parsian gateway
     //--------------------------------
-    'parsian'      => [
-        'pin'          => 'xxxxxxxxxxxxxxxxxxxx',
+    'parsian' => [
+        'name' => '',
+        'active' => false,
+        'order' => 5,
+        'pin' => 'xxxxxxxxxxxxxxxxxxxx',
         'callback-url' => '/'
     ],
 
     //--------------------------------
     // Saderat gateway
     //--------------------------------
-    'saderat'      => [
-        'merchant-id'  => '999999999999999',
-        'terminal-id'  => '99999999',
-        'public-key'   => storage_path('gateways/saderat/saderat-public-key.pem'),
-        'private-key'  => storage_path('gateways/saderat/saderat-private-key.pem'),
+    'saderat' => [
+        'name' => '',
+        'active' => false,
+        'order' => 6,
+        'merchant-id' => '999999999999999',
+        'terminal-id' => '99999999',
+        'public-key' => storage_path('gateways/saderat/saderat-public-key.pem'),
+        'private-key' => storage_path('gateways/saderat/saderat-private-key.pem'),
         'callback-url' => '/'
     ],
 
     //--------------------------------
     // IranKish gateway
     //--------------------------------
-    'irankish'     => [
-        'merchant-id'  => 'xxxx',
-        'sha1-key'     => 'xxxxxxxxxxxxxxxxxxxx',
-        'description'  => 'description',
+    'irankish' => [
+        'name' => '',
+        'active' => false,
+        'order' => 7,
+        'merchant-id' => 'xxxx',
+        'sha1-key' => 'xxxxxxxxxxxxxxxxxxxx',
+        'description' => 'description',
         'callback-url' => '/'
     ],
 
@@ -76,64 +105,85 @@ return [
     // Asan Pardakht gateway
     //--------------------------------
     'asanpardakht' => [
-        'merchantId'       => '',
+        'name' => '',
+        'active' => false,
+        'order' => 8,
+        'merchantId' => '',
         'merchantConfigId' => '',
-        'username'         => '',
-        'password'         => '',
-        'key'              => '',
-        'iv'               => '',
-        'callback-url'     => '/',
+        'username' => '',
+        'password' => '',
+        'key' => '',
+        'iv' => '',
+        'callback-url' => '/',
     ],
 
     //--------------------------------
     // PayIr gateway
     //--------------------------------
-    'payir'        => [
-        'api'          => env('PAY_IR_API_KEY'),
+    'payir' => [
+        'name' => '',
+        'active' => false,
+        'order' => 9,
+        'api' => env('PAY_IR_API_KEY'),
         'callback-url' => '/'
     ],
 
     //--------------------------------
     // Pardano gateway
     //--------------------------------
-    'pardano'      => [
-        'api'          => env('PARDANO_API_KEY', 'test'), // use test or your api key
+    'pardano' => [
+        'name' => '',
+        'active' => false,
+        'order' => 10,
+        'api' => env('PARDANO_API_KEY', 'test'), // use test or your api key
         'callback-url' => '/'
     ],
 
     //--------------------------------
     // Zarinpal gateway
     //--------------------------------
-    'zarinpal'     => [
-        'merchant-id'  => env('ZARINPAL_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
-        'type'         => 'normal',             // Types: [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
-        'server'       => 'test',                // Servers: [germany || iran || test]
-        'description'  => 'description',
+    'zarinpal' => [
+        'name' => '',
+        'active' => false,
+        'order' => 11,
+        'merchant-id' => env('ZARINPAL_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
+        'type' => 'normal',             // Types: [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
+        'server' => 'test',                // Servers: [germany || iran || test]
+        'description' => 'description',
         'callback-url' => '/',
     ],
 
     //--------------------------------
     // NextPay gateway
     //--------------------------------
-    'nextpay'      => [
-        'api'          => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
+    'nextpay' => [
+        'name' => '',
+        'active' => false,
+        'order' => 12,
+        'api' => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'callback-url' => '/'
     ],
 
     // JiBit gateway
     //--------------------------------
-    'jibit'        => [
-        'merchant-id'  => 'xxxx',
-        'password'     => env('JIBIT_PASS'),
+    'jibit' => [
+        'name' => '',
+        'active' => false,
+        'order' => 13,
+        'merchant-id' => 'xxxx',
+        'password' => env('JIBIT_PASS'),
         'callback-url' => '/',
-        'user-mobile'  => '09xxxxxxxxx'
+        'user-mobile' => '09xxxxxxxxx'
     ],
 
     //--------------------------------
     // SabaPay gateway
     //--------------------------------
-    'sabapay'      => [
-        'api'          => env('SABAPAY_API_KEY'),
+    'sabapay' => [
+        'name' => '',
+        'active' => false,
+        'order' => 14,
+        'api' => env('SABAPAY_API_KEY'),
         'callback-url' => '/'
     ],
 ];
