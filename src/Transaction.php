@@ -183,7 +183,7 @@ class Transaction
             'tracking_code' => $transaction->getTrackingCode(),
             'card_number'   => $transaction->getCardNumber(),
             'extra'         => json_encode($transaction->getExtra()),
-            'payment_date'  => Carbon::now(),
+            'payed_at'      => Carbon::now(),
             'updated_at'    => Carbon::now(),
         ]);
     }

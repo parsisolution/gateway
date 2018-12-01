@@ -32,7 +32,7 @@ class CreateGatewayTransactionsTable extends Migration
                 ->default(\Parsisolution\Gateway\Transaction::STATE_INIT);
             $table->string('ip', 20)->nullable();
             $table->json('extra')->nullable();
-            $table->timestamp('payment_date')->nullable();
+            $table->timestamp('payed_at')->nullable();
             $table->nullableTimestamps();
             $table->softDeletes();
         });
