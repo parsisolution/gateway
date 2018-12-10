@@ -129,7 +129,7 @@ class SabaPay extends AbstractProvider
         $cardNumber = $request->input('card_number');
 
         $fields = [
-            'api' => $this->config['api'],
+            'api_key' => $this->config['api'],
         ];
 
         $ch = curl_init();
