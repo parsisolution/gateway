@@ -63,7 +63,7 @@ class SabaPay extends AbstractProvider
         $fields = [
             'api_key'    => $this->config['api'],
             'amount'     => $transaction->getAmount()->getToman(),
-            'return_url' => urlencode($this->getCallback($transaction)),
+            'return_url' => $this->getCallback($transaction, true),
         ];
 
 

@@ -78,7 +78,7 @@ class Payir extends AbstractProvider
         $fields = [
             'api'      => $this->config['api'],
             'amount'   => $transaction->getAmount()->getToman(),
-            'redirect' => urlencode($this->getCallback($transaction)),
+            'redirect' => $this->getCallback($transaction, true),
         ];
 
         $fields['factorNumber'] =

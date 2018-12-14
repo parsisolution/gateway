@@ -69,7 +69,7 @@ class Mabna extends AbstractProvider
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
         $url = self::URL_GATE;
-        $callback = $this->getCallback($transaction->generateUnAuthorized());
+        $callback = $this->getCallback($transaction->generateUnAuthorized(), true);
         $terminalId = $this->config['terminalId'];
 
         return $this->view('gateway::mabna-redirector')->with(compact('url', 'transaction', 'terminalId', 'callback'));

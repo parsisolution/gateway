@@ -115,15 +115,18 @@ abstract class AbstractProvider implements ProviderContract
      * Gets callback url
      *
      * @param UnAuthorizedTransaction $transaction
+     * @param bool $encode
      * @return string
      */
-    public function getCallback(UnAuthorizedTransaction $transaction)
+    public function getCallback(UnAuthorizedTransaction $transaction, $encode = false)
     {
         if (! $this->callbackUrl) {
             $this->callbackUrl = Arr::get($this->config, 'callback-url');
         }
 
-        return $this->makeCallback($transaction);
+        $callback = $this->makeCallback($transaction);
+
+        return $encode ? urlencode($callback) : $callback;
     }
 
     /**
