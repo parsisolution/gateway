@@ -11,16 +11,16 @@
     hiddenField.setAttribute("value", "{{ $terminalId }}");
 
     var hiddenField2 = document.createElement("input");
-    hiddenField.setAttribute("name", "Amount");
-    hiddenField.setAttribute("value", "{{ $transaction->getAmount()->getRiyal() }}");
+    hiddenField2.setAttribute("name", "Amount");
+    hiddenField2.setAttribute("value", "{{ $transaction->getAmount()->getRiyal() }}");
 
     var hiddenField3 = document.createElement("input");
-    hiddenField2.setAttribute("name", "callbackURL");
-    hiddenField2.setAttribute("value", "{{ $callback }}");
+    hiddenField3.setAttribute("name", "callbackURL");
+    hiddenField3.setAttribute("value", "{{ $callback }}");
 
     var hiddenField4 = document.createElement("input");
-    hiddenField2.setAttribute("name", "InvoiceID");
-    hiddenField2.setAttribute("value", "{{ $transaction->getId() }}");
+    hiddenField4.setAttribute("name", "InvoiceID");
+    hiddenField4.setAttribute("value", "{{ $transaction->getId() }}");
 
 
     form.appendChild(hiddenField);
