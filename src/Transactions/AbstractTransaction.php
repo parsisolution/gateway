@@ -43,7 +43,7 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction
      */
     public function getExtra()
     {
-        return $this->extra;
+        return is_array($this->extra) ? $this->extra : [];
     }
 
     /**
