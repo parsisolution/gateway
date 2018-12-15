@@ -16,7 +16,7 @@
 
     var hiddenField3 = document.createElement("input");
     hiddenField3.setAttribute("name", "callbackURL");
-    hiddenField3.setAttribute("value", "{{ $callback }}");
+    hiddenField3.setAttribute("value", "{!! $callback !!}");
 
     var hiddenField4 = document.createElement("input");
     hiddenField4.setAttribute("name", "InvoiceID");
