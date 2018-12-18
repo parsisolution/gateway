@@ -164,8 +164,7 @@ abstract class AbstractProvider implements ProviderContract
 
             return $authorizedTransaction;
         } catch (Exception $e) {
-            $this->transaction->failed();
-            $this->transaction->createLog(get_class($e).' : '.$e->getCode(), $e->getMessage());
+            $this->transaction->failed(get_class($e).' : '.$e->getCode(), $e->getMessage());
             throw $e;
         }
     }
@@ -219,17 +218,14 @@ abstract class AbstractProvider implements ProviderContract
             $settledTransaction = $this->settleTransaction($this->request, $authorizedTransaction);
 
             $this->transaction->succeeded($settledTransaction);
-            $this->transaction->createLog(Transaction::STATE_SUCCEEDED, Transaction::MESSAGE_SUCCEEDED);
 
             return $settledTransaction;
         } catch (TransactionException $exception) {
-            $this->transaction->failed();
-            $this->transaction->createLog($exception->getCode(), $exception->getMessage());
+            $this->transaction->failed($exception->getCode(), $exception->getMessage());
 
             throw $exception;
         } catch (Exception $e) {
-            $this->transaction->failed();
-            $this->transaction->createLog(get_class($e).' : '.$e->getCode(), $e->getMessage());
+            $this->transaction->failed(get_class($e).' : '.$e->getCode(), $e->getMessage());
 
             throw $e;
         }

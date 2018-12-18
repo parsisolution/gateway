@@ -165,7 +165,12 @@ class Transaction
             'tracking_code' => $transaction->getTrackingCode(),
             'card_number'   => $transaction->getCardNumber(),
             'extra'         => json_encode($transaction->getExtra()),
-            'paid_at'      => Carbon::now(),
+            'log'           => json_encode([
+                'result_code'    => self::STATE_SUCCEEDED,
+                'result_message' => self::MESSAGE_SUCCEEDED,
+                'logged_at'      => Carbon::now(),
+            ]),
+            'paid_at'       => Carbon::now(),
             'updated_at'    => Carbon::now(),
         ]);
     }
@@ -174,30 +179,21 @@ class Transaction
      * Failed transaction
      * Set status to failure status
      *
+     * @param string|int $statusCode
+     * @param string $statusMessage
+     *
      * @return bool
      */
-    public function failed()
+    public function failed($statusCode, $statusMessage)
     {
         return $this->getTable()->where('id', $this->id)->update([
             'status'     => self::STATE_FAILED,
+            'log'        => json_encode([
+                'result_code'    => $statusCode,
+                'result_message' => $statusMessage,
+                'logged_at'      => Carbon::now(),
+            ]),
             'updated_at' => Carbon::now(),
-        ]);
-    }
-
-    /**
-     * Create new log
-     *
-     * @param string|int $statusCode
-     * @param string $statusMessage
-     * @return bool
-     */
-    public function createLog($statusCode, $statusMessage)
-    {
-        return $this->getLogTable()->insert([
-            'transaction_id' => $this->id,
-            'result_code'    => $statusCode,
-            'result_message' => $statusMessage,
-            'log_date'       => Carbon::now(),
         ]);
     }
 }
