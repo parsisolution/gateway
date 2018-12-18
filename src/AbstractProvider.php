@@ -11,6 +11,7 @@ use Parsisolution\Gateway\Contracts\Provider as ProviderContract;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\RequestTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 use RuntimeException;
@@ -152,7 +153,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * {@inheritdoc}
      */
-    final public function authorize($transaction)
+    final public function authorize(RequestTransaction $transaction)
     {
         $id = $this->transaction->create($transaction, $this->getProviderName(), $this->request->getClientIp());
 
@@ -180,7 +181,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * {@inheritdoc}
      */
-    final public function redirect($transaction)
+    final public function redirect(AuthorizedTransaction $transaction)
     {
         return $this->redirectToGateway($transaction);
     }
@@ -210,13 +211,10 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * {@inheritdoc}
      */
-    final public function settle()
+    final public function settle(AuthorizedTransaction $authorizedTransaction)
     {
         try {
             $this->validateSettlementRequest($this->request);
-
-            $transaction = $this->transaction->get();
-            $authorizedTransaction = AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
 
             $settledTransaction = $this->settleTransaction($this->request, $authorizedTransaction);
 

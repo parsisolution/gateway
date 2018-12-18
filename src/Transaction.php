@@ -102,19 +102,6 @@ class Transaction
         return $this->db->table($this->table_name.'_logs');
     }
 
-    private function generateTimeID()
-    {
-        $generateUid = function () {
-            return substr(str_pad(str_replace('.', '', microtime(true)), 12, 0), 0, 12);
-        };
-        $uid = $generateUid();
-        while ($this->getTable()->where('id', $uid)->first()) {
-            $uid = $generateUid();
-        }
-
-        return $uid;
-    }
-
     /**
      * Insert new transaction into transactions table
      * and return the its id
@@ -126,10 +113,7 @@ class Transaction
      */
     public function create(RequestTransaction $transaction, $provider, $client_ip)
     {
-        $uid = $this->generateTimeID();
-
-        $this->getTable()->insert([
-            'id'         => $uid,
+        $this->id = $this->getTable()->insertGetId([
             'provider'   => $provider,
             'amount'     => $transaction->getAmount()->getTotal(),
             'currency'   => $transaction->getAmount()->getCurrency(),
@@ -140,9 +124,7 @@ class Transaction
             'updated_at' => Carbon::now(),
         ]);
 
-        $this->id = $uid;
-
-        return $uid;
+        return $this->id;
     }
 
     /**

@@ -2,6 +2,9 @@
 
 namespace Parsisolution\Gateway\Contracts;
 
+use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\RequestTransaction;
+
 interface Provider
 {
 
@@ -21,7 +24,7 @@ interface Provider
      * @return \Parsisolution\Gateway\Transactions\AuthorizedTransaction
      * @throws \Exception
      */
-    public function authorize($transaction);
+    public function authorize(RequestTransaction $transaction);
 
     /**
      * Redirect the user of the application to the provider's payment screen.
@@ -29,15 +32,16 @@ interface Provider
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
      */
-    public function redirect($transaction);
+    public function redirect(AuthorizedTransaction $transaction);
 
     /**
      * Verify and Settle the transaction and get the settled transaction instance.
      *
+     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $authorizedTransaction
      * @return \Parsisolution\Gateway\Transactions\SettledTransaction
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
      * @throws \Parsisolution\Gateway\Exceptions\TransactionException
      * @throws \Exception
      */
-    public function settle();
+    public function settle(AuthorizedTransaction $authorizedTransaction);
 }

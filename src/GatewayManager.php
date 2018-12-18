@@ -6,9 +6,11 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Parsisolution\Gateway\Exceptions\GatewayException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
 use Parsisolution\Gateway\Exceptions\NotFoundTransactionException;
+use Parsisolution\Gateway\Exceptions\NullConfigException;
 use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
@@ -24,6 +26,7 @@ use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
+use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 
 class GatewayManager extends Manager implements Contracts\Factory
 {
@@ -111,7 +114,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      *
      * @param bool $stateless
      *
-     * @return \stdClass
+     * @return \Parsisolution\Gateway\Transactions\AuthorizedTransaction
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
      * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
      * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
@@ -162,28 +165,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             throw new RetryException;
         }
 
-        return $transaction;
-    }
-
-    /**
-     * retrieve respective driver instance from request
-     *
-     * @param bool $stateless
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
-     * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
-     * @throws \Parsisolution\Gateway\Exceptions\RetryException
-     * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
-     */
-    public function fromSettleRequest($stateless = false)
-    {
-        $transaction = $this->transactionFromSettleRequest($stateless);
-
-        $driver = $this->of(strtoupper($transaction->provider));
-        $driver->setTransactionId($transaction->id);
-
-        return $driver;
+        return AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
     }
 
     /**
@@ -200,18 +182,22 @@ class GatewayManager extends Manager implements Contracts\Factory
      */
     public function settle($stateless = false)
     {
-        $driver = $this->fromSettleRequest($stateless);
+        $authorizedTransaction = $this->transactionFromSettleRequest($stateless);
+
+        $driver = $this->of(strtoupper($authorizedTransaction['provider']));
+        $driver->setTransactionId($authorizedTransaction->getId());
         if ($stateless) {
             $driver->stateless();
         }
 
-        return $driver->settle();
+        return $driver->settle($authorizedTransaction);
     }
 
     /**
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createMellatDriver()
     {
@@ -224,6 +210,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createSadadDriver()
     {
@@ -236,6 +223,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createSamanDriver()
     {
@@ -248,6 +236,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createParsianDriver()
     {
@@ -260,6 +249,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createMabnaDriver()
     {
@@ -272,6 +262,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createMabnaOldDriver()
     {
@@ -284,6 +275,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createIrankishDriver()
     {
@@ -296,6 +288,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createAsanpardakhtDriver()
     {
@@ -308,6 +301,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createPayirDriver()
     {
@@ -320,6 +314,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createPardanoDriver()
     {
@@ -332,6 +327,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createZarinpalDriver()
     {
@@ -344,6 +340,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createNextpayDriver()
     {
@@ -356,6 +353,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createJibitDriver()
     {
@@ -368,6 +366,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createSabapayDriver()
     {
@@ -392,9 +391,14 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @param  string $provider
      * @param  array $config
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     public function buildProvider($provider, $config)
     {
+        if (! $config) {
+            throw new NullConfigException();
+        }
+
         return new $provider($this->app, $this->formatConfig($config));
     }
 
