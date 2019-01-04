@@ -97,7 +97,7 @@ class Saman extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-//        $refId = $request->input('RefNum');
+        //        $refId = $request->input('RefNum');
         $payRequestRes = $request->input('State');
         $payRequestResCode = $request->input('StateCode');
 
@@ -121,13 +121,13 @@ class Saman extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('‫‪TRACENO‬‬');
-        $cardNumber = $request->input('‫‪SecurePan‬‬');
+        $trackingCode = $request->TRACENO;
+        $cardNumber = $request->SecurePan;
 
         $fields = [
             "merchantID" => $this->config['merchant'],
             "password"   => $this->config['password'],
-            "RefNum"     => $transaction->getReferenceId(),
+            "RefNum"     => $request->RefNum,
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -136,6 +136,8 @@ class Saman extends AbstractProvider
         $response = intval($response);
 
         if ($response == $transaction->getAmount()->getRiyal()) {
+            $this->transaction->updateReferenceId($fields["RefNum"]);
+
             return new SettledTransaction($transaction, $trackingCode, $cardNumber);
         }
 
