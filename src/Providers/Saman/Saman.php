@@ -121,8 +121,8 @@ class Saman extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->TRACENO;
-        $cardNumber = $request->SecurePan;
+        $trackingCode = $request->input('TRACENO');
+        $cardNumber = $request->input('SecurePan');
 
         $fields = [
             "merchantID" => $this->config['merchant'],
