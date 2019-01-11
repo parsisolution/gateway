@@ -79,7 +79,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @param string $name_prefix
      * @return array
      */
-    public function activeDrivers($name_prefix = 'درگاه ')
+    public static function activeDrivers($name_prefix = 'درگاه ')
     {
         $activeDrivers = [];
         $configsOfDrivers = $this->app['config'][self::CONFIG_FILE_NAME];
