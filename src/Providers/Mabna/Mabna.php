@@ -124,9 +124,8 @@ class Mabna extends AbstractProvider
         curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
         $response = curl_exec($curl);
         curl_close($curl);
-
-
-        if ($response['Status'] == 'OK') {
+        $result = json_decode($response, true);
+        if ($result["Status"] == "Ok") {
             return new SettledTransaction($transaction, $trackingCode, $cardNumber, [
                 'RRN'             => $rrn,
                 'digital_receipt' => $digitalreceipt,
