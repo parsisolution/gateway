@@ -1,5 +1,5 @@
 {
-    "name": "parsisolution/gateway",
+    "name": "anisi/gateway",
     "description": "A Laravel package for connecting to all Iraninan payment gateways",
     "license": "MIT",
     "homepage": "https://github.com/parsisolution/gateway",
