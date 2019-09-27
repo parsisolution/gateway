@@ -20,7 +20,7 @@
         "illuminate/view": "~5.4",
         "illuminate/support": "~5.4",
         "illuminate/database": "~5.4",
-        "nesbot/carbon": "~1.20"
+        "nesbot/carbon": ">=1.20"
     },
     "require-dev": {
         "mockery/mockery": "~0.9",
