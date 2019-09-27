@@ -16,11 +16,12 @@ Available PSPs (Bank):
 
 Available 3rd-parties:
 1. Pay.ir
-2. JibIt
-3. Pardano
-4. ZarinPal
-5. NextPay
-6. SabaPay
+2. ZarinPal
+3. JibIt
+4. NextPay
+5. SizPay
+6. SabaPay (Saba Novin)
+7. Pardano
 
 ## Install
  
