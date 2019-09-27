@@ -164,6 +164,7 @@ return [
         'callback-url' => '/',
     ],
 
+    //--------------------------------
     // JiBit gateway
     //--------------------------------
     'jibit'        => [
@@ -184,6 +185,21 @@ return [
         'active'       => false,
         'order'        => 14,
         'api'          => env('SABAPAY_API_KEY'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // Sizpay gateway
+    //--------------------------------
+    'sizpay'      => [
+        'name'         => 'سیزپی',
+        'active'       => false,
+        'order'        => 15,
+        'merchant-id'  => '999999999999999',
+        'terminal-id'  => env('SIZPAY_TERMINAL_ID'),
+        'key'  => env('SIZPAY_KEY'),
+        'iv'  => env('SIZPAY_IV'),
+        'password'  => env('SIZPAY_PASS'),
         'callback-url' => '/',
     ],
 ];

@@ -23,6 +23,7 @@ use Parsisolution\Gateway\Providers\Payir\Payir;
 use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
+use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
 
 class GatewayManager extends Manager implements Contracts\Factory
@@ -44,6 +45,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const NEXTPAY = 'NEXTPAY';
     const JIBIT = 'JIBIT';
     const SABAPAY = 'SABAPAY';
+    const SIZPAY = 'SIZPAY';
 
     /**
      * Get all of the available "drivers".
@@ -67,6 +69,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::NEXTPAY,
             self::JIBIT,
             self::SABAPAY,
+            self::SIZPAY,
         ];
     }
 
@@ -374,6 +377,18 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = $this->app['config'][self::CONFIG_FILE_NAME.'.sabapay'];
 
         return $this->buildProvider(SabaPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     */
+    protected function createSizpayDriver()
+    {
+        $config = $this->app['config'][self::CONFIG_FILE_NAME.'.sizpay'];
+
+        return $this->buildProvider(Sizpay::class, $config);
     }
 
     /**
