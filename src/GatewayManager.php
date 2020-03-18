@@ -133,7 +133,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             $all = $request->session()->all();
             $to_forgets = [];
             foreach ($all as $key => $value) {
-                if (starts_with($key, 'gateway_')) {
+                if (substr($key, 0, 8) === 'gateway_') {
                     $name = substr($key, 8);
 
                     $parameters [$name] = $value;
