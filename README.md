@@ -39,6 +39,12 @@ php artisan vendor:publish --provider="Parsisolution\Gateway\GatewayServiceProvi
  
 ### Step 3:
 
+``` bash
+php artisan migrate
+```
+
+### Step 4:
+
 Change `config/gateways.php` fields to your specifications.
 
 ## Usage
