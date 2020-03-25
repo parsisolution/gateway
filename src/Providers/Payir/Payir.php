@@ -20,21 +20,21 @@ class Payir extends AbstractProvider
      *
      * @var string
      */
-    const SERVER_URL = 'https://pay.ir/payment/send';
+    const SERVER_URL = 'https://pay.ir/pg/send';
 
     /**
      * Address of CURL server for verify payment
      *
      * @var string
      */
-    const SERVER_VERIFY_URL = 'https://pay.ir/payment/verify';
+    const SERVER_VERIFY_URL = 'https://pay.ir/pg/verify';
 
     /**
      * Address of gate for redirect
      *
      * @var string
      */
-    const URL_GATE = 'https://pay.ir/payment/gateway/';
+    const URL_GATE = 'https://pay.ir/pg/';
 
     protected $factorNumber;
 
@@ -76,13 +76,15 @@ class Payir extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api'      => $this->config['api'],
-            'amount'   => $transaction->getAmount()->getToman(),
-            'redirect' => $this->getCallback($transaction, true),
+            'api'             => $this->config['api'],
+            'amount'          => $transaction->getAmount()->getRiyal(),
+            'redirect'        => $this->getCallback($transaction, true),
+            'mobile'          => $transaction->getExtraField('mobile'),
+            'factorNumber'    =>
+                (isset($this->factorNumber) ? $this->factorNumber : $transaction->getExtraField('factorNumber')),
+            'description'     => $transaction->getExtraField('description'),
+            'validCardNumber' => $transaction->getExtraField('validCardNumber'),
         ];
-
-        $fields['factorNumber'] =
-            isset($this->factorNumber) ? $this->factorNumber : $transaction->getExtraField('factor.number');
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, self::SERVER_URL);
@@ -94,7 +96,7 @@ class Payir extends AbstractProvider
         curl_close($ch);
 
         if (is_numeric($response['status']) && $response['status'] > 0) {
-            return AuthorizedTransaction::make($transaction, $response['transId']);
+            return AuthorizedTransaction::make($transaction, $response['token']);
         }
 
         throw new PayirSendException($response['errorCode']);
@@ -143,12 +145,12 @@ class Payir extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('transId');
+        $trackingCode = $request->input('token');
         $cardNumber = $request->input('cardNumber');
 
         $fields = [
-            'api'     => $this->config['api'],
-            'transId' => $transaction->getReferenceId(),
+            'api'   => $this->config['api'],
+            'token' => $transaction->getReferenceId(),
         ];
 
         $ch = curl_init();
