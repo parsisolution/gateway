@@ -34,9 +34,9 @@ return [
         'name'           => 'ملی',
         'active'         => false,
         'order'          => 2,
-        'merchant'       => '',
-        'transactionKey' => '',
-        'terminalId'     => 000000000,
+        'key'            => env('SADAD_KEY'),
+        'merchantId'     => env('SADAD_MERCHANT_ID'),
+        'terminalId'     => env('SADAD_TERMINAL_ID'),
         'callback-url'   => '/',
     ],
 
