@@ -18,10 +18,11 @@ Available 3rd-parties:
 1. Pay.ir
 2. ZarinPal
 3. JibIt
-4. NextPay
-5. SizPay
-6. SabaPay (Saba Novin)
-7. Pardano
+4. PayPing
+5. NextPay
+6. SizPay
+7. SabaPay (Saba Novin)
+8. Pardano
 
 ## Install
  

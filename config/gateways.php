@@ -202,4 +202,15 @@ return [
         'password'  => env('SIZPAY_PASS'),
         'callback-url' => '/',
     ],
+
+    //--------------------------------
+    // PayPing gateway
+    //--------------------------------
+    'payping'      => [
+        'name'         => 'پی پینگ',
+        'active'       => false,
+        'order'        => 16,
+        'api'          => env('PAYPING_API_KEY'),
+        'callback-url' => '/',
+    ],
 ];
