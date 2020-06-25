@@ -63,7 +63,7 @@ class PayPing extends AbstractProvider
         $fields = [
             'clientRefId'   => $transaction->getId(),
             'payerIdentity' => $transaction->getExtraField('mobile'),
-            'Amount'        => $transaction->getAmount()->getRiyal(),
+            'Amount'        => $transaction->getAmount()->getToman(),
             'Description'   => $transaction->getExtraField('description'),
             'returnUrl'     => $this->getCallback($transaction),
         ];
