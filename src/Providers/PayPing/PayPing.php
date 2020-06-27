@@ -155,11 +155,11 @@ class PayPing extends AbstractProvider
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $refId = $request->input('refid');
-        $amount = $request->input('amount');
+        $cardNumber = $request->input('cardnumber');
 
         $fields = [
             'refId'  => $refId,
-            'amount' => $amount,
+            'amount' => $transaction->getAmount()->getToman(),
         ];
 
         $curl = curl_init();
@@ -194,7 +194,7 @@ class PayPing extends AbstractProvider
         if ($header['http_code'] == 200) {
             $response = json_decode($response, true);
             if (isset($refid) and $refid != '') {
-                return new SettledTransaction($transaction, $refId, '', $response);
+                return new SettledTransaction($transaction, $refId, $cardNumber, $response);
             } else {
                 throw new PayPingException(
                     200,
