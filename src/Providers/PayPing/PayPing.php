@@ -193,7 +193,7 @@ class PayPing extends AbstractProvider
 
         if ($header['http_code'] == 200) {
             $response = json_decode($response, true);
-            if (isset($refid) and $refid != '') {
+            if (isset($refId) and $refId != '') {
                 return new SettledTransaction($transaction, $refId, $cardNumber, $response);
             } else {
                 throw new PayPingException(
