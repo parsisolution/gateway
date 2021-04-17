@@ -29,7 +29,7 @@ Available 3rd-parties:
 ### Step 1:
 
 ``` bash
-composer require parsisolution/gateway
+composer require vahidalvandi/gateway
 ```
 
 ### Step 2:
