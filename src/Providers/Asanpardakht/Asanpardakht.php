@@ -8,6 +8,7 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -23,6 +24,13 @@ class Asanpardakht extends AbstractProvider
      */
     const SERVER_URL = 'https://services.asanpardakht.net/paygate/merchantservices.asmx?wsdl';
     const SERVER_UTILS = 'https://services.asanpardakht.net/paygate/internalutils.asmx?WSDL';
+
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const GATE_URL = 'https://asan.shaparak.ir';
 
     /**
      * Get this provider name to save on transaction table.
@@ -78,13 +86,15 @@ class Asanpardakht extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return $this->view('gateway::asan-pardakht-redirector')->with([
-            'refId' => $transaction->getReferenceId(),
-        ]);
+        $data = [
+            'RefId' => $transaction->getReferenceId()
+        ];
+
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**

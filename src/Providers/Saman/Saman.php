@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -21,6 +22,13 @@ class Saman extends AbstractProvider
      * @var string
      */
     const SERVER_URL = 'https://sep.shaparak.ir/payments/referencepayment.asmx?wsdl';
+
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const GATE_URL = 'https://sep.shaparak.ir/Payment.aspx';
 
     /**
      *
@@ -72,20 +80,20 @@ class Saman extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
         $main_data = [
-            'amount'      => $transaction->getAmount()->getRiyal(),
-            'merchant'    => $this->config['merchant'],
-            'resNum'      => $transaction->getId(),
-            'callBackUrl' => $this->getCallback($transaction->generateUnAuthorized()),
+            'Amount'      => $transaction->getAmount()->getRiyal(),
+            'MID'    => $this->config['merchant'],
+            'ResNum'      => $transaction->getId(),
+            'RedirectURL' => $this->getCallback($transaction->generateUnAuthorized()),
         ];
 
         $data = array_merge($main_data, $this->optional_data);
 
-        return $this->view('gateway::saman-redirector')->with($data);
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**

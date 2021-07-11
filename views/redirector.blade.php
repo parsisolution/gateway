@@ -3,15 +3,13 @@
         <script>
         	var form = document.createElement("form");
         	form.setAttribute("method", "POST");
-        	form.setAttribute("action", "https://rt.sizpay.com/Route/Payment");
+        	form.setAttribute("action", "{{$URL}}");
         	form.setAttribute("target", "_self");
 
             var params = {
-                MerchantID: '{{$MerchantID}}',
-                TerminalID: '{{$TerminalID}}',
-                UserName: '{{$UserName}}',
-                Password: '{{$Password}}',
-                Token: '{{$Token}}',
+                @foreach($Data as $key => $value)
+                    {{$key}}: "{{$value}}",
+                @endforeach
             };
 
             for(var key in params){

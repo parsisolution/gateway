@@ -8,6 +8,7 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -21,14 +22,14 @@ class Sizpay extends AbstractProvider implements ProviderInterface
      *
      * @var string
      */
-    const SERVER_URL = 'https://rt.sizpay.com/KimiaIPGRouteService.asmx?WSDL';
+    const SERVER_URL = 'https://rt.sizpay.ir/KimiaIPGRouteService.asmx?WSDL';
 
     /**
      * Address of gate for redirect
      *
      * @var string
      */
-    const GATE_URL = 'https://rt.sizpay.com/Route/Payment';
+    const GATE_URL = 'https://rt.sizpay.ir/Route/Payment';
 
     /**
      * Get this provider name to save on transaction table.
@@ -58,8 +59,8 @@ class Sizpay extends AbstractProvider implements ProviderInterface
             'InvoiceNo'   => $transaction->getId(),
             'AppExtraInf' => '',
             'SignData'    => '',
-            'UserName'    => Arr::get($this->config, 'key'),
-            'Password'    => Arr::get($this->config, 'iv'),
+            'UserName'    => Arr::get($this->config, 'username'),
+            'Password'    => Arr::get($this->config, 'password'),
         );
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig(), ['encoding' => 'UTF-8']);
@@ -81,19 +82,19 @@ class Sizpay extends AbstractProvider implements ProviderInterface
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
         $data = [
             'MerchantID' => $this->config['merchant-id'],
             'TerminalID' => $this->config['terminal-id'],
-            'UserName'   => $this->config['key'],
-            'Password'   => $this->config['iv'],
+            'UserName'   => $this->config['username'],
+            'Password'   => $this->config['password'],
             'Token'      => $transaction->getReferenceId(),
         ];
 
-        return $this->view('gateway::sizpay-redirector')->with($data);
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**
@@ -120,8 +121,8 @@ class Sizpay extends AbstractProvider implements ProviderInterface
             'TerminalID' => Arr::get($this->config, 'terminal-id'),
             'Token'      => $transaction->getReferenceId(),
             'SignData'   => '',
-            'UserName'   => Arr::get($this->config, 'key'),
-            'Password'   => Arr::get($this->config, 'iv'),
+            'UserName'   => Arr::get($this->config, 'username'),
+            'Password'   => Arr::get($this->config, 'password'),
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig(), ['encoding' => 'UTF-8']);

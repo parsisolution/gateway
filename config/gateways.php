@@ -197,9 +197,8 @@ return [
         'order'        => 15,
         'merchant-id'  => '999999999999999',
         'terminal-id'  => env('SIZPAY_TERMINAL_ID'),
-        'key'  => env('SIZPAY_KEY'),
-        'iv'  => env('SIZPAY_IV'),
-        'password'  => env('SIZPAY_PASS'),
+        'username'  => env('SIZPAY_USERNAME'),
+        'password'  => env('SIZPAY_PASSWORD'),
         'callback-url' => '/',
     ],
 

@@ -4,12 +4,12 @@ namespace Parsisolution\Gateway\Providers\Pardano;
 
 use Exception;
 use Illuminate\Container\Container;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -79,11 +79,11 @@ class Pardano extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse($this->gate_url.$transaction->getReferenceId());
+        return new RedirectResponse(RedirectResponse::TYPE_GET, $this->gate_url.$transaction->getReferenceId());
     }
 
     /**

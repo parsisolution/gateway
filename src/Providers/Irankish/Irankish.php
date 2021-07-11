@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -28,6 +29,13 @@ class Irankish extends AbstractProvider
      * @var string
      */
     const SERVER_VERIFY_URL = 'https://ikc.shaparak.ir/XVerify/Verify.xml';
+
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const GATE_URL = 'https://ikc.shaparak.ir/TPayment/Payment/index';
 
     /**
      * Get this provider name to save on transaction table.
@@ -76,14 +84,16 @@ class Irankish extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $refId = $transaction->getReferenceId();
-        $merchantId = $this->config['merchant-id'];
+        $data = [
+            'merchantId' => $this->config['merchant-id'],
+            'token' => $transaction->getReferenceId(),
+        ];
 
-        return $this->view('gateway::irankish-redirector')->with(compact('refId', 'merchantId'));
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**

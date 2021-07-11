@@ -173,7 +173,7 @@ abstract class AbstractProvider implements ProviderContract
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return \Parsisolution\Gateway\RedirectResponse
      */
     abstract protected function redirectToGateway(AuthorizedTransaction $transaction);
 
@@ -181,6 +181,24 @@ abstract class AbstractProvider implements ProviderContract
      * {@inheritdoc}
      */
     final public function redirect($transaction)
+    {
+        $response = $this->redirectToGateway($transaction);
+
+        if ($response->getType() === RedirectResponse::TYPE_GET) {
+            return new \Symfony\Component\HttpFoundation\RedirectResponse($response->getUrl());
+        } else {
+            $data = [
+                'URL'=> $response->getUrl(),
+                'Data' => $response->getData()
+            ];
+            return $this->view('gateway::redirector')->with($data);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    final public function redirectResponse($transaction)
     {
         return $this->redirectToGateway($transaction);
     }

@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class SabaPay extends AbstractProvider
 {
@@ -87,11 +87,11 @@ class SabaPay extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse(self::URL_GATE.$transaction->getReferenceId());
+        return new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$transaction->getReferenceId());
     }
 
     /**

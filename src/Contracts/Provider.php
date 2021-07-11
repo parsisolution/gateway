@@ -32,6 +32,14 @@ interface Provider
     public function redirect($transaction);
 
     /**
+     * get instruction on how user of the application should be redirected to the provider's payment screen.
+     *
+     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
+     * @return \Parsisolution\Gateway\RedirectResponse
+     */
+    public function redirectResponse($transaction);
+
+    /**
      * Verify and Settle the transaction and get the settled transaction instance.
      *
      * @return \Parsisolution\Gateway\Transactions\SettledTransaction

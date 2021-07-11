@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -29,6 +30,13 @@ class MabnaOld extends AbstractProvider
      * @var string
      */
     const SERVER_VERIFY_URL = "https://mabna.shaparak.ir/TransactionReference/TransactionReference?wsdl";
+
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const GATE_URL = 'https://mabna.shaparak.ir';
 
     /**
      * Public key
@@ -182,13 +190,15 @@ class MabnaOld extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $token = $transaction->getReferenceId();
+        $data = [
+            'TOKEN' => $transaction->getReferenceId()
+        ];
 
-        return $this->view('gateway::mabna-old-redirector')->with(compact('token'));
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**

@@ -3,13 +3,13 @@
 namespace Parsisolution\Gateway\Providers\Zarinpal;
 
 use Illuminate\Container\Container;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -239,7 +239,7 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
@@ -250,25 +250,28 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
         switch ($this->type) {
             case 'zarin-gate':
                 return new RedirectResponse(
+                    RedirectResponse::TYPE_GET,
                     str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_ZARIN)
                 );
                 break;
 
             case 'zarin-gate-sep':
                 return new RedirectResponse(
+                    RedirectResponse::TYPE_GET,
                     str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SEP)
                 );
                 break;
 
             case 'zarin-gate-sad':
                 return new RedirectResponse(
+                    RedirectResponse::TYPE_GET,
                     str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SAD)
                 );
                 break;
 
             case 'normal':
             default:
-                return new RedirectResponse($this->gateUrl.$transaction->getReferenceId());
+                return new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$transaction->getReferenceId());
                 break;
         }
     }
