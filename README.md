@@ -21,8 +21,9 @@ Available 3rd-parties:
 4. PayPing
 5. NextPay
 6. SizPay
-7. SabaPay (Saba Novin)
-8. Pardano
+7. IranDargah
+8. SabaPay (Saba Novin)
+9. Pardano
 
 ## Install
  

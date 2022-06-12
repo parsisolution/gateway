@@ -191,7 +191,7 @@ return [
     //--------------------------------
     // Sizpay gateway
     //--------------------------------
-    'sizpay'      => [
+    'sizpay'     => [
         'name'         => 'سیزپی',
         'active'       => false,
         'order'        => 15,
@@ -205,11 +205,24 @@ return [
     //--------------------------------
     // PayPing gateway
     //--------------------------------
-    'payping'      => [
+    'payping'    => [
         'name'         => 'پی پینگ',
         'active'       => false,
         'order'        => 16,
         'api'          => env('PAYPING_API_KEY'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // IranDargah gateway
+    //--------------------------------
+    'irandargah' => [
+        'name'         => 'ایران درگاه',
+        'active'       => false,
+        'order'        => 17,
+        'merchant-id'  => env('IRANDARGAH_API_KEY'),
+        'server'       => 'test',                // Servers: [main || test]
+        'description'  => 'description',
         'callback-url' => '/',
     ],
 ];

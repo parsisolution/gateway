@@ -13,6 +13,7 @@ use Parsisolution\Gateway\Exceptions\NotFoundTransactionException;
 use Parsisolution\Gateway\Exceptions\NullConfigException;
 use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
+use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
 use Parsisolution\Gateway\Providers\Mabna\Mabna;
@@ -51,6 +52,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const SABAPAY = 25;
     const SIZPAY = 26;
     const PAYPING = 27;
+    const IRANDARGAH = 28;
 
     /**
      * Get all of the available "drivers".
@@ -76,6 +78,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::SABAPAY,
             self::SIZPAY,
             self::PAYPING,
+            self::IRANDARGAH,
         ];
     }
 
@@ -104,6 +107,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             25 => 'SABAPAY',
             26 => 'SIZPAY',
             27 => 'PAYPING',
+            28 => 'IRANDARGAH',
         ];
 
         if (empty($map[$id])) {
@@ -439,6 +443,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.payping'];
 
         return $this->buildProvider(PayPing::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createIrandargahDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.irandargah'];
+
+        return $this->buildProvider(IranDargah::class, $config);
     }
 
     /**
