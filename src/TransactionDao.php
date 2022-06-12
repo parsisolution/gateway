@@ -94,7 +94,7 @@ class TransactionDao
             $uid = $generateUid();
         }
 
-        $id = $this->getTable()->insertGetId([
+        $fields = array_merge($transaction->getRaw(), [
             'provider'   => $provider,
             'amount'     => $transaction->getAmount()->getTotal(),
             'currency'   => $transaction->getAmount()->getCurrency(),
@@ -105,6 +105,8 @@ class TransactionDao
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ]);
+
+        $id = $this->getTable()->insertGetId($fields);
 
         return new UnAuthorizedTransaction($transaction, $id, $uid);
     }
@@ -140,12 +142,13 @@ class TransactionDao
      * Set status to success status
      *
      * @param SettledTransaction $transaction
+     * @param array $additionalFields
      *
      * @return bool
      */
-    public function succeeded(SettledTransaction $transaction)
+    public function succeeded(SettledTransaction $transaction, $additionalFields = [])
     {
-        $fields = [
+        $fields = array_merge($additionalFields, [
             'status'       => self::STATE_SUCCEEDED,
             'reference_id' => $transaction->getReferenceId(),
             'trace_number' => $transaction->getTraceNumber(),
@@ -159,7 +162,7 @@ class TransactionDao
             ]),
             'paid_at'      => Carbon::now(),
             'updated_at'   => Carbon::now(),
-        ];
+        ]);
 
         return $this->getTable()->where('id', $transaction->getId())->update($fields);
     }

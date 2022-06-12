@@ -229,7 +229,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * {@inheritdoc}
      */
-    final public function settle(AuthorizedTransaction $authorizedTransaction)
+    final public function settle(AuthorizedTransaction $authorizedTransaction, $fieldsToUpdateOnSuccess = [])
     {
         try {
             $this->validateSettlementRequest($this->request);
@@ -241,7 +241,7 @@ abstract class AbstractProvider implements ProviderContract
                 throw new RetryException('Transaction has been Spend Before');
             }
 
-            $this->transactionDao->succeeded($settledTransaction);
+            $this->transactionDao->succeeded($settledTransaction, $fieldsToUpdateOnSuccess);
 
             return $settledTransaction;
         } catch (TransactionException $exception) {

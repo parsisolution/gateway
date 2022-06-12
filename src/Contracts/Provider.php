@@ -46,11 +46,12 @@ interface Provider
      * Verify and Settle the transaction and get the settled transaction instance.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $authorizedTransaction
+     * @param array $fieldsToUpdateOnSuccess
      * @return \Parsisolution\Gateway\Transactions\SettledTransaction
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
      * @throws \Parsisolution\Gateway\Exceptions\TransactionException
      * @throws \Parsisolution\Gateway\Exceptions\RetryException
      * @throws \Exception
      */
-    public function settle(AuthorizedTransaction $authorizedTransaction);
+    public function settle(AuthorizedTransaction $authorizedTransaction, $fieldsToUpdateOnSuccess);
 }

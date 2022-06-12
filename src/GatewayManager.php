@@ -212,6 +212,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Verify and Settle the callback request and get the settled transaction instance.
      *
      * @param bool $stateless
+     * @param array $fieldsToUpdateOnSuccess
      *
      * @return \Parsisolution\Gateway\Transactions\SettledTransaction
      * @throws \Parsisolution\Gateway\Exceptions\TransactionException
@@ -220,7 +221,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @throws \Parsisolution\Gateway\Exceptions\RetryException
      * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
      */
-    public function settle($stateless = false)
+    public function settle($stateless = false, $fieldsToUpdateOnSuccess = [])
     {
         $authorizedTransaction = $this->transactionFromSettleRequest($stateless);
 
@@ -229,7 +230,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             $driver->stateless();
         }
 
-        return $driver->settle($authorizedTransaction);
+        return $driver->settle($authorizedTransaction, $fieldsToUpdateOnSuccess);
     }
 
     /**
