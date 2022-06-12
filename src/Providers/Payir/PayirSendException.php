@@ -15,6 +15,7 @@ class PayirSendException extends TransactionException
     protected function getErrors()
     {
         return [
+            -0       => 'در حال حاضر درگاه پرداخت قطع می باشد. به زودی مشکل برطرف خواهد شد',
             -1       => 'ارسال api الزامی می باشد',
             -2       => 'ارسال amount ( مبلغ تراکنش ) الزامی می باشد',
             -3       => 'amount ( مبلغ تراکنش )باید به صورت عددی باشد',

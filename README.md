@@ -16,11 +16,13 @@ Available PSPs (Bank):
 
 Available 3rd-parties:
 1. Pay.ir
-2. JibIt
-3. Pardano
-4. ZarinPal
+2. ZarinPal
+3. JibIt
+4. PayPing
 5. NextPay
-6. SabaPay
+6. SizPay
+7. SabaPay (Saba Novin)
+8. Pardano
 
 ## Install
  
@@ -37,6 +39,12 @@ php artisan vendor:publish --provider="Parsisolution\Gateway\GatewayServiceProvi
 ```
  
 ### Step 3:
+
+``` bash
+php artisan migrate
+```
+
+### Step 4:
 
 Change `config/gateways.php` fields to your specifications.
 
@@ -103,9 +111,10 @@ And in callback
 try {
 
     $settledTransaction = Gateway::settle(true); // true argument for stateless
-    $trackingCode = $settledTransaction->getTrackingCode();
+    $traceNumber = $settledTransaction->getTraceNumber();
     $refId = $settledTransaction->getReferenceId();
     $cardNumber = $settledTransaction->getCardNumber();
+    $RRN = $settledTransaction->getRRN();
 
     // تراکنش با موفقیت سمت بانک تایید گردید
     // در این مرحله عملیات خرید کاربر را تکمیل میکنیم

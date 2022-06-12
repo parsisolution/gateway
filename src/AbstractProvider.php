@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Parsisolution\Gateway\Contracts\Provider as ProviderContract;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
+use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\RequestTransaction;
@@ -61,11 +62,11 @@ abstract class AbstractProvider implements ProviderContract
     private $callbackUrl;
 
     /**
-     * Transaction db model
+     * Transaction Data Access Object
      *
-     * @var Transaction
+     * @var TransactionDao
      */
-    protected $transaction;
+    protected $transactionDao;
 
     /**
      * Create a new provider instance.
@@ -81,7 +82,7 @@ abstract class AbstractProvider implements ProviderContract
         $this->request = $app->make('request');
 
         $table_name = Arr::get($this->app['config'], GatewayManager::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
-        $this->transaction = new Transaction($app->make('db'), $table_name);
+        $this->transactionDao = new TransactionDao($app->make('db'), $table_name);
 
         return $this;
     }
@@ -90,7 +91,7 @@ abstract class AbstractProvider implements ProviderContract
      * Map the raw transaction array to a Gateway Transaction instance.
      *
      * @param  array $transaction
-     * @return \Parsisolution\Gateway\Transaction
+     * @return \Parsisolution\Gateway\TransactionDao
      */
 //    abstract protected function mapTransactionToObject(array $transaction);
 
@@ -102,14 +103,6 @@ abstract class AbstractProvider implements ProviderContract
         $this->callbackUrl = $url;
 
         return $this;
-    }
-
-    /**
-     * @param string $id
-     */
-    public function setTransactionId($id)
-    {
-        $this->transaction->setId($id);
     }
 
     /**
@@ -131,13 +124,13 @@ abstract class AbstractProvider implements ProviderContract
     }
 
     /**
-     * Get this provider name to save on transaction table.
+     * Get this provider id to save on transaction table.
      * and later use that to verify and settle
      * callback request (from transaction)
      *
-     * @return string
+     * @return integer
      */
-    abstract protected function getProviderName();
+    abstract protected function getProviderId();
 
     /**
      * Authorize payment request from provider's server and return
@@ -155,16 +148,24 @@ abstract class AbstractProvider implements ProviderContract
      */
     final public function authorize(RequestTransaction $transaction)
     {
-        $id = $this->transaction->create($transaction, $this->getProviderName(), $this->request->getClientIp());
+        $unAuthorizedTransaction = $this->transactionDao->create(
+            $transaction,
+            $this->getProviderId(),
+            $this->request->getClientIp()
+        );
 
         try {
-            $authorizedTransaction = $this->authorizeTransaction(new UnAuthorizedTransaction($transaction, $id));
+            $authorizedTransaction = $this->authorizeTransaction($unAuthorizedTransaction);
 
-            $this->transaction->updateReferenceId($authorizedTransaction->getReferenceId());
+            $this->transactionDao->updateTransaction($authorizedTransaction);
 
             return $authorizedTransaction;
         } catch (Exception $e) {
-            $this->transaction->failed(get_class($e).' : '.$e->getCode(), $e->getMessage());
+            $this->transactionDao->failed(
+                $unAuthorizedTransaction,
+                get_class($e).' : '.$e->getCode(),
+                $e->getMessage()
+            );
             throw $e;
         }
     }
@@ -173,7 +174,7 @@ abstract class AbstractProvider implements ProviderContract
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return \Parsisolution\Gateway\RedirectResponse
      */
     abstract protected function redirectToGateway(AuthorizedTransaction $transaction);
 
@@ -181,6 +182,24 @@ abstract class AbstractProvider implements ProviderContract
      * {@inheritdoc}
      */
     final public function redirect(AuthorizedTransaction $transaction)
+    {
+        $response = $this->redirectToGateway($transaction);
+
+        if ($response->getType() === RedirectResponse::TYPE_GET) {
+            return new \Symfony\Component\HttpFoundation\RedirectResponse($response->getUrl());
+        } else {
+            $data = [
+                'URL'=> $response->getUrl(),
+                'Data' => $response->getData()
+            ];
+            return $this->view('gateway::redirector')->with($data);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    final public function redirectResponse($transaction)
     {
         return $this->redirectToGateway($transaction);
     }
@@ -217,15 +236,20 @@ abstract class AbstractProvider implements ProviderContract
 
             $settledTransaction = $this->settleTransaction($this->request, $authorizedTransaction);
 
-            $this->transaction->succeeded($settledTransaction);
+            // prevent "Double Spending"
+            if ($this->transactionDao->isSpent($settledTransaction)) {
+                throw new RetryException('Transaction has been Spend Before');
+            }
+
+            $this->transactionDao->succeeded($settledTransaction);
 
             return $settledTransaction;
         } catch (TransactionException $exception) {
-            $this->transaction->failed($exception->getCode(), $exception->getMessage());
+            $this->transactionDao->failed($authorizedTransaction, $exception->getCode(), $exception->getMessage());
 
             throw $exception;
         } catch (Exception $e) {
-            $this->transaction->failed(get_class($e).' : '.$e->getCode(), $e->getMessage());
+            $this->transactionDao->failed($authorizedTransaction, get_class($e).' : '.$e->getCode(), $e->getMessage());
 
             throw $e;
         }

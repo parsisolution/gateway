@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -30,13 +31,16 @@ class Irankish extends AbstractProvider
     const SERVER_VERIFY_URL = 'https://ikc.shaparak.ir/XVerify/Verify.xml';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
+     * Address of gate for redirect
      *
-     * @return string
+     * @var string
      */
-    protected function getProviderName()
+    const GATE_URL = 'https://ikc.shaparak.ir/TPayment/Payment/index';
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getProviderId()
     {
         return GatewayManager::IRANKISH;
     }
@@ -56,9 +60,9 @@ class Irankish extends AbstractProvider
             'amount'           => $transaction->getAmount()->getRiyal(),
             'merchantId'       => $this->config['merchant-id'],
             'description'      => $this->config['description'],
-            'invoiceNo'        => $transaction->getId(),
-            'paymentId'        => $transaction->getId(),
-            'specialPaymentId' => $transaction->getId(),
+            'invoiceNo'        => $transaction->getOrderId(),
+            'paymentId'        => $transaction->getOrderId(),
+            'specialPaymentId' => $transaction->getOrderId(),
             'revertURL'        => $this->getCallback($transaction),
         );
 
@@ -69,21 +73,23 @@ class Irankish extends AbstractProvider
             throw new IrankishException($response->MakeTokenResult->result, $response->MakeTokenResult->message);
         }
 
-        return AuthorizedTransaction::make($transaction, $response->MakeTokenResult->token);
+        return AuthorizedTransaction::make($transaction, null, $response->MakeTokenResult->token);
     }
 
     /**
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $refId = $transaction->getReferenceId();
-        $merchantId = $this->config['merchant-id'];
+        $data = [
+            'merchantId' => $this->config['merchant-id'],
+            'token' => $transaction->getToken(),
+        ];
 
-        return $this->view('gateway::irankish-redirector')->with(compact('refId', 'merchantId'));
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**
@@ -118,11 +124,11 @@ class Irankish extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('referenceId');
+        $traceNumber = $request->input('referenceId');
 
         $fields = array(
-            'token'           => $transaction->getReferenceId(),
-            'referenceNumber' => $trackingCode,
+            'token'           => $transaction->getToken(),
+            'referenceNumber' => $traceNumber,
             'merchantId'      => $this->config['merchant-id'],
             'sha1Key'         => $this->config['sha1-key'],
         );
@@ -133,7 +139,7 @@ class Irankish extends AbstractProvider
         $response = floatval($response->KicccPaymentsVerificationResult);
 
         if ($response > 0) {
-            return new SettledTransaction($transaction, $trackingCode);
+            return new SettledTransaction($transaction, $traceNumber);
         }
 
         throw new IrankishException($response);

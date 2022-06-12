@@ -8,6 +8,7 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -25,13 +26,16 @@ class Asanpardakht extends AbstractProvider
     const SERVER_UTILS = 'https://services.asanpardakht.net/paygate/internalutils.asmx?WSDL';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
+     * Address of gate for redirect
      *
-     * @return string
+     * @var string
      */
-    protected function getProviderName()
+    const GATE_URL = 'https://asan.shaparak.ir';
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getProviderId()
     {
         return GatewayManager::ASANPARDAKHT;
     }
@@ -49,7 +53,7 @@ class Asanpardakht extends AbstractProvider
     {
         $username = $this->config['username'];
         $password = $this->config['password'];
-        $orderId = $this->transaction->getId();
+        $orderId = $transaction->getOrderId();
         $price = $transaction->getAmount()->getRiyal();
         $localDate = date("Ymd His");
         $additionalData = "";
@@ -78,13 +82,15 @@ class Asanpardakht extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return $this->view('gateway::asan-pardakht-redirector')->with([
-            'refId' => $transaction->getReferenceId(),
-        ]);
+        $data = [
+            'RefId' => $transaction->getReferenceId()
+        ];
+
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**
@@ -131,7 +137,11 @@ class Asanpardakht extends AbstractProvider
         $RRN = $paramsArray[6];
         $LastFourDigitOfPAN = $paramsArray[7];
 
-        $settledTransaction = new SettledTransaction($transaction, $PayGateTranID, $LastFourDigitOfPAN);
+        $cardNumber = '************'.$LastFourDigitOfPAN;
+        if (substr($ResMessage, 0, 27) === 'FirstSixDigitsOfCardNumber:') {
+            $cardNumber = substr($ResMessage, 27).'******'.$LastFourDigitOfPAN;
+        }
+        $settledTransaction = new SettledTransaction($transaction, $PayGateTranID, $cardNumber, $RRN);
 
         if (! ($ResCode == '0' || $ResCode == '00')) {
             throw new AsanpardakhtException($ResCode);
@@ -145,7 +155,7 @@ class Asanpardakht extends AbstractProvider
         $params = array(
             'merchantConfigurationID' => $this->config['merchantConfigId'],
             'encryptedCredentials'    => $encryptedCredintials,
-            'payGateTranID'           => $settledTransaction->getTrackingCode(),
+            'payGateTranID'           => $settledTransaction->getTraceNumber(),
         );
 
 

@@ -2,15 +2,28 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-class AuthorizedTransaction extends AbstractTransaction
+use Parsisolution\Gateway\Contracts\HasId;
+use Parsisolution\Gateway\Traits\HasIdField;
+use Parsisolution\Gateway\Traits\HasOrderIdField;
+
+class AuthorizedTransaction extends AbstractTransaction implements HasId
 {
+
+    use HasIdField, HasOrderIdField;
 
     /**
      * The transaction's reference id.
      *
      * @var string
      */
-    protected $referenceId;
+    protected $reference_id;
+
+    /**
+     * The transaction's token.
+     *
+     * @var string
+     */
+    protected $token;
 
     /**
      * AuthorizedTransaction constructor.
@@ -24,18 +37,20 @@ class AuthorizedTransaction extends AbstractTransaction
      *
      * @param UnAuthorizedTransaction $transaction
      * @param string $referenceId
+     * @param string $token
      * @return AuthorizedTransaction
      */
-    public static function make(UnAuthorizedTransaction $transaction, $referenceId)
+    public static function make(UnAuthorizedTransaction $transaction, $referenceId = null, $token = null)
     {
         $instance = new self();
         $instance->setRaw($transaction->getRaw());
-        $instance['referenceId'] = $referenceId;
+        $instance['reference_id'] = $referenceId;
+        $instance['token'] = $token;
         $instance->map([
-            'amount'      => $transaction->getAmount(),
-            'extra'       => $transaction->getExtra(),
-            'id'          => $transaction->getId(),
-            'referenceId' => $referenceId,
+            'amount'       => $transaction->getAmount(),
+            'extra'        => $transaction->getExtra(),
+            'reference_id' => $referenceId,
+            'token'        => $token,
         ]);
 
         return $instance;
@@ -48,17 +63,17 @@ class AuthorizedTransaction extends AbstractTransaction
      */
     public function getReferenceId()
     {
-        return $this->referenceId;
+        return $this->reference_id;
     }
 
     /**
-     * Get the unique identifier of the transaction.
+     * Get token of the transaction.
      *
      * @return string
      */
-    public function getId()
+    public function getToken()
     {
-        return $this['id'];
+        return $this->token;
     }
 
     /**
@@ -71,13 +86,12 @@ class AuthorizedTransaction extends AbstractTransaction
     {
         $instance = new self();
         $instance->setRaw($transaction);
-        $instance['referenceId'] = $transaction['ref_id'];
         $amount = new Amount($transaction['amount'], $transaction['currency']);
         $instance->map([
-            'id'          => $transaction['id'],
-            'amount'      => $amount,
-            'extra'       => json_decode($transaction['extra'], true),
-            'referenceId' => $transaction['ref_id'],
+            'amount'       => $amount,
+            'extra'        => json_decode($transaction['extra'], true),
+            'reference_id' => $transaction['reference_id'],
+            'token'        => $transaction['token'],
         ]);
 
         return $instance;
@@ -92,7 +106,7 @@ class AuthorizedTransaction extends AbstractTransaction
     {
         $transaction = new RequestTransaction($this->getAmount());
         $transaction->setExtra($this->getExtra());
-        $unAuthorizedTransaction = new UnAuthorizedTransaction($transaction, $this->getId());
+        $unAuthorizedTransaction = new UnAuthorizedTransaction($transaction, $this->getId(), $this->getOrderId());
 
         return $unAuthorizedTransaction;
     }

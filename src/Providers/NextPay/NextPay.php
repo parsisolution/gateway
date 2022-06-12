@@ -3,13 +3,13 @@
 namespace Parsisolution\Gateway\Providers\NextPay;
 
 use Exception;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\ApiType;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -36,13 +36,9 @@ class NextPay extends AbstractProvider
     }
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::NEXTPAY;
     }
@@ -70,7 +66,7 @@ class NextPay extends AbstractProvider
                     $curl,
                     CURLOPT_POSTFIELDS,
                     "api_key=".$this->config['api'].
-                    "&order_id=".$transaction->getId().
+                    "&order_id=".$transaction->getOrderId().
                     "&amount=".$transaction->getAmount()->getToman().
                     "&callback_uri=".$this->getCallback($transaction)
                 );
@@ -86,7 +82,7 @@ class NextPay extends AbstractProvider
                 $soap_client = new SoapClient(self::SERVER_SOAP, $this->soapConfig());
                 $response = $soap_client->TokenGenerator([
                     'api_key'      => $this->config['api'],
-                    'order_id'     => $transaction->getId(),
+                    'order_id'     => $transaction->getOrderId(),
                     'amount'       => $transaction->getAmount()->getToman(),
                     'callback_uri' => $this->getCallback($transaction),
                 ]);
@@ -101,11 +97,11 @@ class NextPay extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse(self::URL_PAYMENT.$transaction->getReferenceId());
+        return new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_PAYMENT.$transaction->getReferenceId());
     }
 
     /**

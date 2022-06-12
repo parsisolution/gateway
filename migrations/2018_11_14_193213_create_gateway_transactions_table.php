@@ -22,14 +22,16 @@ class CreateGatewayTransactionsTable extends Migration
         Schema::create($this->getTable(), function (Blueprint $table) {
             $table->engine = "innoDB";
             $table->unsignedBigInteger('id', true);
-            $table->enum('provider', \Parsisolution\Gateway\GatewayManager::availableDrivers());
+            $table->unsignedTinyInteger('provider');
             $table->decimal('amount', 15, 2);
             $table->string('currency', 3)->nullable();
-            $table->string('ref_id', 100)->nullable();
-            $table->string('tracking_code', 50)->nullable();
+            $table->string('order_id', 100)->nullable()->unique();
+            $table->string('token', 100)->nullable();
+            $table->string('reference_id', 100)->nullable()->index();
+            $table->string('trace_number', 100)->nullable()->index();
+            $table->string('rrn', 100)->nullable();
             $table->string('card_number', 50)->nullable();
-            $table->enum('status', \Parsisolution\Gateway\Transaction::availableStates())
-                ->default(\Parsisolution\Gateway\Transaction::STATE_INIT);
+            $table->unsignedTinyInteger('status')->default(0);
             $table->string('ip', 20)->nullable();
             $table->json('extra')->nullable();
             $table->json('log')->nullable();

@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class SabaPay extends AbstractProvider
 {
@@ -38,13 +38,9 @@ class SabaPay extends AbstractProvider
 
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::SABAPAY;
     }
@@ -87,11 +83,11 @@ class SabaPay extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse(self::URL_GATE.$transaction->getReferenceId());
+        return new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$transaction->getReferenceId());
     }
 
     /**
@@ -125,7 +121,7 @@ class SabaPay extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('bank_code');
+        $traceNumber = $request->input('bank_code');
         $cardNumber = $request->input('card_number');
 
         $fields = [
@@ -142,7 +138,7 @@ class SabaPay extends AbstractProvider
         curl_close($ch);
 
         if ($response['status'] == 1) {
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+            return new SettledTransaction($transaction, $traceNumber, $cardNumber);
         }
 
         throw new SabaPayException($response['errorCode']);

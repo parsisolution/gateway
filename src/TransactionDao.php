@@ -4,19 +4,22 @@ namespace Parsisolution\Gateway;
 
 use Carbon\Carbon;
 use Illuminate\Database\DatabaseManager;
+use Parsisolution\Gateway\Contracts\HasId;
+use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\RequestTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
+use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-class Transaction
+class TransactionDao
 {
 
-    const STATE_INIT = 'INIT';
+    const STATE_INIT = 0;
     const MESSAGE_INIT = 'تراکنش ایجاد شد.';
 
-    const STATE_SUCCEEDED = 'SUCCEEDED';
+    const STATE_SUCCEEDED = 1;
     const MESSAGE_SUCCEEDED = 'پرداخت با موفقیت انجام شد.';
 
-    const STATE_FAILED = 'FAILED';
+    const STATE_FAILED = 2;
     const MESSAGE_FAILED = 'عملیات پرداخت با خطا مواجه شد.';
 
     /**
@@ -32,13 +35,6 @@ class Transaction
             self::STATE_FAILED,
         ];
     }
-
-    /**
-     * ID of the transaction row in database
-     *
-     * @var string
-     */
-    protected $id;
 
     /**
      * database manager
@@ -67,22 +63,6 @@ class Transaction
     }
 
     /**
-     * @return string
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * @param string $id
-     */
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
-
-    /**
      * Gets query builder for transactions table
      *
      * @return \Illuminate\Database\Query\Builder
@@ -93,30 +73,32 @@ class Transaction
     }
 
     /**
-     * Gets query builder for transaction logs table
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function getLogTable()
-    {
-        return $this->db->table($this->table_name.'_logs');
-    }
-
-    /**
      * Insert new transaction into transactions table
-     * and return the its id
+     * and return its id
      *
      * @param RequestTransaction $transaction
-     * @param string $provider
+     * @param integer $provider
      * @param null|string $client_ip
-     * @return string
+     * @return UnAuthorizedTransaction
      */
     public function create(RequestTransaction $transaction, $provider, $client_ip)
     {
-        $this->id = $this->getTable()->insertGetId([
+        $generateUid = function () {
+            $strReplace = str_replace('.', '', microtime(true));
+            $string = str_pad($strReplace, 12, 0);
+
+            return substr($string, 0, 12);
+        };
+        $uid = $generateUid();
+        while ($this->getTable()->where('order_id', $uid)->first()) {
+            $uid = $generateUid();
+        }
+
+        $id = $this->getTable()->insertGetId([
             'provider'   => $provider,
             'amount'     => $transaction->getAmount()->getTotal(),
             'currency'   => $transaction->getAmount()->getCurrency(),
+            'order_id'   => $uid,
             'status'     => self::STATE_INIT,
             'ip'         => $client_ip,
             'extra'      => json_encode($transaction->getExtra()),
@@ -124,31 +106,33 @@ class Transaction
             'updated_at' => Carbon::now(),
         ]);
 
-        return $this->id;
-    }
-
-    /**
-     * Get current transaction db model
-     *
-     * @return \stdClass
-     */
-    public function get()
-    {
-        return $this->getTable()->where('id', $this->id)->first();
+        return new UnAuthorizedTransaction($transaction, $id, $uid);
     }
 
     /**
      * Update transaction reference ID
      *
-     * @param string $referenceId
+     * @param AuthorizedTransaction $transaction
      * @return int
      */
-    public function updateReferenceId($referenceId)
+    public function updateTransaction($transaction)
     {
-        return $this->getTable()->where('id', $this->id)->update([
-            'ref_id'     => $referenceId,
-            'updated_at' => Carbon::now(),
+        return $this->getTable()->where('id', $transaction->getId())->update([
+            'reference_id' => $transaction->getReferenceId(),
+            'token'        => $transaction->getToken(),
+            'updated_at'   => Carbon::now(),
         ]);
+    }
+
+    /**
+     * Determines if transaction is spent before
+     *
+     * @param SettledTransaction $transaction
+     * @return bool
+     */
+    public function isSpent(SettledTransaction $transaction)
+    {
+        return !!$this->getTable()->where('trace_number', $transaction->getTraceNumber())->count();
     }
 
     /**
@@ -156,37 +140,44 @@ class Transaction
      * Set status to success status
      *
      * @param SettledTransaction $transaction
+     *
      * @return bool
      */
     public function succeeded(SettledTransaction $transaction)
     {
-        return $this->getTable()->where('id', $this->id)->update([
-            'status'        => self::STATE_SUCCEEDED,
-            'tracking_code' => $transaction->getTrackingCode(),
-            'card_number'   => $transaction->getCardNumber(),
-            'extra'         => json_encode($transaction->getExtra()),
-            'log'           => json_encode([
+        $fields = [
+            'status'       => self::STATE_SUCCEEDED,
+            'reference_id' => $transaction->getReferenceId(),
+            'trace_number' => $transaction->getTraceNumber(),
+            'card_number'  => $transaction->getCardNumber(),
+            'rrn'          => $transaction->getRRN(),
+            'extra'        => json_encode($transaction->getExtra()),
+            'log'          => json_encode([
                 'result_code'    => self::STATE_SUCCEEDED,
                 'result_message' => self::MESSAGE_SUCCEEDED,
                 'logged_at'      => Carbon::now(),
             ]),
-            'paid_at'       => Carbon::now(),
-            'updated_at'    => Carbon::now(),
-        ]);
+            'paid_at'      => Carbon::now(),
+            'updated_at'   => Carbon::now(),
+        ];
+
+        return $this->getTable()->where('id', $transaction->getId())->update($fields);
     }
 
     /**
      * Failed transaction
      * Set status to failure status
      *
+     * @param HasId $transaction
      * @param string|int $statusCode
      * @param string $statusMessage
+     * @param null $referenceId
      *
      * @return bool
      */
-    public function failed($statusCode, $statusMessage)
+    public function failed(HasId $transaction, $statusCode, $statusMessage, $referenceId = null)
     {
-        return $this->getTable()->where('id', $this->id)->update([
+        $fields = [
             'status'     => self::STATE_FAILED,
             'log'        => json_encode([
                 'result_code'    => $statusCode,
@@ -194,6 +185,11 @@ class Transaction
                 'logged_at'      => Carbon::now(),
             ]),
             'updated_at' => Carbon::now(),
-        ]);
+        ];
+        if ($referenceId) {
+            $fields['reference_id'] = $referenceId;
+        }
+
+        return $this->getTable()->where('id', $transaction->getId())->update($fields);
     }
 }

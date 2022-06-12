@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -24,13 +25,16 @@ class Mellat extends AbstractProvider
     const SERVER_URL = 'https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
+     * Address of gate for redirect
      *
-     * @return string
+     * @var string
      */
-    protected function getProviderName()
+    const GATE_URL = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat';
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getProviderId()
     {
         return GatewayManager::MELLAT;
     }
@@ -52,7 +56,7 @@ class Mellat extends AbstractProvider
             'terminalId'     => $this->config['terminalId'],
             'userName'       => $this->config['username'],
             'userPassword'   => $this->config['password'],
-            'orderId'        => $transaction->getId(),
+            'orderId'        => $transaction->getOrderId(),
             'amount'         => $transaction->getAmount()->getRiyal(),
             'localDate'      => $dateTime->format('Ymd'),
             'localTime'      => $dateTime->format('His'),
@@ -77,13 +81,15 @@ class Mellat extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $refId = $transaction->getReferenceId();
+        $data = [
+            'RefId' => $transaction->getReferenceId()
+        ];
 
-        return $this->view('gateway::mellat-redirector')->with(compact('refId'));
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**
@@ -119,9 +125,9 @@ class Mellat extends AbstractProvider
             'terminalId'      => $this->config['terminalId'],
             'userName'        => $this->config['username'],
             'userPassword'    => $this->config['password'],
-            'orderId'         => $transaction->getId(),
-            'saleOrderId'     => $transaction->getId(),
-            'saleReferenceId' => $transaction->getTrackingCode(),
+            'orderId'         => $transaction->getOrderId(),
+            'saleOrderId'     => $transaction->getOrderId(),
+            'saleReferenceId' => $transaction->getTraceNumber(),
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -149,9 +155,9 @@ class Mellat extends AbstractProvider
             'terminalId'      => $this->config['terminalId'],
             'userName'        => $this->config['username'],
             'userPassword'    => $this->config['password'],
-            'orderId'         => $transaction->getId(),
-            'saleOrderId'     => $transaction->getId(),
-            'saleReferenceId' => $transaction->getTrackingCode(),
+            'orderId'         => $transaction->getOrderId(),
+            'saleOrderId'     => $transaction->getOrderId(),
+            'saleReferenceId' => $transaction->getTraceNumber(),
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -177,9 +183,9 @@ class Mellat extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('SaleReferenceId');
+        $traceNumber = $request->input('SaleReferenceId');
         $cardNumber = $request->input('CardHolderPan');
-        $settledTransaction = new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        $settledTransaction = new SettledTransaction($transaction, $traceNumber, $cardNumber);
 
         $this->verifyPayment($settledTransaction);
         $this->settleRequest($settledTransaction);

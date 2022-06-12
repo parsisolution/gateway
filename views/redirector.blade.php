@@ -3,12 +3,13 @@
         <script>
         	var form = document.createElement("form");
         	form.setAttribute("method", "POST");
-        	form.setAttribute("action", "https://asan.shaparak.ir");
+        	form.setAttribute("action", "{{$URL}}");
         	form.setAttribute("target", "_self");
 
-
             var params = {
-                RefId: '{{$refId}}'
+                @foreach($Data as $key => $value)
+                    {{$key}}: "{{$value}}",
+                @endforeach
             };
 
             for(var key in params){
@@ -16,6 +17,7 @@
                 var hiddenField = document.createElement("input");
                 hiddenField.setAttribute("name", key);
                 hiddenField.setAttribute("value", params[key]);
+
                 form.appendChild(hiddenField);
             }
 

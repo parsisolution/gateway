@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
@@ -35,13 +36,9 @@ class Mabna extends AbstractProvider
     const SERVER_VERIFY_URL = 'https://mabna.shaparak.ir:8081/V1/PeymentApi/Advice';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::MABNA;
     }
@@ -57,22 +54,28 @@ class Mabna extends AbstractProvider
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        return AuthorizedTransaction::make($transaction, $transaction->getId());
+        return AuthorizedTransaction::make($transaction);
     }
 
     /**
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $url = self::URL_GATE;
         $callback = $this->getCallback($transaction->generateUnAuthorized());
         $terminalId = $this->config['terminalId'];
 
-        return $this->view('gateway::mabna-redirector')->with(compact('url', 'transaction', 'terminalId', 'callback'));
+        $data = [
+            'TerminalID' => $terminalId,
+            'Amount' => $transaction->getAmount()->getRiyal(),
+            'callbackURL' => $callback,
+            'InvoiceID' => $transaction->getOrderId(),
+        ];
+
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::URL_GATE, $data);
     }
 
     /**
@@ -105,7 +108,7 @@ class Mabna extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('tracenumber');
+        $traceNumber = $request->input('tracenumber');
         $cardNumber = $request->input('cardnumber');
         $rrn = $request->input('rrn');
         $digitalreceipt = $request->input('digitalreceipt');
@@ -124,11 +127,9 @@ class Mabna extends AbstractProvider
         curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
         $response = curl_exec($curl);
         curl_close($curl);
-
-
-        if ($response['Status'] == 'OK') {
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber, [
-                'RRN'             => $rrn,
+        $result = json_decode($response, true);
+        if ($result["Status"] == "Ok") {
+            return new SettledTransaction($transaction, $traceNumber, $cardNumber, $rrn, [
                 'digital_receipt' => $digitalreceipt,
             ]);
         }

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -29,6 +30,13 @@ class MabnaOld extends AbstractProvider
      * @var string
      */
     const SERVER_VERIFY_URL = "https://mabna.shaparak.ir/TransactionReference/TransactionReference?wsdl";
+
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const GATE_URL = 'https://mabna.shaparak.ir';
 
     /**
      * Public key
@@ -88,7 +96,7 @@ class MabnaOld extends AbstractProvider
      */
     protected function createSignature(UnAuthorizedTransaction $transaction)
     {
-        $data = $transaction->getAmount()->getRiyal().$transaction->getId().$this->config['merchant-id'].
+        $data = $transaction->getAmount()->getRiyal().$transaction->getOrderId().$this->config['merchant-id'].
             $this->getCallback($transaction).
             $this->config['terminal-id'];
 
@@ -105,7 +113,7 @@ class MabnaOld extends AbstractProvider
      */
     protected function createVerifySignature(SettledTransaction $transaction)
     {
-        $data = $this->config['merchant-id'].$transaction->getTrackingCode().$transaction->getId();
+        $data = $this->config['merchant-id'].$transaction->getTraceNumber().$transaction->getOrderId();
 
         openssl_sign($data, $signature, $this->privateKey, OPENSSL_ALGO_SHA1);
 
@@ -113,13 +121,9 @@ class MabnaOld extends AbstractProvider
     }
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::MABNA_OLD;
     }
@@ -138,7 +142,7 @@ class MabnaOld extends AbstractProvider
         $fields = [
             "Token_param" => [
                 "AMOUNT"        => $this->encryptData($transaction->getAmount()->getRiyal()),
-                "CRN"           => $this->encryptData($transaction->getId()),
+                "CRN"           => $this->encryptData($transaction->getOrderId()),
                 "MID"           => $this->encryptData($this->config['merchant-id']),
                 "REFERALADRESS" => $this->encryptData($this->getCallback($transaction)),
                 "SIGNATURE"     => $this->createSignature($transaction),
@@ -173,22 +177,24 @@ class MabnaOld extends AbstractProvider
             throw new MabnaOldException('gateway-faild-signature-verify');
         }
 
-        $refId = $response->return->token;
+        $token = $response->return->token;
 
-        return AuthorizedTransaction::make($transaction, $refId);
+        return AuthorizedTransaction::make($transaction, null, $token);
     }
 
     /**
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        $token = $transaction->getReferenceId();
+        $data = [
+            'TOKEN' => $transaction->getToken()
+        ];
 
-        return $this->view('gateway::mabna-old-redirector')->with(compact('token'));
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**
@@ -220,13 +226,13 @@ class MabnaOld extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('TRN');
+        $traceNumber = $request->input('TRN');
 
         $fields = [
             "SaleConf_req" => [
-                "CRN"       => $this->encryptData($transaction->getId()),
+                "CRN"       => $this->encryptData($transaction->getOrderId()),
                 "MID"       => $this->encryptData($this->config['merchant-id']),
-                "TRN"       => $this->encryptData($trackingCode),
+                "TRN"       => $this->encryptData($traceNumber),
                 "SIGNATURE" => $this->createSignature($transaction->generateUnAuthorized()),
             ],
         ];
@@ -261,6 +267,6 @@ class MabnaOld extends AbstractProvider
             throw new MabnaOldException('gateway-faild-signature-verify');
         }
 
-        return new SettledTransaction($transaction, $trackingCode);
+        return new SettledTransaction($transaction, $traceNumber);
     }
 }

@@ -34,9 +34,9 @@ return [
         'name'           => 'ملی',
         'active'         => false,
         'order'          => 2,
-        'merchant'       => '',
-        'transactionKey' => '',
-        'terminalId'     => 000000000,
+        'key'            => env('SADAD_KEY'),
+        'merchantId'     => env('SADAD_MERCHANT_ID'),
+        'terminalId'     => env('SADAD_TERMINAL_ID'),
         'callback-url'   => '/',
     ],
 
@@ -164,6 +164,7 @@ return [
         'callback-url' => '/',
     ],
 
+    //--------------------------------
     // JiBit gateway
     //--------------------------------
     'jibit'        => [
@@ -184,6 +185,31 @@ return [
         'active'       => false,
         'order'        => 14,
         'api'          => env('SABAPAY_API_KEY'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // Sizpay gateway
+    //--------------------------------
+    'sizpay'      => [
+        'name'         => 'سیزپی',
+        'active'       => false,
+        'order'        => 15,
+        'merchant-id'  => '999999999999999',
+        'terminal-id'  => env('SIZPAY_TERMINAL_ID'),
+        'username'  => env('SIZPAY_USERNAME'),
+        'password'  => env('SIZPAY_PASSWORD'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // PayPing gateway
+    //--------------------------------
+    'payping'      => [
+        'name'         => 'پی پینگ',
+        'active'       => false,
+        'order'        => 16,
+        'api'          => env('PAYPING_API_KEY'),
         'callback-url' => '/',
     ],
 ];

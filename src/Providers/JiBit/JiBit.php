@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class JiBit extends AbstractProvider
 {
@@ -39,13 +39,9 @@ class JiBit extends AbstractProvider
     protected $gateUrl;
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::JIBIT;
     }
@@ -100,11 +96,11 @@ class JiBit extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse($this->gateUrl);
+        return new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl);
     }
 
     /**
@@ -155,7 +151,7 @@ class JiBit extends AbstractProvider
         curl_close($ch);
 
         if (isset($response['errorCode']) && $response['errorCode'] == 0) {
-            return new SettledTransaction($transaction, $transaction->getReferenceId());
+            return new SettledTransaction($transaction, $response['result']['refId'], '', '', $response['result']);
         }
 
         throw new JiBitException(@$response['message'], @$response['errorCode']);

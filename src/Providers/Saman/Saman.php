@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -21,6 +22,13 @@ class Saman extends AbstractProvider
      * @var string
      */
     const SERVER_URL = 'https://sep.shaparak.ir/payments/referencepayment.asmx?wsdl';
+
+    /**
+     * Address of gate for redirect
+     *
+     * @var string
+     */
+    const GATE_URL = 'https://sep.shaparak.ir/Payment.aspx';
 
     /**
      *
@@ -43,13 +51,9 @@ class Saman extends AbstractProvider
     }
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::SAMAN;
     }
@@ -65,27 +69,27 @@ class Saman extends AbstractProvider
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        return AuthorizedTransaction::make($transaction, $transaction->getId());
+        return AuthorizedTransaction::make($transaction);
     }
 
     /**
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
         $main_data = [
-            'amount'      => $transaction->getAmount()->getRiyal(),
-            'merchant'    => $this->config['merchant'],
-            'resNum'      => $transaction->getId(),
-            'callBackUrl' => $this->getCallback($transaction->generateUnAuthorized()),
+            'Amount'      => $transaction->getAmount()->getRiyal(),
+            'MID'         => $this->config['merchant'],
+            'ResNum'      => $transaction->getOrderId(),
+            'RedirectURL' => $this->getCallback($transaction->generateUnAuthorized()),
         ];
 
         $data = array_merge($main_data, $this->optional_data);
 
-        return $this->view('gateway::saman-redirector')->with($data);
+        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
     }
 
     /**
@@ -97,7 +101,6 @@ class Saman extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-//        $refId = $request->input('RefNum');
         $payRequestRes = $request->input('State');
         $payRequestResCode = $request->input('StateCode');
 
@@ -121,13 +124,16 @@ class Saman extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('‫‪TRACENO‬‬');
-        $cardNumber = $request->input('‫‪SecurePan‬‬');
+        $refId = $request->input('RefNum');
+        $traceNumber = $request->input('TRACENO');
+        $cardNumber = $request->input('SecurePan');
+        $cardId = $request->input('CID');
+        $RRN = $request->input('RRN');
 
         $fields = [
             "merchantID" => $this->config['merchant'],
             "password"   => $this->config['password'],
-            "RefNum"     => $transaction->getReferenceId(),
+            "RefNum"     => $refId,
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -136,7 +142,7 @@ class Saman extends AbstractProvider
         $response = intval($response);
 
         if ($response == $transaction->getAmount()->getRiyal()) {
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+            return new SettledTransaction($transaction, $traceNumber, $cardNumber, $RRN, compact('cardId'), $refId);
         }
 
         //Reverse Transaction

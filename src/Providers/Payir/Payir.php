@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
+use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class Payir extends AbstractProvider
 {
@@ -20,21 +20,21 @@ class Payir extends AbstractProvider
      *
      * @var string
      */
-    const SERVER_URL = 'https://pay.ir/payment/send';
+    const SERVER_URL = 'https://pay.ir/pg/send';
 
     /**
      * Address of CURL server for verify payment
      *
      * @var string
      */
-    const SERVER_VERIFY_URL = 'https://pay.ir/payment/verify';
+    const SERVER_VERIFY_URL = 'https://pay.ir/pg/verify';
 
     /**
      * Address of gate for redirect
      *
      * @var string
      */
-    const URL_GATE = 'https://pay.ir/payment/gateway/';
+    const URL_GATE = 'https://pay.ir/pg/';
 
     protected $factorNumber;
 
@@ -53,13 +53,9 @@ class Payir extends AbstractProvider
     }
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::PAYIR;
     }
@@ -76,13 +72,15 @@ class Payir extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api'      => $this->config['api'],
-            'amount'   => $transaction->getAmount()->getToman(),
-            'redirect' => $this->getCallback($transaction, true),
+            'api'             => $this->config['api'],
+            'amount'          => $transaction->getAmount()->getRiyal(),
+            'redirect'        => $this->getCallback($transaction, true),
+            'mobile'          => $transaction->getExtraField('mobile'),
+            'factorNumber'    =>
+                (isset($this->factorNumber) ? $this->factorNumber : $transaction->getExtraField('factorNumber')),
+            'description'     => $transaction->getExtraField('description'),
+            'validCardNumber' => $transaction->getExtraField('validCardNumber'),
         ];
-
-        $fields['factorNumber'] =
-            isset($this->factorNumber) ? $this->factorNumber : $transaction->getExtraField('factor.number');
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, self::SERVER_URL);
@@ -94,7 +92,7 @@ class Payir extends AbstractProvider
         curl_close($ch);
 
         if (is_numeric($response['status']) && $response['status'] > 0) {
-            return AuthorizedTransaction::make($transaction, $response['transId']);
+            return AuthorizedTransaction::make($transaction, null, $response['token']);
         }
 
         throw new PayirSendException($response['errorCode']);
@@ -104,11 +102,11 @@ class Payir extends AbstractProvider
      * Redirect the user of the application to the provider's payment screen.
      *
      * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
+     * @return RedirectResponse
      */
     protected function redirectToGateway(AuthorizedTransaction $transaction)
     {
-        return new RedirectResponse(self::URL_GATE.$transaction->getReferenceId());
+        return new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$transaction->getToken());
     }
 
     /**
@@ -143,12 +141,12 @@ class Payir extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('transId');
+        $traceNumber = $request->input('token');
         $cardNumber = $request->input('cardNumber');
 
         $fields = [
-            'api'     => $this->config['api'],
-            'transId' => $transaction->getReferenceId(),
+            'api'   => $this->config['api'],
+            'token' => $transaction->getToken(),
         ];
 
         $ch = curl_init();
@@ -161,7 +159,7 @@ class Payir extends AbstractProvider
         curl_close($ch);
 
         if ($response['status'] == 1) {
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+            return new SettledTransaction($transaction, $traceNumber, $cardNumber);
         }
 
         throw new PayirReceiveException($response['errorCode']);
