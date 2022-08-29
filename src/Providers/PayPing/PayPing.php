@@ -2,13 +2,13 @@
 
 namespace Parsisolution\Gateway\Providers\PayPing;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -46,13 +46,7 @@ class PayPing extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
@@ -64,89 +58,46 @@ class PayPing extends AbstractProvider
             'returnUrl'     => $this->getCallback($transaction),
         ];
 
-        $curl = curl_init();
-        curl_setopt_array(
-            $curl,
-            [
-                CURLOPT_URL            => self::SERVER_URL,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING       => "",
-                CURLOPT_MAXREDIRS      => 10,
-                CURLOPT_TIMEOUT        => 45,
-                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST  => "POST",
-                CURLOPT_POSTFIELDS     => json_encode($fields),
-                CURLOPT_HTTPHEADER     => [
-                    "accept: application/json",
-                    "authorization: Bearer ".$this->config['api'],
-                    "cache-control: no-cache",
-                    "content-type: application/json",
-                ],
-            ]
-        );
-        $response = curl_exec($curl);
+        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL, $fields, true, [
+            CURLOPT_TIMEOUT    => 45,
+            CURLOPT_HTTPHEADER => $this->generateHeaders(),
+        ]);
 
-        $header = curl_getinfo($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-
-        if ($err) {
-            throw new PayPingException($err);
+        if ($error) {
+            throw new PayPingException($error);
         }
 
-        if ($header['http_code'] == 200) {
-            $response = json_decode($response, true);
-            if (isset($response) and $response != '') {
-                return AuthorizedTransaction::make($transaction, $response['code']);
-            } else {
-                throw new PayPingException(200, 'تراکنش ناموفق بود - شرح خطا: عدم وجود کد ارجاع');
-            }
-        } elseif ($header['http_code'] == 400) {
-            throw new PayPingException(400, $response);
-        } else {
-            throw new PayPingException($header['http_code']);
+        if ($http_code == 400) {
+            throw new PayPingException(400, json_encode($response));
+        } elseif ($http_code != 200) {
+            throw new PayPingException($http_code);
         }
+
+        if (empty($response)) {
+            throw new PayPingException(200, 'تراکنش ناموفق بود - شرح خطا: عدم وجود کد ارجاع');
+        }
+
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$response['code']);
+
+        return AuthorizedTransaction::make($transaction, $response['code'], null, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        return new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$transaction->getReferenceId());
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $refId = $request->input('refid');
+        $referenceId = $request->input('refid');
 
-        if ($refId) {
-            return true;
+        if (! $referenceId) {
+            throw new PayPingException($referenceId);
         }
 
-        throw new PayPingException($refId);
+        return new FieldsToMatch(null, $referenceId);
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
@@ -158,49 +109,43 @@ class PayPing extends AbstractProvider
             'amount' => $transaction->getAmount()->getToman(),
         ];
 
-        $curl = curl_init();
-        curl_setopt_array(
-            $curl,
-            [
-                CURLOPT_URL            => self::SERVER_VERIFY_URL,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING       => "",
-                CURLOPT_MAXREDIRS      => 10,
-                CURLOPT_TIMEOUT        => 45,
-                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST  => "POST",
-                CURLOPT_POSTFIELDS     => json_encode($fields),
-                CURLOPT_HTTPHEADER     => [
-                    "accept: application/json",
-                    "authorization: Bearer ".$this->config['api'],
-                    "cache-control: no-cache",
-                    "content-type: application/json",
-                ],
-            ]
-        );
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        $header = curl_getinfo($curl);
-        curl_close($curl);
+        list($response, $http_code, $error) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
+            CURLOPT_TIMEOUT    => 45,
+            CURLOPT_HTTPHEADER => $this->generateHeaders(),
+        ]);
 
-        if ($err) {
-            throw new PayPingException($err);
+        if ($error) {
+            throw new PayPingException($error);
         }
 
-        if ($header['http_code'] == 200) {
-            $response = json_decode($response, true);
-            if (isset($refId) and $refId != '') {
-                return new SettledTransaction($transaction, $refId, $cardNumber, '', $response);
-            } else {
-                throw new PayPingException(
-                    200,
-                    'متافسانه سامانه قادر به دریافت کد پیگیری نمی‌باشد! نتیجه درخواست: '.$header['http_code']
-                );
-            }
-        } elseif ($header['http_code'] == 400) {
-            throw new PayPingException(400, $response);
-        } else {
-            throw new PayPingException($header['http_code']);
+        if ($http_code == 400) {
+            throw new PayPingException(400, json_encode($response));
+        } elseif ($http_code != 200) {
+            throw new PayPingException($http_code);
         }
+
+        if (empty($refId)) {
+            throw new PayPingException(
+                200,
+                'متافسانه سامانه قادر به دریافت کد پیگیری نمی‌باشد! نتیجه درخواست: '.$http_code
+            );
+        }
+
+        $toMatch = new FieldsToMatch();
+
+        return new SettledTransaction($transaction, $refId, $toMatch, $cardNumber, '', $response);
+    }
+
+    /**
+     * @return array
+     */
+    protected function generateHeaders(): array
+    {
+        return [
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'Authorization: Bearer '.$this->config['api'],
+            'Cache-Control: no-cache',
+        ];
     }
 }

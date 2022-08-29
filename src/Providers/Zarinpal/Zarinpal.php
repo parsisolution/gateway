@@ -12,6 +12,7 @@ use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -212,14 +213,14 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        $fields = array(
+        $fields = [
             'MerchantID'  => Arr::get($this->config, 'merchant-id'),
             'Amount'      => $transaction->getAmount()->getToman(),
             'CallbackURL' => $this->getCallback($transaction),
             'Description' => $transaction->getExtraField('description', Arr::get($this->config, 'description', '')),
             'Email'       => $transaction->getExtraField('email'),
             'Mobile'      => $transaction->getExtraField('mobile'),
-        );
+        ];
 
         $soap = new SoapClient($this->serverUrl, $this->soapConfig(), ['encoding' => 'UTF-8']);
         $response = $soap->PaymentRequest($fields);
@@ -228,62 +229,60 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
             throw new ZarinpalException($response->Status);
         }
 
-        return AuthorizedTransaction::make($transaction, $response->Authority);
-    }
-
-    /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
         if (! $this->type) {
             $this->type = Arr::get($this->config, 'type');
         }
 
+        $redirectResponse = null;
+
         switch ($this->type) {
             case 'zarin-gate':
-                return new RedirectResponse(
+                $redirectResponse = new RedirectResponse(
                     RedirectResponse::TYPE_GET,
-                    str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_ZARIN)
+                    str_replace('$Authority', $response->Authority, self::GATE_URL_ZARIN)
                 );
                 break;
 
             case 'zarin-gate-sep':
-                return new RedirectResponse(
+                $redirectResponse = new RedirectResponse(
                     RedirectResponse::TYPE_GET,
-                    str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SEP)
+                    str_replace('$Authority', $response->Authority, self::GATE_URL_SEP)
                 );
                 break;
 
             case 'zarin-gate-sad':
-                return new RedirectResponse(
+                $redirectResponse = new RedirectResponse(
                     RedirectResponse::TYPE_GET,
-                    str_replace('$Authority', $transaction->getReferenceId(), self::GATE_URL_SAD)
+                    str_replace('$Authority', $response->Authority, self::GATE_URL_SAD)
                 );
                 break;
 
             case 'normal':
             default:
-                return new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$transaction->getReferenceId());
+                $redirectResponse = new RedirectResponse(
+                    RedirectResponse::TYPE_GET,
+                    $this->gateUrl.$response->Authority
+                );
                 break;
         }
+
+        return AuthorizedTransaction::make($transaction, $response->Authority, '', $redirectResponse);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $status = $request->input('Status');
 
-        if ($status == 'OK') {
-            return true;
+        if ($status != 'OK') {
+            throw new InvalidRequestException();
         }
 
-        throw new InvalidRequestException();
+        $authority = $request->input('Authority');
+
+        return new FieldsToMatch(null, $authority);
     }
 
     /**
@@ -291,11 +290,9 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $authority = $request->input('Authority');
-
         $fields = [
             'MerchantID' => Arr::get($this->config, 'merchant-id'),
-            'Authority'  => $authority,
+            'Authority'  => $transaction->getReferenceId(),
             'Amount'     => $transaction->getAmount()->getToman(),
         ];
 
@@ -306,6 +303,6 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
             throw new ZarinpalException($response->Status);
         }
 
-        return new SettledTransaction($transaction, $response->RefID);
+        return new SettledTransaction($transaction, $response->RefID, new FieldsToMatch());
     }
 }

@@ -2,16 +2,15 @@
 
 namespace Parsisolution\Gateway\Providers\Pardano;
 
-use Exception;
 use Illuminate\Container\Container;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -50,13 +49,7 @@ class Pardano extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
@@ -64,53 +57,32 @@ class Pardano extends AbstractProvider
         $api = $this->config['api'];
         $amount = $transaction->getAmount()->getToman();
         $callbackUrl = $this->getCallback($transaction);
-        $orderId = $transaction->getExtraField('order.id', 1);
+        $orderId = $transaction->getOrderId();
         $txt = $transaction->getExtraField('description');
         $res = $client->requestpayment($api, $amount, $callbackUrl, $orderId, $txt);
 
-        return AuthorizedTransaction::make($transaction, $res);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gate_url.$res);
+
+        return AuthorizedTransaction::make($transaction, $res, null, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        return new RedirectResponse(RedirectResponse::TYPE_GET, $this->gate_url.$transaction->getReferenceId());
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws InvalidRequestException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $orderId = $request->input('order_id');
         $authority = $request->input('au');
 
-        if (isset($orderId) && isset($authority)) {
-            return true;
+        if (! isset($orderId) || ! isset($authority)) {
+            throw new InvalidRequestException();
         }
 
-        throw new InvalidRequestException();
+        return new FieldsToMatch($orderId);
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
@@ -120,10 +92,10 @@ class Pardano extends AbstractProvider
         $client = new SoapClient($this->server_url, $this->soapConfig());
         $result = $client->verification($api, $amount, $authority);
 
-        if (! empty($result) and $result == 1) {
-            return new SettledTransaction($transaction, $authority);
-        } else {
+        if (empty($result) or $result != 1) {
             throw new PardanoException($result);
         }
+
+        return new SettledTransaction($transaction, $authority, new FieldsToMatch());
     }
 }

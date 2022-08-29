@@ -2,15 +2,15 @@
 
 namespace Parsisolution\Gateway\Providers\MabnaOld;
 
-use Exception;
 use Illuminate\Container\Container;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -129,13 +129,7 @@ class MabnaOld extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
@@ -179,30 +173,15 @@ class MabnaOld extends AbstractProvider
 
         $token = $response->return->token;
 
-        return AuthorizedTransaction::make($transaction, null, $token);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, [
+            'TOKEN' => $token,
+        ]);
+
+        return AuthorizedTransaction::make($transaction, null, $token, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        $data = [
-            'TOKEN' => $transaction->getToken()
-        ];
-
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
@@ -210,19 +189,11 @@ class MabnaOld extends AbstractProvider
             throw new MabnaOldException($request->input('RESCODE'));
         }
 
-        return true;
+        return new FieldsToMatch();
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
@@ -267,6 +238,8 @@ class MabnaOld extends AbstractProvider
             throw new MabnaOldException('gateway-faild-signature-verify');
         }
 
-        return new SettledTransaction($transaction, $traceNumber);
+        $toMatch = new FieldsToMatch(null, null, null, new Amount($response->return->AMOUNT, 'IRR'));
+
+        return new SettledTransaction($transaction, $traceNumber, $toMatch);
     }
 }

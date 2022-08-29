@@ -8,13 +8,14 @@
 
 namespace Parsisolution\Gateway\Providers\Mabna;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -44,96 +45,76 @@ class Mabna extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        return AuthorizedTransaction::make($transaction);
-    }
-
-    /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        $callback = $this->getCallback($transaction->generateUnAuthorized());
-        $terminalId = $this->config['terminalId'];
-
         $data = [
-            'TerminalID' => $terminalId,
-            'Amount' => $transaction->getAmount()->getRiyal(),
-            'callbackURL' => $callback,
-            'InvoiceID' => $transaction->getOrderId(),
+            'TerminalID'  => $this->config['terminalId'],
+            'Amount'      => $transaction->getAmount()->getRiyal(),
+            'callbackURL' => $this->getCallback($transaction),
+            'InvoiceID'   => $transaction->getOrderId(),
         ];
 
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::URL_GATE, $data);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::URL_GATE, $data);
+
+        return AuthorizedTransaction::make($transaction, null, null, $redirectResponse);
     }
 
     /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $status = $request->input('respcode');
-        if ($status == 0) {
-            return true;
+        $code = $request->input('respcode');
+        $message = $request->input('respmsg');
+
+        if ($code != 0) {
+            throw new MabnaException($code, $message);
         }
 
-        throw new MabnaException(-7);
+        $amount = $request->input('amount');
+        $orderId = $request->input('invoiceid');
+
+        return new FieldsToMatch($orderId, null, null, new Amount($amount, 'IRR'));
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $traceNumber = $request->input('tracenumber');
         $cardNumber = $request->input('cardnumber');
+//        $issuerBank = $request->input('issuerbank');
         $rrn = $request->input('rrn');
         $digitalreceipt = $request->input('digitalreceipt');
+//        $payload = $request->input('payload');
 
-        $data = [
+        $fields = [
             "digitalreceipt" => $digitalreceipt,
             "Tid"            => $this->config['terminalId'],
         ];
-        $data = http_build_query($data);
 
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, self::SERVER_VERIFY_URL);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-        $response = curl_exec($curl);
-        curl_close($curl);
-        $result = json_decode($response, true);
-        if ($result["Status"] == "Ok") {
-            return new SettledTransaction($transaction, $traceNumber, $cardNumber, $rrn, [
-                'digital_receipt' => $digitalreceipt,
-            ]);
+        list($result) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        if ($result["Status"] != "Ok") {
+            throw new MabnaException($result['ReturnId']);
         }
 
-        throw new MabnaException($response['ReturnId']);
+        $toMatch = new FieldsToMatch();
+
+        return new SettledTransaction(
+            $transaction,
+            $traceNumber,
+            $toMatch,
+            $cardNumber,
+            $rrn,
+            [
+                'digital_receipt' => $digitalreceipt,
+            ]
+        );
     }
 }

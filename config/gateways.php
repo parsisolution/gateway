@@ -11,7 +11,7 @@ return [
     // Soap configuration
     //--------------------------------
     'soap'         => [
-        'attempts' => 2 // Attempts if soap connection is fail
+        'attempts' => 2 // Attempts if soap connection fails
     ],
 
     //--------------------------------
@@ -47,8 +47,9 @@ return [
         'name'         => 'سامان',
         'active'       => false,
         'order'        => 3,
-        'merchant'     => '',
-        'password'     => '',
+        'terminal-id'  => env('SAMAN_TERMINAL_ID'),
+        'username'     => env('SAMAN_USERNAME'),
+        'password'     => env('SAMAN_PASSWORD'),
         'callback-url' => '/',
     ],
 
@@ -56,11 +57,11 @@ return [
     // Parsian gateway
     //--------------------------------
     'parsian'      => [
-        'name'         => 'پارسیان',
-        'active'       => false,
-        'order'        => 4,
-        'pin'          => 'xxxxxxxxxxxxxxxxxxxx',
-        'callback-url' => '/',
+        'name'          => 'پارسیان',
+        'active'        => false,
+        'order'         => 4,
+        'login-account' => env('PARSIAN_LOGIN_ACCOUNT'),
+        'callback-url'  => '/',
     ],
 
     //--------------------------------
@@ -95,8 +96,10 @@ return [
         'name'         => 'ایران کیش',
         'active'       => false,
         'order'        => 7,
-        'merchant-id'  => 'xxxx',
-        'sha1-key'     => 'xxxxxxxxxxxxxxxxxxxx',
+        'acceptor-id'  => env('IRANKISH_ACCEPTOR_ID'),
+        'terminal-id'  => env('IRANKISH_TERMINAL_ID'),
+        'password'     => env('IRANKISH_PASSWORD'),
+        'public-key'   => env('IRANKISH_PUBLIC_KEY'),
         'description'  => 'description',
         'callback-url' => '/',
     ],
@@ -124,7 +127,7 @@ return [
         'name'         => 'شبکه پرداخت پی',
         'active'       => false,
         'order'        => 9,
-        'api'          => env('PAY_IR_API_KEY'),
+        'api'          => env('PAY_IR_API_KEY', 'test'),
         'callback-url' => '/',
     ],
 
@@ -162,6 +165,23 @@ return [
         'order'        => 12,
         'api'          => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'callback-url' => '/',
+        'settings'     => [
+            'soap' => [
+                'attempts' => 2, // Attempts if soap connection fails
+                'options'  => [
+                    'cache_wsdl'     => 0,
+                    'encoding'       => 'UTF-8',
+                    'trace'          => 1,
+                    'stream_context' => stream_context_create([
+                        'ssl' => [
+                            'verify_peer'       => false,
+                            'verify_peer_name'  => false,
+                            'allow_self_signed' => true,
+                        ],
+                    ]),
+                ],
+            ],
+        ],
     ],
 
     //--------------------------------

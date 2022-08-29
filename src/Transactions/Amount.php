@@ -2,6 +2,9 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
+use Parsisolution\Gateway\Contracts\Comparable;
+use Parsisolution\Gateway\Exceptions\UncomparableException;
+
 /**
  * Class Amount
  *
@@ -10,7 +13,7 @@ namespace Parsisolution\Gateway\Transactions;
  * @property string currency
  * @property float total
  */
-class Amount
+class Amount implements Comparable
 {
 
     /**
@@ -41,7 +44,7 @@ class Amount
      */
     public function __construct($amount, $currency = 'IRT')
     {
-        $this->total = $amount;
+        $this->setTotal($amount);
         $this->currency = $currency;
     }
 
@@ -86,6 +89,9 @@ class Amount
      */
     public function setTotal($total)
     {
+        if (! is_float($total)) {
+            $total = floatval(preg_replace('/[^0-9.]/', '', $total));
+        }
         $this->total = $total;
 
         return $this;
@@ -135,5 +141,43 @@ class Amount
                 return floor($this->total);
         }
         throw new \BadMethodCallException("only Iran currencies can cast to Toman");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function compareTo($value)
+    {
+        if (($value instanceof $this) === false) {
+            throw new UncomparableException();
+        }
+
+        if ($this->getCurrency() != $value->getCurrency() &&
+            (
+                strtoupper(substr($this->getCurrency(), 0, 2)) !== 'IR' ||
+                strtoupper(substr($value->getCurrency(), 0, 2)) !== 'IR'
+            )) {
+            throw new UncomparableException();
+        }
+
+        if (strtoupper(substr($this->getCurrency(), 0, 2)) === 'IR' &&
+            strtoupper(substr($value->getCurrency(), 0, 2)) === 'IR') {
+            $difference = $this->getRiyal() - $value->getRiyal();
+
+            return $difference == 0 ? 0 : ($difference > 0 ? 1 : -1);
+        }
+
+        $difference = $this->getTotal() - $value->getTotal();
+
+        return $difference == 0 ? 0 : ($difference > 0 ? 1 : -1);
+    }
+
+    public function equals($value): bool
+    {
+        try {
+            return $this->compareTo($value) == 0;
+        } catch (\Exception $exception) {
+            return false;
+        }
     }
 }

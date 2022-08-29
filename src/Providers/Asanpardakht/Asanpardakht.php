@@ -2,15 +2,15 @@
 
 namespace Parsisolution\Gateway\Providers\Asanpardakht;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -41,13 +41,7 @@ class Asanpardakht extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
@@ -61,10 +55,10 @@ class Asanpardakht extends AbstractProvider
         $req = "1,{$username},{$password},{$orderId},{$price},{$localDate},{$additionalData},{$callBackUrl},0";
 
         $encryptedRequest = $this->encrypt($req);
-        $params = array(
+        $params = [
             'merchantConfigurationID' => $this->config['merchantConfigId'],
             'encryptedRequest'        => $encryptedRequest,
-        );
+        ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->RequestOperation($params);
@@ -75,89 +69,61 @@ class Asanpardakht extends AbstractProvider
             throw new AsanpardakhtException($response);
         }
 
-        return AuthorizedTransaction::make($transaction, substr($response, 2));
+        $referenceId = substr($response, 2);
+
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, [
+            'RefId' => $referenceId,
+        ]);
+
+        return AuthorizedTransaction::make($transaction, $referenceId, null, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        $data = [
-            'RefId' => $transaction->getReferenceId()
-        ];
-
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws InvalidRequestException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $ReturningParams = $request->input('ReturningParams');
 
-        if (isset($ReturningParams)) {
-            return true;
+        if (! isset($ReturningParams)) {
+            throw new InvalidRequestException();
         }
 
-        throw new InvalidRequestException();
+        $ReturningParams = $request->input('ReturningParams');
+
+        list($amount, $orderId, $referenceId) = explode(",", $this->decrypt($ReturningParams));
+
+        return new FieldsToMatch($orderId, $referenceId, null, new Amount($amount, 'IRR'));
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $ReturningParams = $request->input('ReturningParams');
-        $ReturningParams = $this->decrypt($ReturningParams);
 
-        $paramsArray = explode(",", $ReturningParams);
-        $Amount = $paramsArray[0];
-        $SaleOrderId = $paramsArray[1];
-        $RefId = $paramsArray[2];
-        $ResCode = $paramsArray[3];
-        $ResMessage = $paramsArray[4];
-        $PayGateTranID = $paramsArray[5];
-        $RRN = $paramsArray[6];
-        $LastFourDigitOfPAN = $paramsArray[7];
+        list($Amount, $SaleOrderId, $RefId, $ResCode, $ResMessage, $PayGateTranID, $RRN, $LastFourDigitOfPAN) =
+            explode(',', $this->decrypt($ReturningParams));
 
         $cardNumber = '************'.$LastFourDigitOfPAN;
         if (substr($ResMessage, 0, 27) === 'FirstSixDigitsOfCardNumber:') {
             $cardNumber = substr($ResMessage, 27).'******'.$LastFourDigitOfPAN;
         }
-        $settledTransaction = new SettledTransaction($transaction, $PayGateTranID, $cardNumber, $RRN);
 
         if (! ($ResCode == '0' || $ResCode == '00')) {
             throw new AsanpardakhtException($ResCode);
         }
 
-
         $username = $this->config['username'];
         $password = $this->config['password'];
 
         $encryptedCredintials = $this->encrypt("{$username},{$password}");
-        $params = array(
+        $params = [
             'merchantConfigurationID' => $this->config['merchantConfigId'],
             'encryptedCredentials'    => $encryptedCredintials,
-            'payGateTranID'           => $settledTransaction->getTraceNumber(),
-        );
-
+            'payGateTranID'           => $PayGateTranID,
+        ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->RequestVerification($params);
@@ -174,7 +140,7 @@ class Asanpardakht extends AbstractProvider
             throw new AsanpardakhtException($response);
         }
 
-        return $settledTransaction;
+        return new SettledTransaction($transaction, $PayGateTranID, new FieldsToMatch(), $cardNumber, $RRN);
     }
 
     /**
@@ -191,11 +157,11 @@ class Asanpardakht extends AbstractProvider
 
         try {
             $soap = new SoapClient(self::SERVER_UTILS, $this->soapConfig());
-            $params = array(
+            $params = [
                 'aesKey'        => $key,
                 'aesVector'     => $iv,
                 'toBeEncrypted' => $string,
-            );
+            ];
 
             $response = $soap->EncryptInAES($params);
 
@@ -218,11 +184,11 @@ class Asanpardakht extends AbstractProvider
 
         try {
             $soap = new SoapClient(self::SERVER_UTILS, $this->soapConfig());
-            $params = array(
+            $params = [
                 'aesKey'        => $key,
                 'aesVector'     => $iv,
                 'toBeDecrypted' => $string,
-            );
+            ];
 
             $response = $soap->DecryptInAES($params);
 

@@ -2,13 +2,13 @@
 
 namespace Parsisolution\Gateway\Providers\Sadad;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -38,13 +38,7 @@ class Sadad extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
@@ -53,7 +47,7 @@ class Sadad extends AbstractProvider
         $Amount = $transaction->getAmount()->getRiyal();
         $OrderId = $transaction->getOrderId();
         $SignData = $this->encryptPKCS7("$TerminalId;$OrderId;$Amount", "$key");
-        $data = [
+        $fields = [
             'TerminalId'    => $TerminalId,
             'MerchantId'    => $this->config['merchantId'],
             'Amount'        => $Amount,
@@ -62,76 +56,64 @@ class Sadad extends AbstractProvider
             'LocalDateTime' => date("m/d/Y g:i:s a"),
             'OrderId'       => $transaction->getOrderId(),
         ];
-        $str_data = json_encode($data);
-        $res = $this->callAPI(self::SERVER_URL.'/Request/PaymentRequest', $str_data);
-        $response = json_decode($res);
+
+        list($response) = Curl::execute(self::SERVER_URL.'/Request/PaymentRequest', $fields, false);
+
         if ($response->ResCode != 0) {
             throw new SadadException($response->ResCode, $response->Description);
         }
 
-        return AuthorizedTransaction::make($transaction, null, $response->Token);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL.$response->Token);
+
+        return AuthorizedTransaction::make($transaction, null, $response->Token, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        return new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL.$transaction->getToken());
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $ResCode = $request->input("ResCode");
 
-        if ($ResCode == 0) {
-            return true;
+        if ($ResCode != 0) {
+            throw new SadadException($ResCode);
         }
 
-        throw new SadadException($ResCode);
+        $Token = $request->input("token");
+
+        return new FieldsToMatch(null, null, $Token);
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $key = $this->config['key'];
-        $Token = $request->input("token");
 
-        $verifyData = array('Token' => $Token, 'SignData' => $this->encryptPKCS7($Token, $key));
-        $str_data = json_encode($verifyData);
-        $res = $this->callAPI(self::SERVER_URL.'/Advice/Verify', $str_data);
-        $response = json_decode($res);
+        $fields = [
+            'Token'    => $transaction->getToken(),
+            'SignData' => $this->encryptPKCS7($transaction->getToken(), $key),
+        ];
 
-        if ($response->ResCode != -1 && $response->ResCode == 0) {
-            $traceNumber = $response->SystemTraceNo;
-            $cardNumber = $response->CustomerCardNumber;
-            $RRN = $response->RetrivalRefNo;
+        list($response) = Curl::execute(self::SERVER_URL.'/Advice/Verify', $fields);
 
-            return new SettledTransaction($transaction, $traceNumber, $cardNumber, $RRN, json_decode($res, true));
+        if ($response['ResCode'] != -1 && $response['ResCode'] == 0) {
+            $traceNumber = $response['SystemTraceNo'];
+            $cardNumber = $response['CustomerCardNumber'];
+            $RRN = $response['RetrivalRefNo'];
+
+            return new SettledTransaction(
+                $transaction,
+                $traceNumber,
+                $cardNumber,
+                $RRN,
+                $response
+            );
         }
 
         throw new SadadException(
-            $response->ResCode,
+            $response['ResCode'],
             "تراکنش نا موفق بود در صورت کسر مبلغ از حساب شما حداکثر پس از 72 ساعت مبلغ به حسابتان برمی گردد."
         );
     }
@@ -149,27 +131,5 @@ class Sadad extends AbstractProvider
         $cipherText = OpenSSL_encrypt($str, "DES-EDE3", $key, OPENSSL_RAW_DATA);
 
         return base64_encode($cipherText);
-    }
-
-    /**
-     * @param string $url
-     * @param mixed $data
-     * @return string
-     */
-    private function callAPI($url, $data = false)
-    {
-        $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(
-            $curl,
-            CURLOPT_HTTPHEADER,
-            array('Content-Type: application/json', 'Content-Length: '.strlen($data))
-        );
-        $result = curl_exec($curl);
-        curl_close($curl);
-
-        return $result;
     }
 }

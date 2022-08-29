@@ -7,10 +7,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -66,27 +69,6 @@ class IranDargah extends AbstractProvider implements ProviderInterface
      */
     protected $merchantId;
 
-    /**
-     * Payment Description
-     *
-     * @var string
-     */
-    protected $description;
-
-    /**
-     * Payer Card Number
-     *
-     * @var string
-     */
-    protected $cardNumber;
-
-    /**
-     * Payer Mobile Number
-     *
-     * @var string
-     */
-    protected $mobileNumber;
-
     public function __construct(Container $app, array $config)
     {
         parent::__construct($app, $config);
@@ -95,7 +77,6 @@ class IranDargah extends AbstractProvider implements ProviderInterface
 
         return $this;
     }
-
 
     /**
      * Set server for soap transfers data
@@ -121,39 +102,6 @@ class IranDargah extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * Set Description
-     *
-     * @param $description
-     * @return void
-     */
-    public function setDescription($description)
-    {
-        $this->description = $description;
-    }
-
-    /**
-     * Set Payer Card Number
-     *
-     * @param $cardNumber
-     * @return void
-     */
-    public function setCardNumber($cardNumber)
-    {
-        $this->cardNumber = $cardNumber;
-    }
-
-    /**
-     * Set Payer Mobile Number
-     *
-     * @param $number
-     * @return void
-     */
-    public function setMobileNumber($number)
-    {
-        $this->mobileNumber = $number;
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function getProviderId()
@@ -171,51 +119,33 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             'amount'      => $transaction->getAmount()->getRiyal(),
             'callbackURL' => $this->getCallback($transaction),
             'orderId'     => $transaction->getOrderId(),
-            'mobile'      => $transaction->getExtraField('mobile', $this->mobileNumber),
+            'mobile'      => $transaction->getExtraField('mobile'),
             'description' => $transaction->getExtraField('description', Arr::get($this->config, 'description', '')),
         ];
-        $cardNumber = $transaction->getExtraField('cardNumber', $this->cardNumber);
+        $cardNumber = $transaction->getExtraField('card_number');
         if (! empty($cardNumber)) {
             // by sending cardnumber , your user can not pay with another card number // OPTIONAL
             $fields['cardNumber'] = $cardNumber;
         }
-        $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, $this->serverUrl.'/payment');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-        # if you get SSL error (curl error 60) add 2 lines below
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        # end SSL error
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
+        list($result, $http_code) = Curl::execute($this->serverUrl.'/payment', $fields, false, [
+            # if you get SSL error (curl error 60) add 2 lines below
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => false,
+            # end SSL error
         ]);
 
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        curl_close($ch);
-        $result = json_decode($response);
-
-        if (isset($result->status) && $result->status == '200') {
-            return AuthorizedTransaction::make($transaction, $result->authority);
-        } else {
-            throw new IranDargahException(isset($result->status) ? $result->status : $http_code, $result->message);
+        if (! isset($result->status) || $result->status != '200') {
+            throw new IranDargahException($result->status ?? $http_code, $result->message);
         }
+
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$result->authority);
+
+        return AuthorizedTransaction::make($transaction, $result->authority, null, $redirectResponse);
     }
 
     /**
      * {@inheritdoc}
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        return new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$transaction->getReferenceId());
-    }
-
-    /**
-     * @inheritdoc
      */
     protected function validateSettlementRequest(Request $request)
     {
@@ -228,7 +158,11 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             throw new IranDargahException($code/*, $request->input('message')*/);
         }
 
-        return true;
+        $orderId = $request->input('orderId');
+        $referenceId = $request->input('authority');
+        $amount = $request->input('amount');
+
+        return new FieldsToMatch($orderId, $referenceId, null, new Amount($amount, 'IRR'));
     }
 
     /**
@@ -236,37 +170,27 @@ class IranDargah extends AbstractProvider implements ProviderInterface
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $authority = $request->input('authority');
-
         $fields = [
             'merchantID' => $this->merchantId,
-            'authority'  => $authority,
+            'authority'  => $transaction->getReferenceId(),
             'amount'     => $transaction->getAmount()->getRiyal(),
             'orderId'    => $transaction->getOrderId(),
         ];
-        $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, $this->serverUrl.'/verification');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-        # if you get SSL error (curl error 60) add 2 lines below
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        # end SSL error
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
+        list($result) = Curl::execute($this->serverUrl.'/verification', $fields, false, [
+            # if you get SSL error (curl error 60) add 2 lines below
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => false,
+            # end SSL error
         ]);
 
-        $response = curl_exec($ch);
+        $status = $result->status;
+        if ($status != 100) {
+            throw new IranDargahException($status/*, $result->message*/);
+        }
 
-        curl_close($ch);
-        $result = json_decode($response);
+        $toMatch = new FieldsToMatch($result->orderId);
 
-//        $status = $result->status;
-//        $message = $result->message;
-//        $orderId = $result->orderId;
-
-        return new SettledTransaction($transaction, $result->refId, $result->cardNumber);
+        return new SettledTransaction($transaction, $result->refId, $toMatch, $result->cardNumber);
     }
 }

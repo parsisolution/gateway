@@ -14,13 +14,12 @@
         }
     ],
     "require": {
-        "php": ">=5.6.4",
+        "php": ">=7.1",
         "illuminate/contracts": ">=5.4",
         "illuminate/http": ">=5.4",
         "illuminate/view": ">=5.4",
         "illuminate/support": ">=5.4",
-        "illuminate/database": ">=5.4",
-        "nesbot/carbon": ">=1.20"
+        "illuminate/database": ">=5.4"
     },
     "require-dev": {
         "mockery/mockery": "^1.0",

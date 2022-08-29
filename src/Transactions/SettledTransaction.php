@@ -8,35 +8,14 @@ use Parsisolution\Gateway\Traits\HasOrderIdField;
 
 class SettledTransaction extends AbstractTransaction implements HasId
 {
-
     use HasIdField, HasOrderIdField;
-
-    /**
-     * The transaction's trace number.
-     *
-     * @var string
-     */
-    protected $trace_number;
-
-    /**
-     * The transaction's card number.
-     *
-     * @var string
-     */
-    protected $card_number;
-
-    /**
-     * The transaction's Retrieval Reference Number.
-     *
-     * @var string
-     */
-    protected $rrn;
 
     /**
      * SettledTransaction constructor.
      *
      * @param AuthorizedTransaction $transaction
      * @param string $traceNumber
+     * @param FieldsToMatch $toMatch
      * @param string $cardNumber
      * @param string $RRN
      * @param array $extraFields
@@ -45,25 +24,21 @@ class SettledTransaction extends AbstractTransaction implements HasId
     public function __construct(
         AuthorizedTransaction $transaction,
         $traceNumber,
+        $toMatch,
         $cardNumber = '',
         $RRN = '',
         $extraFields = [],
         $referenceId = ''
     ) {
-        $this->setRaw($transaction->getRaw());
+        $this->setAttributes($transaction->getAttributes());
+        $this['trace_number'] = $traceNumber;
+        $this['to_match'] = $toMatch;
+        $this['card_number'] = $cardNumber;
+        $this['rrn'] = $RRN;
+        $this['extra'] = array_merge($transaction->getExtra(), $extraFields);
         if (! empty($referenceId)) {
             $this['reference_id'] = $referenceId;
         }
-        $this['trace_number'] = $traceNumber;
-        $this['card_number'] = $cardNumber;
-        $this['rrn'] = $RRN;
-        $this->map([
-            'amount'       => $transaction->getAmount(),
-            'extra'        => array_merge($transaction->getExtra(), $extraFields),
-            'trace_number' => $traceNumber,
-            'card_number'  => $cardNumber,
-            'rrn'          => $RRN,
-        ]);
     }
 
     /**
@@ -73,7 +48,17 @@ class SettledTransaction extends AbstractTransaction implements HasId
      */
     public function getTraceNumber()
     {
-        return $this->trace_number;
+        return $this['trace_number'];
+    }
+
+    /**
+     * Get fields to match.
+     *
+     * @return FieldsToMatch
+     */
+    public function getFieldsToMatch()
+    {
+        return $this['to_match'];
     }
 
     /**
@@ -83,7 +68,7 @@ class SettledTransaction extends AbstractTransaction implements HasId
      */
     public function getCardNumber()
     {
-        return $this->card_number;
+        return $this['card_number'];
     }
 
     /**
@@ -93,7 +78,7 @@ class SettledTransaction extends AbstractTransaction implements HasId
      */
     public function getRRN()
     {
-        return $this->rrn;
+        return $this['rrn'];
     }
 
     /**

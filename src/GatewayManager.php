@@ -9,9 +9,7 @@ use InvalidArgumentException;
 use Parsisolution\Gateway\Exceptions\GatewayException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
-use Parsisolution\Gateway\Exceptions\NotFoundTransactionException;
 use Parsisolution\Gateway\Exceptions\NullConfigException;
-use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
@@ -29,7 +27,6 @@ use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
-use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 
 class GatewayManager extends Manager implements Contracts\Factory
 {
@@ -189,27 +186,21 @@ class GatewayManager extends Manager implements Contracts\Factory
             $parameters = $request->input();
         }
 
-        if (! key_exists('transaction_id', $parameters) && ! key_exists('iN', $parameters)) {
+        if (! key_exists('_order_id', $parameters) && ! key_exists('iN', $parameters)) {
             throw new InvalidRequestException;
         }
-        if (key_exists('transaction_id', $parameters)) {
-            $id = $parameters['transaction_id'];
+        if (key_exists('_order_id', $parameters)) {
+            $orderId = $parameters['_order_id'];
         } else {
-            $id = $parameters['iN'];
+            $orderId = $parameters['iN'];
         }
 
         $db = app()['db'];
-        $transaction = $db->table($this->getTable())->where('id', $id)->first();
+        $transactionDao = new TransactionDao($db, $this->getTable());
 
-        if (! $transaction) {
-            throw new NotFoundTransactionException;
-        }
+        $authorizedTransaction = $transactionDao->find($orderId);
 
-        if (in_array($transaction->status, [TransactionDao::STATE_SUCCEEDED, TransactionDao::STATE_FAILED])) {
-            throw new RetryException;
-        }
-
-        return AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
+        return $authorizedTransaction;
     }
 
     /**

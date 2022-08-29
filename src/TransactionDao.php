@@ -2,9 +2,10 @@
 
 namespace Parsisolution\Gateway;
 
-use Carbon\Carbon;
 use Illuminate\Database\DatabaseManager;
 use Parsisolution\Gateway\Contracts\HasId;
+use Parsisolution\Gateway\Exceptions\NotFoundTransactionException;
+use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\RequestTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -94,7 +95,7 @@ class TransactionDao
             $uid = $generateUid();
         }
 
-        $fields = array_merge($transaction->getRaw(), [
+        $fields = array_merge($transaction->getAttributes(), [
             'provider'   => $provider,
             'amount'     => $transaction->getAmount()->getTotal(),
             'currency'   => $transaction->getAmount()->getCurrency(),
@@ -102,8 +103,8 @@ class TransactionDao
             'status'     => self::STATE_INIT,
             'ip'         => $client_ip,
             'extra'      => json_encode($transaction->getExtra()),
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
         $id = $this->getTable()->insertGetId($fields);
@@ -122,8 +123,34 @@ class TransactionDao
         return $this->getTable()->where('id', $transaction->getId())->update([
             'reference_id' => $transaction->getReferenceId(),
             'token'        => $transaction->getToken(),
-            'updated_at'   => Carbon::now(),
+            'updated_at'   => date('Y-m-d H:i:s'),
         ]);
+    }
+
+    /**
+     * find transaction by its order id
+     *
+     * @param string $orderId
+     * @return AuthorizedTransaction
+     * @throws NotFoundTransactionException
+     * @throws RetryException
+     * @throws \Exception
+     */
+    public function find($orderId)
+    {
+        $this->db->connection()->beginTransaction();
+
+        $transaction = $this->getTable()->where('order_id', $orderId)->lockForUpdate()->first();
+
+        if (! $transaction) {
+            throw new NotFoundTransactionException;
+        }
+
+        if (in_array($transaction->status, [self::STATE_SUCCEEDED])) {
+            throw new RetryException;
+        }
+
+        return AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
     }
 
     /**
@@ -134,7 +161,7 @@ class TransactionDao
      */
     public function isSpent(SettledTransaction $transaction)
     {
-        return !!$this->getTable()->where('trace_number', $transaction->getTraceNumber())->count();
+        return $this->getTable()->where('trace_number', $transaction->getTraceNumber())->exists();
     }
 
     /**
@@ -148,6 +175,14 @@ class TransactionDao
      */
     public function succeeded(SettledTransaction $transaction, $additionalFields = [])
     {
+        $log = json_decode($transaction['log'] ?? '[]');
+
+        $log[] = [
+            'result_code'    => self::STATE_SUCCEEDED,
+            'result_message' => self::MESSAGE_SUCCEEDED,
+            'logged_at'      => date('Y-m-d H:i:s'),
+        ];
+
         $fields = array_merge($additionalFields, [
             'status'       => self::STATE_SUCCEEDED,
             'reference_id' => $transaction->getReferenceId(),
@@ -155,16 +190,16 @@ class TransactionDao
             'card_number'  => $transaction->getCardNumber(),
             'rrn'          => $transaction->getRRN(),
             'extra'        => json_encode($transaction->getExtra()),
-            'log'          => json_encode([
-                'result_code'    => self::STATE_SUCCEEDED,
-                'result_message' => self::MESSAGE_SUCCEEDED,
-                'logged_at'      => Carbon::now(),
-            ]),
-            'paid_at'      => Carbon::now(),
-            'updated_at'   => Carbon::now(),
+            'log'          => json_encode($log),
+            'paid_at'      => date('Y-m-d H:i:s'),
+            'updated_at'   => date('Y-m-d H:i:s'),
         ]);
 
-        return $this->getTable()->where('id', $transaction->getId())->update($fields);
+        $result = $this->getTable()->where('id', $transaction->getId())->update($fields);
+
+        $this->db->connection()->commit();
+
+        return $result;
     }
 
     /**
@@ -180,19 +215,27 @@ class TransactionDao
      */
     public function failed(HasId $transaction, $statusCode, $statusMessage, $referenceId = null)
     {
+        $log = json_decode($transaction['log'] ?? '[]');
+
+        $log[] = [
+            'result_code'    => $statusCode,
+            'result_message' => $statusMessage,
+            'logged_at'      => date('Y-m-d H:i:s'),
+        ];
+
         $fields = [
             'status'     => self::STATE_FAILED,
-            'log'        => json_encode([
-                'result_code'    => $statusCode,
-                'result_message' => $statusMessage,
-                'logged_at'      => Carbon::now(),
-            ]),
-            'updated_at' => Carbon::now(),
+            'log'        => json_encode($log),
+            'updated_at' => date('Y-m-d H:i:s'),
         ];
         if ($referenceId) {
             $fields['reference_id'] = $referenceId;
         }
 
-        return $this->getTable()->where('id', $transaction->getId())->update($fields);
+        $result = $this->getTable()->where('id', $transaction->getId())->update($fields);
+
+        $this->db->connection()->commit();
+
+        return $result;
     }
 }

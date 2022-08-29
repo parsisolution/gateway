@@ -3,14 +3,13 @@
 namespace Parsisolution\Gateway\Providers\Mellat;
 
 use DateTime;
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -40,19 +39,13 @@ class Mellat extends AbstractProvider
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $dateTime = new DateTime();
 
-        $fields = array(
+        $fields = [
             'terminalId'     => $this->config['terminalId'],
             'userName'       => $this->config['username'],
             'userPassword'   => $this->config['password'],
@@ -62,8 +55,8 @@ class Mellat extends AbstractProvider
             'localTime'      => $dateTime->format('His'),
             'additionalData' => $transaction->getExtraField('description'),
             'callBackUrl'    => $this->getCallback($transaction),
-            'payerId'        => $transaction->getExtraField('payer.id', 0),
-        );
+            'payerId'        => $transaction->getExtraField('payer_id', 0),
+        ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpPayRequest($fields);
@@ -74,40 +67,44 @@ class Mellat extends AbstractProvider
             throw new MellatException($response[0]);
         }
 
-        return AuthorizedTransaction::make($transaction, $response[1]);
+        $referenceId = $response[1];
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, [
+            'RefId' => $referenceId,
+        ]);
+
+        return AuthorizedTransaction::make($transaction, $referenceId, null, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        $data = [
-            'RefId' => $transaction->getReferenceId()
-        ];
-
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $payRequestResCode = $request->input('ResCode');
 
-        if ($payRequestResCode == '0') {
-            return true;
+        if ($payRequestResCode != '0') {
+            throw new MellatException($payRequestResCode);
         }
 
-        throw new MellatException($payRequestResCode);
+        return new FieldsToMatch();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
+    {
+        $traceNumber = $request->input('SaleReferenceId');
+        $cardNumber = $request->input('CardHolderPan');
+
+        $toMatch = new FieldsToMatch();
+
+        $settledTransaction = new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber);
+
+        $this->verifyPayment($settledTransaction);
+        $this->settleRequest($settledTransaction);
+
+        return $settledTransaction;
     }
 
     /**
@@ -163,33 +160,10 @@ class Mellat extends AbstractProvider
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpSettleRequest($fields);
 
-        if ($response->return == '0' || $response->return == '45') {
-            return true;
+        if ($response->return != '0' && $response->return != '45') {
+            throw new MellatException($response->return);
         }
 
-        throw new MellatException($response->return);
-    }
-
-    /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
-     */
-    protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
-    {
-        $traceNumber = $request->input('SaleReferenceId');
-        $cardNumber = $request->input('CardHolderPan');
-        $settledTransaction = new SettledTransaction($transaction, $traceNumber, $cardNumber);
-
-        $this->verifyPayment($settledTransaction);
-        $this->settleRequest($settledTransaction);
-
-        return $settledTransaction;
+        return true;
     }
 }

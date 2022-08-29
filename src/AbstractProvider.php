@@ -12,6 +12,7 @@ use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\RequestTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
@@ -86,14 +87,6 @@ abstract class AbstractProvider implements ProviderContract
 
         return $this;
     }
-
-    /**
-     * Map the raw transaction array to a Gateway Transaction instance.
-     *
-     * @param  array $transaction
-     * @return \Parsisolution\Gateway\TransactionDao
-     */
-//    abstract protected function mapTransactionToObject(array $transaction);
 
     /**
      * {@inheritdoc}
@@ -171,44 +164,10 @@ abstract class AbstractProvider implements ProviderContract
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Parsisolution\Gateway\RedirectResponse
-     */
-    abstract protected function redirectToGateway(AuthorizedTransaction $transaction);
-
-    /**
-     * {@inheritdoc}
-     */
-    final public function redirect(AuthorizedTransaction $transaction)
-    {
-        $response = $this->redirectToGateway($transaction);
-
-        if ($response->getType() === RedirectResponse::TYPE_GET) {
-            return new \Symfony\Component\HttpFoundation\RedirectResponse($response->getUrl());
-        } else {
-            $data = [
-                'URL'=> $response->getUrl(),
-                'Data' => $response->getData()
-            ];
-            return $this->view('gateway::redirector')->with($data);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    final public function redirectResponse($transaction)
-    {
-        return $this->redirectToGateway($transaction);
-    }
-
-    /**
      * Validate the settlement request to see if it has all necessary fields
      *
      * @param Request $request
-     * @return bool
+     * @return FieldsToMatch
      * @throws InvalidRequestException|TransactionException
      */
     abstract protected function validateSettlementRequest(Request $request);
@@ -232,13 +191,21 @@ abstract class AbstractProvider implements ProviderContract
     final public function settle(AuthorizedTransaction $authorizedTransaction, $fieldsToUpdateOnSuccess = [])
     {
         try {
-            $this->validateSettlementRequest($this->request);
+            $fieldsToMatch = $this->validateSettlementRequest($this->request);
+
+            if (! $fieldsToMatch->matches($authorizedTransaction)) {
+                throw new InvalidRequestException();
+            }
 
             $settledTransaction = $this->settleTransaction($this->request, $authorizedTransaction);
 
+            if (! $settledTransaction->getFieldsToMatch()->matches($settledTransaction)) {
+                throw new InvalidRequestException();
+            }
+
             // prevent "Double Spending"
             if ($this->transactionDao->isSpent($settledTransaction)) {
-                throw new RetryException('Transaction has been Spend Before');
+                throw new RetryException('The Transaction has been Spent Before');
             }
 
             $this->transactionDao->succeeded($settledTransaction, $fieldsToUpdateOnSuccess);
@@ -253,22 +220,6 @@ abstract class AbstractProvider implements ProviderContract
 
             throw $e;
         }
-    }
-
-    /**
-     * Determine if the current request / session has a mismatching "state".
-     *
-     * @return bool
-     */
-    protected function hasInvalidState()
-    {
-        if ($this->isStateless()) {
-            return false;
-        }
-
-        $state = $this->request->session()->pull('gateway__state');
-
-        return ! (strlen($state) > 0 && $this->request->input('_state') === $state);
     }
 
     /**
@@ -372,7 +323,7 @@ abstract class AbstractProvider implements ProviderContract
 
         $this->with(array_merge(
             $this->parameters,
-            ['transaction_id' => $transaction->getId()]
+            ['_order_id' => $transaction->getOrderId()]
         ));
 
         if ($this->usesState()) {
@@ -432,24 +383,5 @@ abstract class AbstractProvider implements ProviderContract
     protected function soapConfig()
     {
         return Arr::get($this->config, 'settings.soap');
-    }
-
-    /**
-     * Get the evaluated view contents for the given view.
-     *
-     * @param  string $view
-     * @param  array $data
-     * @param  array $mergeData
-     * @return \Illuminate\View\View
-     */
-    protected function view($view = null, $data = [], $mergeData = [])
-    {
-        $factory = $this->app->make(\Illuminate\Contracts\View\Factory::class);
-
-        if (func_num_args() === 0) {
-            return $factory;
-        }
-
-        return $factory->make($view, $data, $mergeData);
     }
 }

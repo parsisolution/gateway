@@ -39,13 +39,13 @@ class SadadException extends TransactionException
     {
         $result = SadadResult::codeResponse($code, $message);
         if (! $result) {
-            $result = array(
+            $result = [
                 'code'    => SadadResult::UNKNOWN_CODE,
                 'message' => SadadResult::UNKNOWN_MESSAGE,
                 'fa'      => 'خطای ناشناخته',
                 'en'      => 'Unknown Error',
                 'retry'   => false,
-            );
+            ];
         }
 
         return $result;
