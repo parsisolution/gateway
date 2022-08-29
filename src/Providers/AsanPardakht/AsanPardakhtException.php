@@ -1,10 +1,10 @@
 <?php
 
-namespace Parsisolution\Gateway\Providers\Asanpardakht;
+namespace Parsisolution\Gateway\Providers\AsanPardakht;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-class AsanpardakhtException extends TransactionException
+class AsanPardakhtException extends TransactionException
 {
 
     /**

@@ -43,13 +43,13 @@ class Sadad extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $key = $this->config['key'];
-        $TerminalId = $this->config['terminalId'];
+        $TerminalId = $this->config['terminal-id'];
         $Amount = $transaction->getAmount()->getRiyal();
         $OrderId = $transaction->getOrderId();
         $SignData = $this->encryptPKCS7("$TerminalId;$OrderId;$Amount", "$key");
         $fields = [
             'TerminalId'    => $TerminalId,
-            'MerchantId'    => $this->config['merchantId'],
+            'MerchantId'    => $this->config['merchant-id'],
             'Amount'        => $Amount,
             'SignData'      => $SignData,
             'ReturnUrl'     => $this->getCallback($transaction),
@@ -106,6 +106,7 @@ class Sadad extends AbstractProvider
             return new SettledTransaction(
                 $transaction,
                 $traceNumber,
+                new FieldsToMatch(),
                 $cardNumber,
                 $RRN,
                 $response

@@ -10,7 +10,8 @@ use Parsisolution\Gateway\Exceptions\GatewayException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
 use Parsisolution\Gateway\Exceptions\NullConfigException;
-use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
+use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
+use Parsisolution\Gateway\Providers\IDPay\IDPay;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
@@ -26,6 +27,8 @@ use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
+use Parsisolution\Gateway\Providers\Vandar\Vandar;
+use Parsisolution\Gateway\Providers\YekPay\YekPay;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
 
 class GatewayManager extends Manager implements Contracts\Factory
@@ -34,22 +37,25 @@ class GatewayManager extends Manager implements Contracts\Factory
     const CONFIG_FILE_NAME = 'gateways';
 
     const MELLAT = 1;
-    const SADAD = 2;
-    const SAMAN = 3;
+    const SAMAN = 2;
+    const SADAD = 3;
     const PARSIAN = 4;
-    const MABNA = 5;
-    const MABNA_OLD = 6;
-    const IRANKISH = 7;
+    const IRANKISH = 5;
+    const MABNA = 6;
+    const MABNA_OLD = 7;
     const ASANPARDAKHT = 8;
-    const PAYIR = 20;
-    const PARDANO = 21;
+    const VANDAR = 20;
+    const PAYIR = 21;
     const ZARINPAL = 22;
-    const NEXTPAY = 23;
-    const JIBIT = 24;
-    const SABAPAY = 25;
-    const SIZPAY = 26;
-    const PAYPING = 27;
+    const JIBIT = 23;
+    const PAYPING = 24;
+    const IDPAY = 25;
+    const NEXTPAY = 26;
+    const SIZPAY = 27;
     const IRANDARGAH = 28;
+    const SABAPAY = 29;
+    const PARDANO = 30;
+    const YEKPAY = 50;
 
     /**
      * Get all of the available "drivers".
@@ -60,22 +66,25 @@ class GatewayManager extends Manager implements Contracts\Factory
     {
         return [
             self::MELLAT,
-            self::SADAD,
             self::SAMAN,
+            self::SADAD,
             self::PARSIAN,
+            self::IRANKISH,
             self::MABNA,
             self::MABNA_OLD,
-            self::IRANKISH,
             self::ASANPARDAKHT,
+            self::VANDAR,
             self::PAYIR,
-            self::PARDANO,
             self::ZARINPAL,
-            self::NEXTPAY,
             self::JIBIT,
-            self::SABAPAY,
-            self::SIZPAY,
             self::PAYPING,
+            self::IDPAY,
+            self::NEXTPAY,
+            self::SIZPAY,
             self::IRANDARGAH,
+            self::SABAPAY,
+            self::PARDANO,
+            self::YEKPAY,
         ];
     }
 
@@ -89,29 +98,28 @@ class GatewayManager extends Manager implements Contracts\Factory
     {
         $map = [
             1  => 'MELLAT',
-            2  => 'SADAD',
-            3  => 'SAMAN',
+            2  => 'SAMAN',
+            3  => 'SADAD',
             4  => 'PARSIAN',
-            5  => 'MABNA',
-            6  => 'MABNA_OLD',
-            7  => 'IRANKISH',
+            5  => 'IRANKISH',
+            6  => 'MABNA',
+            7  => 'MABNA_OLD',
             8  => 'ASANPARDAKHT',
-            20 => 'PAYIR',
-            21 => 'PARDANO',
+            20 => 'VANDAR',
+            21 => 'PAYIR',
             22 => 'ZARINPAL',
-            23 => 'NEXTPAY',
-            24 => 'JIBIT',
-            25 => 'SABAPAY',
-            26 => 'SIZPAY',
-            27 => 'PAYPING',
+            23 => 'JIBIT',
+            24 => 'PAYPING',
+            25 => 'IDPAY',
+            26 => 'NEXTPAY',
+            27 => 'SIZPAY',
             28 => 'IRANDARGAH',
+            29 => 'SABAPAY',
+            30 => 'PARDANO',
+            50 => 'YEKPAY',
         ];
 
-        if (empty($map[$id])) {
-            return $id;
-        }
-
-        return $map[$id];
+        return $map[$id] ?? $id;
     }
 
     /**
@@ -329,7 +337,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     {
         $config = app()['config'][self::CONFIG_FILE_NAME.'.asanpardakht'];
 
-        return $this->buildProvider(Asanpardakht::class, $config);
+        return $this->buildProvider(AsanPardakht::class, $config);
     }
 
     /**
@@ -447,6 +455,45 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.irandargah'];
 
         return $this->buildProvider(IranDargah::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createVandarDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.vandar'];
+
+        return $this->buildProvider(Vandar::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createIdpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.idpay'];
+
+        return $this->buildProvider(IDPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createYekpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.yekpay'];
+
+        return $this->buildProvider(YekPay::class, $config);
     }
 
     /**

@@ -21,23 +21,10 @@ return [
         'name'         => 'ملت',
         'active'       => false,
         'order'        => 1,
-        'username'     => '',
-        'password'     => '',
-        'terminalId'   => 0000000,
+        'username'     => env('MELLAT_USERNAME'),
+        'password'     => env('MELLAT_PASSWORD'),
+        'terminal-id'  => env('MELLAT_TERMINAL_ID'),
         'callback-url' => '/',
-    ],
-
-    //--------------------------------
-    // Sadad gateway
-    //--------------------------------
-    'sadad'        => [
-        'name'           => 'ملی',
-        'active'         => false,
-        'order'          => 2,
-        'key'            => env('SADAD_KEY'),
-        'merchantId'     => env('SADAD_MERCHANT_ID'),
-        'terminalId'     => env('SADAD_TERMINAL_ID'),
-        'callback-url'   => '/',
     ],
 
     //--------------------------------
@@ -46,10 +33,23 @@ return [
     'saman'        => [
         'name'         => 'سامان',
         'active'       => false,
-        'order'        => 3,
+        'order'        => 2,
         'terminal-id'  => env('SAMAN_TERMINAL_ID'),
         'username'     => env('SAMAN_USERNAME'),
         'password'     => env('SAMAN_PASSWORD'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // Sadad gateway
+    //--------------------------------
+    'sadad'        => [
+        'name'         => 'ملی',
+        'active'       => false,
+        'order'        => 3,
+        'key'          => env('SADAD_KEY'),
+        'merchant-id'  => env('SADAD_MERCHANT_ID'),
+        'terminal-id'  => env('SADAD_TERMINAL_ID'),
         'callback-url' => '/',
     ],
 
@@ -65,37 +65,12 @@ return [
     ],
 
     //--------------------------------
-    // Mabna gateway
-    //--------------------------------
-    'mabna'        => [
-        'name'         => 'مبنا',
-        'active'       => false,
-        'order'        => 5,
-        'terminalId'   => env('MABNA_TERMINAL_ID'),
-        'callback-url' => '/',
-    ],
-
-    //--------------------------------
-    // Mabna old gateway
-    //--------------------------------
-    'mabna-old'      => [
-        'name'         => 'مبنا',
-        'active'       => false,
-        'order'        => 6,
-        'merchant-id'  => '999999999999999',
-        'terminal-id'  => env('MABNA_TERMINAL_ID'),
-        'public-key'   => storage_path('gateways/mabna/mabna-public-key.pem'),
-        'private-key'  => storage_path('gateways/mabna/mabna-private-key.pem'),
-        'callback-url' => '/',
-    ],
-
-    //--------------------------------
     // IranKish gateway
     //--------------------------------
     'irankish'     => [
         'name'         => 'ایران کیش',
         'active'       => false,
-        'order'        => 7,
+        'order'        => 5,
         'acceptor-id'  => env('IRANKISH_ACCEPTOR_ID'),
         'terminal-id'  => env('IRANKISH_TERMINAL_ID'),
         'password'     => env('IRANKISH_PASSWORD'),
@@ -105,19 +80,55 @@ return [
     ],
 
     //--------------------------------
+    // Mabna gateway
+    //--------------------------------
+    'mabna'        => [
+        'name'         => 'مبنا',
+        'active'       => false,
+        'order'        => 6,
+        'terminal-id'  => env('MABNA_TERMINAL_ID'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // Mabna old gateway
+    //--------------------------------
+    'mabna-old'    => [
+        'name'         => 'مبنا',
+        'active'       => false,
+        'order'        => 7,
+        'merchant-id'  => env('MABNA_MERCHANT_ID'),
+        'terminal-id'  => env('MABNA_TERMINAL_ID'),
+        'public-key'   => storage_path('gateways/mabna/mabna-public-key.pem'),
+        'private-key'  => storage_path('gateways/mabna/mabna-private-key.pem'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // Asan Pardakht gateway
     //--------------------------------
     'asanpardakht' => [
-        'name'             => 'آپ',
-        'active'           => false,
-        'order'            => 8,
-        'merchantId'       => '',
-        'merchantConfigId' => '',
-        'username'         => '',
-        'password'         => '',
-        'key'              => '',
-        'iv'               => '',
-        'callback-url'     => '/',
+        'name'               => 'آپ',
+        'active'             => false,
+        'order'              => 8,
+        'merchant-id'        => env('ASANPARDAKHT_MERCHANT_ID'),
+        'merchant-config-id' => env('ASANPARDAKHT_MERCHANT_CONFIG_ID'),
+        'username'           => env('ASANPARDAKHT_USERNAME'),
+        'password'           => env('ASANPARDAKHT_PASSWORD'),
+        'key'                => env('ASANPARDAKHT_KEY'),
+        'iv'                 => env('ASANPARDAKHT_IV'),
+        'callback-url'       => '/',
+    ],
+
+    //--------------------------------
+    // Vandar gateway
+    //--------------------------------
+    'vandar'       => [
+        'name'         => 'وندار',
+        'active'       => false,
+        'order'        => 20,
+        'api-key'      => env('VANDAR_API_KEY'),
+        'callback-url' => '/',
     ],
 
     //--------------------------------
@@ -126,19 +137,8 @@ return [
     'payir'        => [
         'name'         => 'شبکه پرداخت پی',
         'active'       => false,
-        'order'        => 9,
-        'api'          => env('PAY_IR_API_KEY', 'test'),
-        'callback-url' => '/',
-    ],
-
-    //--------------------------------
-    // Pardano gateway
-    //--------------------------------
-    'pardano'      => [
-        'name'         => 'پردانو',
-        'active'       => false,
-        'order'        => 10,
-        'api'          => env('PARDANO_API_KEY', 'test'), // use test or your api key
+        'order'        => 21,
+        'api-key'      => env('PAY_IR_API_KEY', 'test'),
         'callback-url' => '/',
     ],
 
@@ -148,11 +148,47 @@ return [
     'zarinpal'     => [
         'name'         => 'زرین پال',
         'active'       => false,
-        'order'        => 11,
-        'merchant-id'  => env('ZARINPAL_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
+        'order'        => 22,
+        'merchant-id'  => env('ZARINPAL_MERCHANT_ID', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'type'         => 'normal',             // Types: [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
         'server'       => 'test',                // Servers: [germany || iran || test]
         'description'  => 'description',
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // JiBit gateway
+    //--------------------------------
+    'jibit'        => [
+        'name'         => 'جیبیت',
+        'active'       => false,
+        'order'        => 23,
+        'merchant-id'  => env('MERCHANT_ID'),
+        'password'     => env('JIBIT_PASSWORD'),
+        'callback-url' => '/',
+        'user-mobile'  => '09xxxxxxxxx',
+    ],
+
+    //--------------------------------
+    // PayPing gateway
+    //--------------------------------
+    'payping'      => [
+        'name'         => 'پی پینگ',
+        'active'       => false,
+        'order'        => 24,
+        'api-key'      => env('PAYPING_API_KEY'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
+    // IDPay gateway
+    //--------------------------------
+    'idpay'        => [
+        'name'         => 'آیدی پی',
+        'active'       => false,
+        'order'        => 25,
+        'api-key'      => env('IDPAY_API_KEY', '6a7f99eb-7c20-4412-a972-6dfb7cd253a4'),
+        'sandbox'      => true,
         'callback-url' => '/',
     ],
 
@@ -162,8 +198,8 @@ return [
     'nextpay'      => [
         'name'         => 'نکست پی',
         'active'       => false,
-        'order'        => 12,
-        'api'          => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
+        'order'        => 26,
+        'api-key'      => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'callback-url' => '/',
         'settings'     => [
             'soap' => [
@@ -185,16 +221,30 @@ return [
     ],
 
     //--------------------------------
-    // JiBit gateway
+    // Sizpay gateway
     //--------------------------------
-    'jibit'        => [
-        'name'         => 'جیبیت',
+    'sizpay'       => [
+        'name'         => 'سیزپی',
         'active'       => false,
-        'order'        => 13,
-        'merchant-id'  => 'xxxx',
-        'password'     => env('JIBIT_PASS'),
+        'order'        => 27,
+        'merchant-id'  => env('SIZPAY_MERCHANT_ID'),
+        'terminal-id'  => env('SIZPAY_TERMINAL_ID'),
+        'username'     => env('SIZPAY_USERNAME'),
+        'password'     => env('SIZPAY_PASSWORD'),
         'callback-url' => '/',
-        'user-mobile'  => '09xxxxxxxxx',
+    ],
+
+    //--------------------------------
+    // IranDargah gateway
+    //--------------------------------
+    'irandargah'   => [
+        'name'         => 'ایران درگاه',
+        'active'       => false,
+        'order'        => 28,
+        'merchant-id'  => env('IRANDARGAH_MERCHANT_ID'),
+        'server'       => 'test',                // Servers: [main || test]
+        'description'  => 'description',
+        'callback-url' => '/',
     ],
 
     //--------------------------------
@@ -203,46 +253,30 @@ return [
     'sabapay'      => [
         'name'         => 'صبا پی',
         'active'       => false,
-        'order'        => 14,
-        'api'          => env('SABAPAY_API_KEY'),
+        'order'        => 29,
+        'api-key'      => env('SABAPAY_API_KEY'),
         'callback-url' => '/',
     ],
 
     //--------------------------------
-    // Sizpay gateway
+    // Pardano gateway
     //--------------------------------
-    'sizpay'     => [
-        'name'         => 'سیزپی',
+    'pardano'      => [
+        'name'         => 'پردانو',
         'active'       => false,
-        'order'        => 15,
-        'merchant-id'  => '999999999999999',
-        'terminal-id'  => env('SIZPAY_TERMINAL_ID'),
-        'username'  => env('SIZPAY_USERNAME'),
-        'password'  => env('SIZPAY_PASSWORD'),
+        'order'        => 30,
+        'api-key'      => env('PARDANO_API_KEY', 'test'), // use test or your api key
         'callback-url' => '/',
     ],
 
     //--------------------------------
-    // PayPing gateway
+    // YekPay gateway
     //--------------------------------
-    'payping'    => [
-        'name'         => 'پی پینگ',
+    'yekpay'       => [
+        'name'         => 'یک‌پی',
         'active'       => false,
-        'order'        => 16,
-        'api'          => env('PAYPING_API_KEY'),
-        'callback-url' => '/',
-    ],
-
-    //--------------------------------
-    // IranDargah gateway
-    //--------------------------------
-    'irandargah' => [
-        'name'         => 'ایران درگاه',
-        'active'       => false,
-        'order'        => 17,
-        'merchant-id'  => env('IRANDARGAH_API_KEY'),
-        'server'       => 'test',                // Servers: [main || test]
-        'description'  => 'description',
+        'order'        => 50,
+        'merchant-id'  => env('YEKPAY_MERCHANT_ID'),
         'callback-url' => '/',
     ],
 ];

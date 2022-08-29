@@ -46,7 +46,7 @@ class Mellat extends AbstractProvider
         $dateTime = new DateTime();
 
         $fields = [
-            'terminalId'     => $this->config['terminalId'],
+            'terminalId'     => $this->config['terminal-id'],
             'userName'       => $this->config['username'],
             'userPassword'   => $this->config['password'],
             'orderId'        => $transaction->getOrderId(),
@@ -119,7 +119,7 @@ class Mellat extends AbstractProvider
     protected function verifyPayment(SettledTransaction $transaction)
     {
         $fields = [
-            'terminalId'      => $this->config['terminalId'],
+            'terminalId'      => $this->config['terminal-id'],
             'userName'        => $this->config['username'],
             'userPassword'    => $this->config['password'],
             'orderId'         => $transaction->getOrderId(),
@@ -149,7 +149,7 @@ class Mellat extends AbstractProvider
     protected function settleRequest(SettledTransaction $transaction)
     {
         $fields = [
-            'terminalId'      => $this->config['terminalId'],
+            'terminalId'      => $this->config['terminal-id'],
             'userName'        => $this->config['username'],
             'userPassword'    => $this->config['password'],
             'orderId'         => $transaction->getOrderId(),

@@ -50,7 +50,7 @@ class NextPay extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api_key'      => $this->config['api'],
+            'api_key'      => $this->config['api-key'],
             'order_id'     => $transaction->getOrderId(),
             'amount'       => $transaction->getAmount()->getToman(),
             'callback_uri' => $this->getCallback($transaction),
@@ -106,7 +106,7 @@ class NextPay extends AbstractProvider
         $card_holder = $request->input('card_holder');
 
         $fields = [
-            'api_key'  => $this->config['api'],
+            'api_key'  => $this->config['api-key'],
             'order_id' => $transaction->getOrderId(),
             'amount'   => $transaction->getAmount()->getToman(),
             'trans_id' => $transaction->getToken(),

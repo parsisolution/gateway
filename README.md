@@ -6,24 +6,27 @@ This library is inspired by laravel [Socialite](https://github.com/laravel/socia
 
 Available PSPs (Bank):
 1. Beh Pardakht (MELLAT)
-2. SADAD (MELLI)
-3. SEP (SAMAN)
+2. SEP (SAMAN)
+3. SADAD (MELLI)
 4. PEC (PARSIAN)
-5. Mabna **V1** `old method`
-6. Mabna **V2** `new method`
-7. Asan Pardakht
-8. IranKish
+5. IranKish
+6. Mabna **V1** `old method`
+7. Mabna **V2** `new method`
+8. Asan Pardakht
 
 Available 3rd-parties:
-1. Pay.ir
-2. ZarinPal
-3. JibIt
-4. PayPing
-5. NextPay
-6. SizPay
-7. IranDargah
-8. SabaPay (Saba Novin)
-9. Pardano
+1. Vandar
+2. Pay.ir
+3. ZarinPal
+4. JibIt
+5. PayPing
+6. IDPay
+7. NextPay
+8. SizPay
+9. IranDargah
+10. SabaPay (Saba Novin)
+11. Pardano
+12. YekPay
 
 ## Install
  

@@ -50,7 +50,7 @@ class Mabna extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $data = [
-            'TerminalID'  => $this->config['terminalId'],
+            'TerminalID'  => $this->config['terminal-id'],
             'Amount'      => $transaction->getAmount()->getRiyal(),
             'callbackURL' => $this->getCallback($transaction),
             'InvoiceID'   => $transaction->getOrderId(),
@@ -93,7 +93,7 @@ class Mabna extends AbstractProvider
 
         $fields = [
             "digitalreceipt" => $digitalreceipt,
-            "Tid"            => $this->config['terminalId'],
+            "Tid"            => $this->config['terminal-id'],
         ];
 
         list($result) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [

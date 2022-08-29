@@ -51,7 +51,7 @@ class SabaPay extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api_key'    => $this->config['api'],
+            'api_key'    => $this->config['api-key'],
             'amount'     => $transaction->getAmount()->getToman(),
             'return_url' => $this->getCallback($transaction, true),
         ];
@@ -97,7 +97,7 @@ class SabaPay extends AbstractProvider
         $cardNumber = $request->input('card_number');
 
         $fields = [
-            'api_key' => $this->config['api'],
+            'api_key' => $this->config['api-key'],
         ];
 
         list($response) = Curl::execute(self::SERVER_VERIFY_URL.$transaction->getReferenceId(), $fields, true, [

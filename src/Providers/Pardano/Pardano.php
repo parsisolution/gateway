@@ -30,7 +30,7 @@ class Pardano extends AbstractProvider
     {
         parent::__construct($app, $config);
 
-        $api = $this->config['api'];
+        $api = $this->config['api-key'];
         if ($api == 'test') {
             $this->server_url = self::SERVER_TEST;
             $this->gate_url = self::GATE_URL_TEST;
@@ -54,7 +54,7 @@ class Pardano extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $client = new SoapClient($this->server_url, $this->soapConfig());
-        $api = $this->config['api'];
+        $api = $this->config['api-key'];
         $amount = $transaction->getAmount()->getToman();
         $callbackUrl = $this->getCallback($transaction);
         $orderId = $transaction->getOrderId();
@@ -87,7 +87,7 @@ class Pardano extends AbstractProvider
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $authority = $request->input('au');
-        $api = $this->config['api'];
+        $api = $this->config['api-key'];
         $amount = $transaction->getAmount()->getToman();
         $client = new SoapClient($this->server_url, $this->soapConfig());
         $result = $client->verification($api, $amount, $authority);

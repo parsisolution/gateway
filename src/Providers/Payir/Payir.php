@@ -66,7 +66,7 @@ class Payir extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api'             => $this->config['api'],
+            'api'             => $this->config['api-key'],
             'amount'          => $transaction->getAmount()->getRiyal(),
             'redirect'        => $this->getCallback($transaction, true),
             'mobile'          => $transaction->getExtraField('mobile'),
@@ -117,7 +117,7 @@ class Payir extends AbstractProvider
         $cardNumber = $request->input('cardNumber');
 
         $fields = [
-            'api'   => $this->config['api'],
+            'api'   => $this->config['api-key'],
             'token' => $transaction->getToken(),
         ];
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Parsisolution\Gateway\Providers\Asanpardakht;
+namespace Parsisolution\Gateway\Providers\AsanPardakht;
 
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
@@ -14,7 +14,7 @@ use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
-class Asanpardakht extends AbstractProvider
+class AsanPardakht extends AbstractProvider
 {
 
     /**
@@ -56,7 +56,7 @@ class Asanpardakht extends AbstractProvider
 
         $encryptedRequest = $this->encrypt($req);
         $params = [
-            'merchantConfigurationID' => $this->config['merchantConfigId'],
+            'merchantConfigurationID' => $this->config['merchant-config-id'],
             'encryptedRequest'        => $encryptedRequest,
         ];
 
@@ -66,7 +66,7 @@ class Asanpardakht extends AbstractProvider
         $response = $response->RequestOperationResult;
         $responseCode = explode(",", $response)[0];
         if ($responseCode != '0') {
-            throw new AsanpardakhtException($response);
+            throw new AsanPardakhtException($response);
         }
 
         $referenceId = substr($response, 2);
@@ -112,7 +112,7 @@ class Asanpardakht extends AbstractProvider
         }
 
         if (! ($ResCode == '0' || $ResCode == '00')) {
-            throw new AsanpardakhtException($ResCode);
+            throw new AsanPardakhtException($ResCode);
         }
 
         $username = $this->config['username'];
@@ -120,7 +120,7 @@ class Asanpardakht extends AbstractProvider
 
         $encryptedCredintials = $this->encrypt("{$username},{$password}");
         $params = [
-            'merchantConfigurationID' => $this->config['merchantConfigId'],
+            'merchantConfigurationID' => $this->config['merchant-config-id'],
             'encryptedCredentials'    => $encryptedCredintials,
             'payGateTranID'           => $PayGateTranID,
         ];
@@ -130,14 +130,14 @@ class Asanpardakht extends AbstractProvider
         $response = $response->RequestVerificationResult;
 
         if ($response != '500') {
-            throw new AsanpardakhtException($response);
+            throw new AsanPardakhtException($response);
         }
 
         $response = $soap->RequestReconciliation($params);
         $response = $response->RequestReconciliationResult;
 
         if ($response != '600') {
-            throw new AsanpardakhtException($response);
+            throw new AsanPardakhtException($response);
         }
 
         return new SettledTransaction($transaction, $PayGateTranID, new FieldsToMatch(), $cardNumber, $RRN);

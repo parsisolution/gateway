@@ -144,7 +144,7 @@ class PayPing extends AbstractProvider
         return [
             'Accept: application/json',
             'Content-Type: application/json',
-            'Authorization: Bearer '.$this->config['api'],
+            'Authorization: Bearer '.$this->config['api-key'],
             'Cache-Control: no-cache',
         ];
     }
