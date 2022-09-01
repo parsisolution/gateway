@@ -47,9 +47,9 @@ return [
         'name'         => 'ملی',
         'active'       => false,
         'order'        => 3,
-        'key'          => env('SADAD_KEY'),
         'merchant-id'  => env('SADAD_MERCHANT_ID'),
         'terminal-id'  => env('SADAD_TERMINAL_ID'),
+        'terminal-key' => env('SADAD_TERMINAL_KEY'),
         'callback-url' => '/',
     ],
 

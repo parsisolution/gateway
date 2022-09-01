@@ -57,7 +57,6 @@ class Irankish extends AbstractProvider
                 'billInfo'          => null,
                 'requestId'         => $transaction->getOrderId(),
                 'paymentId'         => $transaction->getOrderId(),
-                'cmsPreservationId' => '98'.substr($transaction->getExtraField('mobile'), 1),
                 'requestTimestamp'  => time(),
                 'revertUri'         => $this->getCallback($transaction),
                 'terminalId'        => $this->config['terminal-id'],
@@ -65,6 +64,10 @@ class Irankish extends AbstractProvider
             ],
             'authenticationEnvelope' => $this->generateAuthenticationEnvelope($transaction->getAmount()->getRiyal()),
         ];
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $fields['cmsPreservationId'] = '98'.substr($mobile, 1);
+        }
 
         list($response) = Curl::execute(self::SERVER_URL, $fields);
 

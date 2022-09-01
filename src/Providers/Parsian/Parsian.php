@@ -56,8 +56,11 @@ class Parsian extends AbstractProvider
             'OrderId'        => $transaction->getOrderId(),
             'CallBackUrl'    => $this->getCallback($transaction),
             'AdditionalData' => $transaction->getExtraField('description'),
-            'Originator'     => '98'.substr($transaction->getExtraField('mobile'), 1),
         ];
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $params['Originator'] = '98'.substr($mobile, 1);
+        }
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->SalePaymentRequest(['requestData' => $params]);

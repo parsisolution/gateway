@@ -5,8 +5,10 @@ namespace Parsisolution\Gateway\Providers\Sadad;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
+use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -20,14 +22,14 @@ class Sadad extends AbstractProvider
      *
      * @var string
      */
-    const SERVER_URL = 'https://sadad.shaparak.ir/vpg/api/v0';
+    const SERVER_URL = 'https://sadad.shaparak.ir/api/v0';
 
     /**
      * Url of sadad gateway redirect path
      *
      * @var string
      */
-    const GATE_URL = 'https://sadad.shaparak.ir/VPG/Purchase?Token=';
+    const GATE_URL = 'https://sadad.shaparak.ir/Purchase?Token=';
 
     /**
      * {@inheritdoc}
@@ -42,20 +44,26 @@ class Sadad extends AbstractProvider
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        $key = $this->config['key'];
         $TerminalId = $this->config['terminal-id'];
-        $Amount = $transaction->getAmount()->getRiyal();
         $OrderId = $transaction->getOrderId();
-        $SignData = $this->encryptPKCS7("$TerminalId;$OrderId;$Amount", "$key");
+        $Amount = $transaction->getAmount()->getRiyal();
+        $SignData = $this->encryptPKCS7("$TerminalId;$OrderId;$Amount", $this->config['terminal-key']);
         $fields = [
-            'TerminalId'    => $TerminalId,
-            'MerchantId'    => $this->config['merchant-id'],
-            'Amount'        => $Amount,
-            'SignData'      => $SignData,
-            'ReturnUrl'     => $this->getCallback($transaction),
-            'LocalDateTime' => date("m/d/Y g:i:s a"),
-            'OrderId'       => $transaction->getOrderId(),
+            'MerchantId'       => $this->config['merchant-id'],
+            'TerminalId'       => $TerminalId,
+            'Amount'           => $Amount,
+            'OrderId'          => $OrderId,
+            'LocalDateTime'    => date('m/d/Y g:i:s a'),
+            'ReturnUrl'        => $this->getCallback($transaction),
+            'SignData'         => $SignData,
+            'AdditionalData'   => $transaction->getExtraField('description'),
+            'MultiplexingData' => $transaction->getExtraField('multiplexing_data'),
+            'ApplicationName'  => $transaction->getExtraField('application_name'),
         ];
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $fields['UserId'] = '98'.substr($mobile, 1);
+        }
 
         list($response) = Curl::execute(self::SERVER_URL.'/Request/PaymentRequest', $fields, false);
 
@@ -73,15 +81,17 @@ class Sadad extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $ResCode = $request->input("ResCode");
+        $ResCode = $request->input('ResCode');
+//        $SwitchResCode = $request->input('SwitchResCode');
 
         if ($ResCode != 0) {
-            throw new SadadException($ResCode);
+            throw new InvalidRequestException();
         }
 
-        $Token = $request->input("token");
+        $OrderId = $request->input('OrderId');
+        $Token = $request->input('Token');
 
-        return new FieldsToMatch(null, null, $Token);
+        return new FieldsToMatch($OrderId, null, $Token);
     }
 
     /**
@@ -89,33 +99,33 @@ class Sadad extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $key = $this->config['key'];
+        $masked_card_number = $request->input('PrimaryAccNo');
+        $hashed_card_number = $request->input('HashedCardNo');
 
         $fields = [
             'Token'    => $transaction->getToken(),
-            'SignData' => $this->encryptPKCS7($transaction->getToken(), $key),
+            'SignData' => $this->encryptPKCS7($transaction->getToken(), $this->config['terminal-key']),
         ];
 
         list($response) = Curl::execute(self::SERVER_URL.'/Advice/Verify', $fields);
 
-        if ($response['ResCode'] != -1 && $response['ResCode'] == 0) {
-            $traceNumber = $response['SystemTraceNo'];
-            $cardNumber = $response['CustomerCardNumber'];
-            $RRN = $response['RetrivalRefNo'];
-
-            return new SettledTransaction(
-                $transaction,
-                $traceNumber,
-                new FieldsToMatch(),
-                $cardNumber,
-                $RRN,
-                $response
-            );
+        if ($response['ResCode'] != 0) {
+            throw new SadadException($response['ResCode'], $response['Description']);
         }
 
-        throw new SadadException(
-            $response['ResCode'],
-            "تراکنش نا موفق بود در صورت کسر مبلغ از حساب شما حداکثر پس از 72 ساعت مبلغ به حسابتان برمی گردد."
+        $orderId = $response['OrderId'];
+        $amount = $response['Amount'];
+        $traceNumber = $response['SystemTraceNo'];
+        $cardNumber = $response['CustomerCardNumber'];
+        $RRN = $response['RetrivalRefNo'];
+
+        return new SettledTransaction(
+            $transaction,
+            $traceNumber,
+            new FieldsToMatch($orderId, null, null, new Amount($amount, 'IRR')),
+            $cardNumber,
+            $RRN,
+            compact('masked_card_number', 'hashed_card_number')
         );
     }
 
@@ -129,7 +139,7 @@ class Sadad extends AbstractProvider
     private function encryptPKCS7($str, $key)
     {
         $key = base64_decode($key);
-        $cipherText = OpenSSL_encrypt($str, "DES-EDE3", $key, OPENSSL_RAW_DATA);
+        $cipherText = OpenSSL_encrypt($str, 'DES-EDE3', $key, OPENSSL_RAW_DATA);
 
         return base64_encode($cipherText);
     }
