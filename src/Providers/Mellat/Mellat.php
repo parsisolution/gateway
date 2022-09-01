@@ -56,6 +56,12 @@ class Mellat extends AbstractProvider
             'additionalData' => $transaction->getExtraField('description'),
             'callBackUrl'    => $this->getCallback($transaction),
             'payerId'        => $transaction->getExtraField('payer_id', 0),
+            // following fields exist in SOAP reference but are not documented in Behpardakht documentation
+//            'mobileNo'       => '',
+//            'encPan'         => '',
+//            'panHiddenMode'  => '',
+//            'cartItem'       => '',
+//            'enc'            => '',
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -63,14 +69,39 @@ class Mellat extends AbstractProvider
 
         $response = explode(',', $response->return);
 
-        if ($response[0] != '0') {
-            throw new MellatException($response[0]);
+        $resCode = $response[0];
+        if ($resCode != '0') {
+            throw new MellatException($resCode);
         }
 
         $referenceId = $response[1];
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, [
+
+        $data = [
             'RefId' => $referenceId,
-        ]);
+        ];
+
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $data['MobileNo'] = '98'.substr($mobile, 1);
+        }
+
+        $cartItem = $transaction->getExtraField('cart_item');
+        if (!empty($cartItem)) {
+            $data['CartItem'] = $cartItem;
+        }
+
+        $inputPan = $transaction->getExtraField('input_pan');
+        if (!empty($inputPan)) {
+            $data['HiddenMode'] = $transaction->getExtraField('hidden_mode', 0);
+            $data['EncPan'] = $this->encrypt($inputPan);
+        }
+
+        $nationalCode = $transaction->getExtraField('national_code');
+        if (!empty($nationalCode)) {
+            $data['ENC'] = $this->encrypt($nationalCode, false);
+        }
+
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
 
         return AuthorizedTransaction::make($transaction, $referenceId, null, $redirectResponse);
     }
@@ -80,13 +111,16 @@ class Mellat extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $payRequestResCode = $request->input('ResCode');
+        $resCode = $request->input('ResCode');
 
-        if ($payRequestResCode != '0') {
-            throw new MellatException($payRequestResCode);
+        if ($resCode != '0') {
+            throw new MellatException($resCode);
         }
 
-        return new FieldsToMatch();
+        $refId = $request->input('RefId');
+        $saleOrderId = $request->input('SaleOrderId');
+
+        return new FieldsToMatch($saleOrderId, $refId);
     }
 
     /**
@@ -96,35 +130,16 @@ class Mellat extends AbstractProvider
     {
         $traceNumber = $request->input('SaleReferenceId');
         $cardNumber = $request->input('CardHolderPan');
+        $credit_card_sale_response_detail = $request->input('CreditCardSaleResponseDetail');
+        $final_amount = $request->input('FinalAmount');
 
-        $toMatch = new FieldsToMatch();
-
-        $settledTransaction = new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber);
-
-        $this->verifyPayment($settledTransaction);
-        $this->settleRequest($settledTransaction);
-
-        return $settledTransaction;
-    }
-
-    /**
-     * Verify user payment from bank server
-     *
-     * @param SettledTransaction $transaction
-     * @return bool
-     *
-     * @throws MellatException
-     * @throws \SoapFault
-     */
-    protected function verifyPayment(SettledTransaction $transaction)
-    {
         $fields = [
             'terminalId'      => $this->config['terminal-id'],
             'userName'        => $this->config['username'],
             'userPassword'    => $this->config['password'],
             'orderId'         => $transaction->getOrderId(),
             'saleOrderId'     => $transaction->getOrderId(),
-            'saleReferenceId' => $transaction->getTraceNumber(),
+            'saleReferenceId' => $traceNumber,
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -134,36 +149,40 @@ class Mellat extends AbstractProvider
             throw new MellatException($response->return);
         }
 
-        return true;
-    }
-
-    /**
-     * Send settle request
-     *
-     * @param SettledTransaction $transaction
-     * @return bool
-     *
-     * @throws MellatException
-     * @throws \SoapFault
-     */
-    protected function settleRequest(SettledTransaction $transaction)
-    {
-        $fields = [
-            'terminalId'      => $this->config['terminal-id'],
-            'userName'        => $this->config['username'],
-            'userPassword'    => $this->config['password'],
-            'orderId'         => $transaction->getOrderId(),
-            'saleOrderId'     => $transaction->getOrderId(),
-            'saleReferenceId' => $transaction->getTraceNumber(),
-        ];
-
-        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpSettleRequest($fields);
 
         if ($response->return != '0' && $response->return != '45') {
             throw new MellatException($response->return);
         }
 
-        return true;
+        $toMatch = new FieldsToMatch();
+
+        return new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber, '', compact(
+            'credit_card_sale_response_detail',
+            'final_amount'
+        ));
+    }
+
+    /**
+     * Encrypts data with predefined gateway's key
+     *
+     * @param string $data
+     * @param bool $no_padding
+     * @return string
+     */
+    protected function encrypt(string $data, bool $no_padding = true): string
+    {
+        $options = OPENSSL_RAW_DATA;
+        if ($no_padding) {
+            $options |= OPENSSL_NO_PADDING;
+        }
+        $encryptedPan = bin2hex(openssl_encrypt(
+            hex2bin($data),
+            'DES-ECB',
+            hex2bin('2C7D202B960A96AA'),
+            $options
+        ));
+
+        return $encryptedPan;
     }
 }
