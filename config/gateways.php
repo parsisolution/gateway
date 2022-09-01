@@ -116,7 +116,7 @@ return [
         'password'           => env('ASANPARDAKHT_PASSWORD'),
         'key'                => env('ASANPARDAKHT_KEY'),
         'iv'                 => env('ASANPARDAKHT_IV'),
-        'api-type'           => 'SOAP', // \Parsisolution\Gateway\ApiType::SOAP_CLIENT
+        'api-type'           => 'SOAP', // \Parsisolution\Gateway\ApiType::SOAP
         'callback-url'       => '/',
     ],
 

@@ -25,7 +25,7 @@ class NextPay extends AbstractProvider
     const SERVER_VERIFY_SOAP = "https://api.nextpay.org/gateway/verify.wsdl";
     const SERVER_VERIFY_HTTP = "https://api.nextpay.org/gateway/verify.http";
 
-    protected $api_type = ApiType::SOAP_CLIENT;
+    protected $api_type = ApiType::SOAP;
 
     /**
      * @param int $api_type
@@ -57,7 +57,7 @@ class NextPay extends AbstractProvider
         ];
 
         switch ($this->api_type) {
-            case ApiType::HTTP:
+            case ApiType::REST:
                 list($response) = Curl::execute(self::SERVER_HTTP, $fields, false, [
                     CURLOPT_SSL_VERIFYHOST => false,
                     CURLOPT_SSL_VERIFYPEER => false,
@@ -65,7 +65,7 @@ class NextPay extends AbstractProvider
 
                 return $this->verifyAuthorizationResponse($transaction, $response);
                 break;
-            case ApiType::SOAP_CLIENT:
+            case ApiType::SOAP:
             default:
                 $soap_client = new SoapClient(
                     self::SERVER_SOAP,
@@ -113,7 +113,7 @@ class NextPay extends AbstractProvider
         ];
 
         switch ($this->api_type) {
-            case ApiType::HTTP:
+            case ApiType::REST:
                 list($response) = Curl::execute(self::SERVER_VERIFY_HTTP, $fields, false, [
                     CURLOPT_SSL_VERIFYHOST => false,
                     CURLOPT_SSL_VERIFYPEER => false,
@@ -121,7 +121,7 @@ class NextPay extends AbstractProvider
 
                 return $this->verifyVerificationResponse($transaction, $response, $card_holder);
                 break;
-            case ApiType::SOAP_CLIENT:
+            case ApiType::SOAP:
             default:
                 $soap_client = new SoapClient(
                     self::SERVER_VERIFY_SOAP,

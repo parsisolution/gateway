@@ -54,7 +54,7 @@ class AsanPardakht extends AbstractProvider
     {
         parent::__construct($app, $config);
 
-        $this->apiType = Arr::get($config, 'api-type', ApiType::SOAP_CLIENT);
+        $this->apiType = Arr::get($config, 'api-type', ApiType::SOAP);
     }
 
     /**
@@ -78,7 +78,7 @@ class AsanPardakht extends AbstractProvider
         $additionalData = $transaction->getExtraField('description', '');
         $callBackUrl = $this->getCallback($transaction);
 
-        if ($this->apiType == ApiType::SOAP_CLIENT) {
+        if ($this->apiType == ApiType::SOAP) {
             $req = "1,{$username},{$password},{$orderId},{$amount},{$localDate},{$additionalData},{$callBackUrl},0";
 
             $encryptedRequest = $this->encrypt($req);
@@ -153,7 +153,7 @@ class AsanPardakht extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        if ($this->apiType == ApiType::SOAP_CLIENT) {
+        if ($this->apiType == ApiType::SOAP) {
             $ReturningParams = $request->input('ReturningParams');
 
             list($Amount, $SaleOrderId, $RefId, $ResCode, $ResMessage, $PayGateTranID, $RRN, $LastFourDigitOfPAN) =
