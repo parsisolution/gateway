@@ -111,12 +111,12 @@ return [
         'name'               => 'آپ',
         'active'             => false,
         'order'              => 8,
-        'merchant-id'        => env('ASANPARDAKHT_MERCHANT_ID'),
         'merchant-config-id' => env('ASANPARDAKHT_MERCHANT_CONFIG_ID'),
         'username'           => env('ASANPARDAKHT_USERNAME'),
         'password'           => env('ASANPARDAKHT_PASSWORD'),
         'key'                => env('ASANPARDAKHT_KEY'),
         'iv'                 => env('ASANPARDAKHT_IV'),
+        'api-type'           => 'SOAP', // \Parsisolution\Gateway\ApiType::SOAP_CLIENT
         'callback-url'       => '/',
     ],
 

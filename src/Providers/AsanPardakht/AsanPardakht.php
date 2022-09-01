@@ -2,8 +2,12 @@
 
 namespace Parsisolution\Gateway\Providers\AsanPardakht;
 
+use Illuminate\Container\Container;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
+use Parsisolution\Gateway\ApiType;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
@@ -22,8 +26,15 @@ class AsanPardakht extends AbstractProvider
      *
      * @var string
      */
-    const SERVER_URL = 'https://services.asanpardakht.net/paygate/merchantservices.asmx?wsdl';
-    const SERVER_UTILS = 'https://services.asanpardakht.net/paygate/internalutils.asmx?WSDL';
+    const SERVER_SOAP_URL = 'https://ipgsoap.asanpardakht.ir/paygate/merchantservices.asmx?wsdl';
+    const SERVER_UTILS = 'https://ipgsoap.asanpardakht.ir/paygate/internalutils.asmx?wsdl';
+
+    /**
+     * Address of main REST server
+     *
+     * @var string
+     */
+    const SERVER_REST_URL = 'https://ipgrest.asanpardakht.ir/v1';
 
     /**
      * Address of gate for redirect
@@ -31,6 +42,20 @@ class AsanPardakht extends AbstractProvider
      * @var string
      */
     const GATE_URL = 'https://asan.shaparak.ir';
+
+    /**
+     * Type of api to use
+     *
+     * @var string
+     */
+    protected $apiType;
+
+    public function __construct(Container $app, array $config)
+    {
+        parent::__construct($app, $config);
+
+        $this->apiType = Arr::get($config, 'api-type', ApiType::SOAP_CLIENT);
+    }
 
     /**
      * {@inheritdoc}
@@ -48,31 +73,58 @@ class AsanPardakht extends AbstractProvider
         $username = $this->config['username'];
         $password = $this->config['password'];
         $orderId = $transaction->getOrderId();
-        $price = $transaction->getAmount()->getRiyal();
-        $localDate = date("Ymd His");
-        $additionalData = "";
+        $amount = $transaction->getAmount()->getRiyal();
+        $localDate = date('Ymd His');
+        $additionalData = $transaction->getExtraField('description', '');
         $callBackUrl = $this->getCallback($transaction);
-        $req = "1,{$username},{$password},{$orderId},{$price},{$localDate},{$additionalData},{$callBackUrl},0";
 
-        $encryptedRequest = $this->encrypt($req);
-        $params = [
-            'merchantConfigurationID' => $this->config['merchant-config-id'],
-            'encryptedRequest'        => $encryptedRequest,
-        ];
+        if ($this->apiType == ApiType::SOAP_CLIENT) {
+            $req = "1,{$username},{$password},{$orderId},{$amount},{$localDate},{$additionalData},{$callBackUrl},0";
 
-        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
-        $response = $soap->RequestOperation($params);
+            $encryptedRequest = $this->encrypt($req);
+            $params = [
+                'merchantConfigurationID' => $this->config['merchant-config-id'],
+                'encryptedRequest'        => $encryptedRequest,
+            ];
 
-        $response = $response->RequestOperationResult;
-        $responseCode = explode(",", $response)[0];
-        if ($responseCode != '0') {
-            throw new AsanPardakhtException($response);
+            $soap = new SoapClient(self::SERVER_SOAP_URL, $this->soapConfig());
+            $response = $soap->RequestOperation($params);
+
+            $response = $response->RequestOperationResult;
+            $responseCode = explode(',', $response)[0];
+            if ($responseCode != '0') {
+                throw new AsanPardakhtException($response);
+            }
+
+            $referenceId = substr($response, 2);
+        } else {
+            $fields = [
+                'merchantConfigurationId' => $this->config['merchant-config-id'],
+                'serviceTypeId'           => 1,
+                'localInvoiceId'          => $orderId,
+                'amountInRials'           => $amount,
+                'localDate'               => $localDate,
+                'additionalData'          => $additionalData,
+                'callbackURL'             => $callBackUrl,
+                'paymentId'               => '0',
+            ];
+            $settlementPortions = $transaction->getExtraField('settlement_portions');
+            if ($settlementPortions) {
+                $fields['settlementPortions'] = $settlementPortions;
+            }
+
+            list($referenceId, $http_code) = Curl::execute(self::SERVER_REST_URL.'/Token', $fields, true, [
+                CURLOPT_HTTPHEADER => $this->generateHeaders(),
+            ]);
+
+            if ($http_code != 200) {
+                throw new AsanPardakhtRestTokenException($http_code);
+            }
         }
 
-        $referenceId = substr($response, 2);
-
         $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, [
-            'RefId' => $referenceId,
+            'RefId'    => $referenceId,
+            'mobileap' => $transaction->getExtraField('mobile'),
         ]);
 
         return AuthorizedTransaction::make($transaction, $referenceId, null, $redirectResponse);
@@ -91,7 +143,7 @@ class AsanPardakht extends AbstractProvider
 
         $ReturningParams = $request->input('ReturningParams');
 
-        list($amount, $orderId, $referenceId) = explode(",", $this->decrypt($ReturningParams));
+        list($amount, $orderId, $referenceId) = explode(',', $this->decrypt($ReturningParams));
 
         return new FieldsToMatch($orderId, $referenceId, null, new Amount($amount, 'IRR'));
     }
@@ -101,46 +153,92 @@ class AsanPardakht extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $ReturningParams = $request->input('ReturningParams');
+        if ($this->apiType == ApiType::SOAP_CLIENT) {
+            $ReturningParams = $request->input('ReturningParams');
 
-        list($Amount, $SaleOrderId, $RefId, $ResCode, $ResMessage, $PayGateTranID, $RRN, $LastFourDigitOfPAN) =
-            explode(',', $this->decrypt($ReturningParams));
+            list($Amount, $SaleOrderId, $RefId, $ResCode, $ResMessage, $PayGateTranID, $RRN, $LastFourDigitOfPAN) =
+                explode(',', $this->decrypt($ReturningParams));
 
-        $cardNumber = '************'.$LastFourDigitOfPAN;
-        if (substr($ResMessage, 0, 27) === 'FirstSixDigitsOfCardNumber:') {
-            $cardNumber = substr($ResMessage, 27).'******'.$LastFourDigitOfPAN;
+            $cardNumber = '************'.$LastFourDigitOfPAN;
+            if (substr($ResMessage, 0, 27) === 'FirstSixDigitsOfCardNumber:') {
+                $cardNumber = substr($ResMessage, 27).'******'.$LastFourDigitOfPAN;
+            }
+
+            if (! ($ResCode == '0' || $ResCode == '00')) {
+                throw new AsanPardakhtException($ResCode);
+            }
+
+            $username = $this->config['username'];
+            $password = $this->config['password'];
+
+            $encryptedCredintials = $this->encrypt("{$username},{$password}");
+            $params = [
+                'merchantConfigurationID' => $this->config['merchant-config-id'],
+                'encryptedCredentials'    => $encryptedCredintials,
+                'payGateTranID'           => $PayGateTranID,
+            ];
+
+            $soap = new SoapClient(self::SERVER_SOAP_URL, $this->soapConfig());
+            $response = $soap->RequestVerification($params);
+            $response = $response->RequestVerificationResult;
+
+            if ($response != '500') {
+                throw new AsanPardakhtException($response);
+            }
+
+            $response = $soap->RequestReconciliation($params);
+            $response = $response->RequestReconciliationResult;
+
+            if ($response != '600') {
+                throw new AsanPardakhtException($response);
+            }
+
+            $toMatch = new FieldsToMatch();
+        } else {
+            $fields = [
+                'merchantConfigurationId' => $this->config['merchant-config-id'],
+                'localInvoiceId'          => $transaction->getOrderId(),
+            ];
+
+            list($result, $http_code) = Curl::execute(self::SERVER_REST_URL.'/TranResult', $fields, true, [
+                CURLOPT_HTTPHEADER => $this->generateHeaders(true),
+            ], 'GET');
+
+            if ($http_code != 200) {
+                throw new AsanPardakhtRestException($http_code);
+            }
+
+            $PayGateTranID = $result['payGateTranID'];
+            $RRN = $result['rrn'];
+            $RefId = $result['refID'];
+            $cardNumber = $result['cardNumber'];
+            $SaleOrderId = $result['salesOrderID'];
+
+            $fields = [
+                'merchantConfigurationId' => $this->config['merchant-config-id'],
+                'payGateTranId'           => $PayGateTranID,
+            ];
+
+            list(, $http_code) = Curl::execute(self::SERVER_REST_URL.'/Verify', $fields, true, [
+                CURLOPT_HTTPHEADER => $this->generateHeaders(),
+            ]);
+
+            if ($http_code != 200) {
+                throw new AsanPardakhtRestException($http_code);
+            }
+
+            list(, $http_code) = Curl::execute(self::SERVER_REST_URL.'/Settlement', $fields, true, [
+                CURLOPT_HTTPHEADER => $this->generateHeaders(),
+            ]);
+
+            if ($http_code != 200) {
+                throw new AsanPardakhtRestException($http_code);
+            }
+
+            $toMatch = new FieldsToMatch($SaleOrderId, $RefId);
         }
 
-        if (! ($ResCode == '0' || $ResCode == '00')) {
-            throw new AsanPardakhtException($ResCode);
-        }
-
-        $username = $this->config['username'];
-        $password = $this->config['password'];
-
-        $encryptedCredintials = $this->encrypt("{$username},{$password}");
-        $params = [
-            'merchantConfigurationID' => $this->config['merchant-config-id'],
-            'encryptedCredentials'    => $encryptedCredintials,
-            'payGateTranID'           => $PayGateTranID,
-        ];
-
-        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
-        $response = $soap->RequestVerification($params);
-        $response = $response->RequestVerificationResult;
-
-        if ($response != '500') {
-            throw new AsanPardakhtException($response);
-        }
-
-        $response = $soap->RequestReconciliation($params);
-        $response = $response->RequestReconciliationResult;
-
-        if ($response != '600') {
-            throw new AsanPardakhtException($response);
-        }
-
-        return new SettledTransaction($transaction, $PayGateTranID, new FieldsToMatch(), $cardNumber, $RRN);
+        return new SettledTransaction($transaction, $PayGateTranID, $toMatch, $cardNumber, $RRN);
     }
 
     /**
@@ -149,7 +247,7 @@ class AsanPardakht extends AbstractProvider
      * @param string $string
      * @return string
      */
-    private function encrypt($string = "")
+    private function encrypt($string = '')
     {
 
         $key = $this->config['key'];
@@ -167,7 +265,7 @@ class AsanPardakht extends AbstractProvider
 
             return $response->EncryptInAESResult;
         } catch (\SoapFault $e) {
-            return "";
+            return '';
         }
     }
 
@@ -177,7 +275,7 @@ class AsanPardakht extends AbstractProvider
      * @param string $string
      * @return string
      */
-    private function decrypt($string = "")
+    private function decrypt($string = '')
     {
         $key = $this->config['key'];
         $iv = $this->config['iv'];
@@ -194,7 +292,26 @@ class AsanPardakht extends AbstractProvider
 
             return $response->DecryptInAESResult;
         } catch (\SoapFault $e) {
-            return "";
+            return '';
         }
+    }
+
+    /**
+     * @param bool $forGetRequest
+     * @return string[]
+     */
+    protected function generateHeaders(bool $forGetRequest = false): array
+    {
+        $headers = [
+            'Accept: application/json',
+            'usr: '.$this->config['username'],
+            'pwd: '.$this->config['password'],
+        ];
+
+        if (! $forGetRequest) {
+            $headers[] = 'Content-Type: application/json';
+        }
+
+        return $headers;
     }
 }
