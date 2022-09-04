@@ -65,12 +65,28 @@ return [
     ],
 
     //--------------------------------
+    // Pasargad gateway
+    //--------------------------------
+    'pasargad'     => [
+        'name'             => 'پاسارگاد',
+        'active'           => false,
+        'order'            => 5,
+        'merchant-code'    => env('PASARGAD_MERCHANT_CODE'),
+        'terminal-code'    => env('PASARGAD_TERMINAL_CODE'),
+        'ssl-verification' => true,
+        'redirect-method'  => 'Get',  // Methods: [Get || Post]
+        'rsa-key-type'     => 'file', // Types:   [File || String]
+        'rsa-key'          => storage_path('gateways/pasargad/certificate.xml'),
+        'callback-url'     => '/',
+    ],
+
+    //--------------------------------
     // IranKish gateway
     //--------------------------------
     'irankish'     => [
         'name'         => 'ایران کیش',
         'active'       => false,
-        'order'        => 5,
+        'order'        => 6,
         'acceptor-id'  => env('IRANKISH_ACCEPTOR_ID'),
         'terminal-id'  => env('IRANKISH_TERMINAL_ID'),
         'password'     => env('IRANKISH_PASSWORD'),
@@ -85,7 +101,7 @@ return [
     'mabna'        => [
         'name'         => 'مبنا',
         'active'       => false,
-        'order'        => 6,
+        'order'        => 7,
         'terminal-id'  => env('MABNA_TERMINAL_ID'),
         'callback-url' => '/',
     ],
@@ -96,7 +112,7 @@ return [
     'mabna-old'    => [
         'name'         => 'مبنا',
         'active'       => false,
-        'order'        => 7,
+        'order'        => 8,
         'merchant-id'  => env('MABNA_MERCHANT_ID'),
         'terminal-id'  => env('MABNA_TERMINAL_ID'),
         'public-key'   => storage_path('gateways/mabna/mabna-public-key.pem'),
@@ -110,7 +126,7 @@ return [
     'asanpardakht' => [
         'name'               => 'آپ',
         'active'             => false,
-        'order'              => 8,
+        'order'              => 9,
         'merchant-config-id' => env('ASANPARDAKHT_MERCHANT_CONFIG_ID'),
         'username'           => env('ASANPARDAKHT_USERNAME'),
         'password'           => env('ASANPARDAKHT_PASSWORD'),

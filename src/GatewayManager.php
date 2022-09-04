@@ -21,6 +21,7 @@ use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Pardano\Pardano;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
+use Parsisolution\Gateway\Providers\Pasargad\Pasargad;
 use Parsisolution\Gateway\Providers\Payir\Payir;
 use Parsisolution\Gateway\Providers\PayPing\PayPing;
 use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
@@ -40,10 +41,11 @@ class GatewayManager extends Manager implements Contracts\Factory
     const SAMAN = 2;
     const SADAD = 3;
     const PARSIAN = 4;
-    const IRANKISH = 5;
-    const MABNA = 6;
-    const MABNA_OLD = 7;
-    const ASANPARDAKHT = 8;
+    const PASARGAD = 5;
+    const IRANKISH = 6;
+    const MABNA = 7;
+    const MABNA_OLD = 8;
+    const ASANPARDAKHT = 9;
     const VANDAR = 20;
     const PAYIR = 21;
     const ZARINPAL = 22;
@@ -69,6 +71,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::SAMAN,
             self::SADAD,
             self::PARSIAN,
+            self::PASARGAD,
             self::IRANKISH,
             self::MABNA,
             self::MABNA_OLD,
@@ -101,10 +104,11 @@ class GatewayManager extends Manager implements Contracts\Factory
             2  => 'SAMAN',
             3  => 'SADAD',
             4  => 'PARSIAN',
-            5  => 'IRANKISH',
-            6  => 'MABNA',
-            7  => 'MABNA_OLD',
-            8  => 'ASANPARDAKHT',
+            5  => 'PASARGAD',
+            6  => 'IRANKISH',
+            7  => 'MABNA',
+            8  => 'MABNA_OLD',
+            9  => 'ASANPARDAKHT',
             20 => 'VANDAR',
             21 => 'PAYIR',
             22 => 'ZARINPAL',
@@ -286,6 +290,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.parsian'];
 
         return $this->buildProvider(Parsian::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createPasargadDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.pasargad'];
+
+        return $this->buildProvider(Pasargad::class, $config);
     }
 
     /**

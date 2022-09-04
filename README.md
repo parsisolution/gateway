@@ -9,10 +9,11 @@ Available PSPs (Bank):
 2. SEP (SAMAN)
 3. SADAD (MELLI)
 4. PEC (PARSIAN)
-5. IranKish
-6. Mabna **V1** `old method`
-7. Mabna **V2** `new method`
-8. Asan Pardakht
+5. PEP (PASARGAD)
+6. IranKish
+7. Mabna **V1** `old method`
+8. Mabna **V2** `new method`
+9. Asan Pardakht
 
 Available 3rd-parties:
 1. Vandar

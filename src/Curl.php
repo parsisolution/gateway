@@ -11,6 +11,9 @@ namespace Parsisolution\Gateway;
 class Curl
 {
 
+    const METHOD_GET = 'GET';
+    const METHOD_POST = 'POST';
+
     /**
      * Perform a cURL session
      *
@@ -26,7 +29,7 @@ class Curl
         array $fields,
         bool $resultAsArray = true,
         array $options = [],
-        string $method = 'POST'
+        string $method = self::METHOD_POST
     ): array {
         $curl = curl_init();
 
@@ -38,9 +41,10 @@ class Curl
             CURLOPT_TIMEOUT        => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST  => (strtoupper($method) == 'GET') ? null : $method,
-            CURLOPT_POSTFIELDS     => (strtoupper($method) == 'GET') ? http_build_query($fields) : json_encode($fields),
-            CURLOPT_HTTPHEADER     => (strtoupper($method) == 'GET') ?
+            CURLOPT_CUSTOMREQUEST  => (strtoupper($method) == self::METHOD_GET) ? null : $method,
+            CURLOPT_POSTFIELDS     => (strtoupper($method) == self::METHOD_GET) ?
+                http_build_query($fields) : json_encode($fields),
+            CURLOPT_HTTPHEADER     => (strtoupper($method) == self::METHOD_GET) ?
                 [
                     'Accept: application/json',
                 ] : [
@@ -58,5 +62,16 @@ class Curl
         $result = json_decode($response, $resultAsArray);
 
         return [$result, $http_code, $error];
+    }
+
+    /**
+     * Perform a cURL session
+     *
+     * @param array $args
+     * @return array
+     */
+    public static function executeArgs(array $args): array
+    {
+        return self::execute($args[0], $args[1], $args[2] ?? true, $args[3] ?? [], $args[4] ?? self::METHOD_POST);
     }
 }

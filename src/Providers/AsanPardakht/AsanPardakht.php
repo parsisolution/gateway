@@ -202,7 +202,7 @@ class AsanPardakht extends AbstractProvider
 
             list($result, $http_code) = Curl::execute(self::SERVER_REST_URL.'/TranResult', $fields, true, [
                 CURLOPT_HTTPHEADER => $this->generateHeaders(true),
-            ], 'GET');
+            ], Curl::METHOD_GET);
 
             if ($http_code != 200) {
                 throw new AsanPardakhtRestException($http_code);

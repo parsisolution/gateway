@@ -77,7 +77,7 @@ class Payir extends AbstractProvider
 
         list($response) = Curl::execute(self::SERVER_URL, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
-        ], 'GET');
+        ], Curl::METHOD_GET);
 
         if (! is_numeric($response['status']) || $response['status'] <= 0) {
             throw new PayirSendException($response['errorCode'], $response['errorMessage']);
@@ -123,7 +123,7 @@ class Payir extends AbstractProvider
 
         list($response) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
-        ], 'GET');
+        ], Curl::METHOD_GET);
 
         if ($response['status'] != 1) {
             throw new PayirReceiveException($response['errorCode'], $response['errorMessage']);

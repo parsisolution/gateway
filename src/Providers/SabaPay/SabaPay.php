@@ -58,7 +58,7 @@ class SabaPay extends AbstractProvider
 
         list($response) = Curl::execute(self::SERVER_URL, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
-        ], 'GET');
+        ], Curl::METHOD_GET);
 
         if ($response['status'] != 1) {
             throw new SabaPayException($response['errorCode']);
@@ -102,7 +102,7 @@ class SabaPay extends AbstractProvider
 
         list($response) = Curl::execute(self::SERVER_VERIFY_URL.$transaction->getReferenceId(), $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
-        ], 'GET');
+        ], Curl::METHOD_GET);
 
         if ($response['status'] != 1) {
             throw new SabaPayException($response['errorCode']);
