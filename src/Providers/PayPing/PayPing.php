@@ -53,6 +53,7 @@ class PayPing extends AbstractProvider
         $fields = [
             'clientRefId'   => $transaction->getOrderId(),
             'payerIdentity' => $transaction->getExtraField('mobile'),
+            'payerName'     => $transaction->getExtraField('name'),
             'Amount'        => $transaction->getAmount()->getToman(),
             'Description'   => $transaction->getExtraField('description'),
             'returnUrl'     => $this->getCallback($transaction),
@@ -146,6 +147,18 @@ class PayPing extends AbstractProvider
             'Content-Type: application/json',
             'Authorization: Bearer '.$this->config['api-key'],
             'Cache-Control: no-cache',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'      => '09124441122',
+            'name'        => 'نام پرداخت کننده',
+            'description' => 'توضیحات',
         ];
     }
 }

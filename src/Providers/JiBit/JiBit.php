@@ -33,14 +33,6 @@ class JiBit extends AbstractProvider
     const URL_PATH_INQUIRY = '/order/inquiry/';
 
     /**
-     * Address of main CURL server
-     * Set after sendPayRequest
-     *
-     * @var string
-     */
-    protected $gateUrl;
-
-    /**
      * {@inheritdoc}
      */
     protected function getProviderId()
@@ -56,8 +48,8 @@ class JiBit extends AbstractProvider
         $fields = [
             'amount'          => $transaction->getAmount()->getRiyal(),
             'callBackUrl'     => $this->getCallback($transaction),
-            'userIdentity'    => $this->config['user-mobile'],
-            'merchantOrderId' => $this->config['merchant-id'],
+            'userIdentity'    => $transaction->getExtraField('mobile'),
+            'merchantOrderId' => $transaction->getOrderId(),
             'additionalData'  => $transaction->getExtraField('additional'),
             'description'     => $transaction->getExtraField('description'),
         ];
@@ -167,8 +159,8 @@ class JiBit extends AbstractProvider
     protected function getToken()
     {
         $fields = [
-            'username' => $this->config['merchant-id'],
-            'password' => $this->config['password'],
+            'username' => $this->config['api-key'],
+            'password' => $this->config['api-secret'],
         ];
 
         list($response) = Curl::execute(self::SERVER_URL.self::URL_PATH_AUTHENTICATE, $fields, true, [
@@ -180,5 +172,17 @@ class JiBit extends AbstractProvider
         }
 
         return $response['result']['token'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'      => '09124441122',
+            'additional'  => 'Optional additional data (optional)',
+            'description' => 'Description will be show in Jibit QR payment gateway (optional)',
+        ];
     }
 }

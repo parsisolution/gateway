@@ -39,26 +39,6 @@ class Saman extends AbstractProvider
     const SERVER_VERIFY_URL = 'https://sep.shaparak.ir/Payments/ReferencePayment.asmx?WSDL';
 
     /**
-     *
-     * @var array $optional_data An array of optional data
-     *  that will be sent with the payment request
-     *
-     */
-    protected $optional_data = [];
-
-    /**
-     *
-     * Add optional data to the request
-     *
-     * @param array $data an array of data
-     *
-     */
-    public function setOptionalData(array $data)
-    {
-        $this->optional_data = $data;
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function getProviderId()
@@ -78,13 +58,9 @@ class Saman extends AbstractProvider
             'ResNum'      => $transaction->getOrderId(),
             'Amount'      => $transaction->getAmount()->getRiyal(),
             'CellNumber'  => $transaction->getExtraField('mobile'),
-            //    'ResNum1'     => '',
-            //    'ResNum2'     => '',
-            //    'ResNum3'     => '',
-            //    'ResNum4'     => '',
         ];
 
-        $fields = array_merge($fields, $this->optional_data);
+        $fields = array_merge($fields, $transaction->getExtraField('optional_data', []));
 
         list($result) = Curl::execute(self::SERVER_URL, $fields);
 
@@ -166,5 +142,25 @@ class Saman extends AbstractProvider
         }
 
         throw new SamanException($response);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'        => '09124441122',
+            'optional_data' => [
+                'ResNum1' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+                'ResNum2' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+                'ResNum3' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+                'ResNum4' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+            ],
+        ];
     }
 }

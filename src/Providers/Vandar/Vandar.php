@@ -53,7 +53,7 @@ class Vandar extends AbstractProvider implements ProviderInterface
             'factorNumber'      => $transaction->getOrderId(),
             'description'       => $transaction->getExtraField('description'),
             'national_code'     => $transaction->getExtraField('national_code'),
-            'valid_card_number' => $transaction->getExtraField('valid_card_number'),
+            'valid_card_number' => $transaction->getExtraField('allowed_card'),
             'comment'           => $transaction->getExtraField('comment'),
         ];
 
@@ -148,5 +148,22 @@ class Vandar extends AbstractProvider implements ProviderInterface
         ];
 
         return $status_codes[$code] ?? null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'        => '09124441122',
+            'description'   => 'توضیحات (اختیاری، حداکثر 255 کاراکتر)',
+            'national_code' => 'کد ملی معتبر'.
+                ' (در صورت ارسال کد ملی، کاربر فقط با کارت‌های بانکی تحت مالکیت آن کد ملی قابلیت پرداخت خواهد داشت.'.
+                ' برای بررسی کدملی در درگاه پرداخت ارسال شماره موبایل مرتبط با کد ملی نیز الزامی است.)',
+            'allowed_card'  => 'شماره کارت معتبر'.
+                ' (در صورت ارسال شماره کارت، کاربر فقط با همان شماره کارت قابلیت پرداخت خواهد داشت.)',
+            'comment'       => 'یک یادداشت که در داشبورد شما روی تراکنش نمایش داده می شود',
+        ];
     }
 }

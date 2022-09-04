@@ -96,34 +96,11 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
      */
     protected $type = null;
 
-    /**
-     * Payment Description
-     *
-     * @var string
-     */
-    protected $description;
-
-    /**
-     * Payer Email Address
-     *
-     * @var string
-     */
-    protected $email;
-
-    /**
-     * Payer Mobile Number
-     *
-     * @var string
-     */
-    protected $mobileNumber;
-
     public function __construct(Container $app, array $config)
     {
         parent::__construct($app, $config);
 
         $this->setServer();
-
-        return $this;
     }
 
 
@@ -217,7 +194,7 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
             'MerchantID'  => Arr::get($this->config, 'merchant-id'),
             'Amount'      => $transaction->getAmount()->getToman(),
             'CallbackURL' => $this->getCallback($transaction),
-            'Description' => $transaction->getExtraField('description', Arr::get($this->config, 'description', '')),
+            'Description' => $transaction->getExtraField('description', ''),
             'Email'       => $transaction->getExtraField('email'),
             'Mobile'      => $transaction->getExtraField('mobile'),
         ];
@@ -304,5 +281,17 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
         }
 
         return new SettledTransaction($transaction, $response->RefID, new FieldsToMatch());
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'      => '09124441122',
+            'email'       => 'test@gmail.com',
+            'description' => 'توضيحات مربوط تراكنش',
+        ];
     }
 }

@@ -143,4 +143,31 @@ class Sadad extends AbstractProvider
 
         return base64_encode($cipherText);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'            => '09124441122',
+            'description'       => 'اطلاعات اضافی تراکنش',
+            'multiplexing_data' => [
+                'Type'             => 'Amount || Percentage',
+                'MultiplexingRows' =>
+                    [
+                        [
+                            'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
+                            'Value'      => '(integer) مبلغ يا درصد',
+                        ],
+                        [
+                            'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
+                            'Value'      => '(integer) مبلغ يا درصد',
+                        ],
+                    ],
+            ],
+            'application_name'  => 'نام اپلیکیشن درخواست کننده - '.
+                'اختیاری (برای گزارشات لازم است که اين فیلد مقدار دهی شود)',
+        ];
+    }
 }

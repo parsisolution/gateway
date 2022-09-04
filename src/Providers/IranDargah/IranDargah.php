@@ -74,8 +74,6 @@ class IranDargah extends AbstractProvider implements ProviderInterface
         parent::__construct($app, $config);
 
         $this->setServer();
-
-        return $this;
     }
 
     /**
@@ -122,7 +120,7 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             'mobile'      => $transaction->getExtraField('mobile'),
             'description' => $transaction->getExtraField('description', Arr::get($this->config, 'description', '')),
         ];
-        $cardNumber = $transaction->getExtraField('card_number');
+        $cardNumber = $transaction->getExtraField('allowed_card');
         if (! empty($cardNumber)) {
             // by sending cardnumber , your user can not pay with another card number // OPTIONAL
             $fields['cardNumber'] = $cardNumber;
@@ -192,5 +190,19 @@ class IranDargah extends AbstractProvider implements ProviderInterface
         $toMatch = new FieldsToMatch($result->orderId);
 
         return new SettledTransaction($transaction, $result->refId, $toMatch, $result->cardNumber);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'       => '09124441122',
+            'description'  => 'توضیحات تراکنش',
+            'allowed_card' => 'شماره کارت پرداخت‌کننده است'.
+                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود'.
+                ' و درصورتی که یکسان نباشد، مبلغ تراکنش به حساب پرداخت‌کننده برمی‌گردد.',
+        ];
     }
 }

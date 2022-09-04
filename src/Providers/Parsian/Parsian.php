@@ -131,4 +131,16 @@ class Parsian extends AbstractProvider
 
         return new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'      => '09124441122',
+            'description' => 'رشته با طول حداکثر ۵۰۰ کاراکتر حاوی داده‌های اضافی است'.
+                ' که پذیرنده می‌تواند به منظور بهره برداری‌های بعدی آن را به درگاه پرداخت ارسال نماید',
+        ];
+    }
 }

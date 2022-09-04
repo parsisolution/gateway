@@ -320,4 +320,47 @@ class Pasargad extends AbstractProvider implements ProviderInterface
 
         return base64_encode($processor->sign(sha1($data, true)));
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample(): array
+    {
+        return [
+            'mobile'             => '09124441122',
+            'email'              => 'test@gmail.com',
+            'merchant_name'      => 'فروشگاه پاسارگاد',
+            'selected_language'  => 'En || Fa',
+            'pidn'               => 'شناسه پرداخت (پیوست ۵ در مستندات پاسارگاد مطالعه شود)',
+            'sub_payment_mode'   => '(bool) true || false (default is false) (درگاه چند پرداختی - تسهیم از طریق IPG)',
+            'sub_payments'       => [
+                [
+                    'SubPayID'    => 1,
+                    'Amount'      => 5000000,
+                    'Date'        => '2010/02/02',
+                    'Account'     => '219.10.44039.1',
+                    'Description' => 'توضیحات تستی',
+                ],
+                [
+                    'SubPayID' => 2,
+                    'Amount'   => 30000,
+                    'Date'     => '2010/04/08',
+                    'Account'  => '201.800.981313.1',
+                ],
+            ],
+            'multi_payment_mode' => '(bool) true || false (default is false) (درگاه چند پرداختی - تسهیم از طریق سوییچ)',
+            'payment_items'      => [
+                [
+                    'IBAN'  => 'IR2345000011',
+                    'type'  => '0 || 1 (0 => value is percent || 1 => value is amount)',
+                    'value' => 25,
+                ],
+                [
+                    'IBAN'  => 'IR2345000022',
+                    'type'  => 1,
+                    'value' => 75,
+                ],
+            ],
+        ];
+    }
 }

@@ -156,4 +156,14 @@ class Irankish extends AbstractProvider
             'iv'   => bin2hex($iv),
         ];
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile' => '09124441122',
+        ];
+    }
 }

@@ -227,4 +227,31 @@ class YekPay extends AbstractProvider implements ProviderInterface
 
         return $currencyCodes[$code] ?? null;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'           => '+44123456789',
+            'to_currency_code' => 'EUR (Euro) ||'.
+                ' IRR (Iranian Rial) ||'.
+                ' CHF (Switzerland Franc) ||'.
+                ' AED (United Arab Emirates Dirham) ||'.
+                ' CNY (Chinese Yuan) ||'.
+                ' GBP (British Pound) ||'.
+                ' JPY (Japanese 100 Yens) ||'.
+                ' RUB (Russian Ruble) ||'.
+                ' TRY (Turkish New Lira)',
+            'email'            => 'test@gmail.com',
+            'first_name'       => 'John',
+            'last_name'        => 'Doe',
+            'address'          => 'Alhamida st Al ras st',
+            'postal_code'      => '64785',
+            'country'          => 'United Arab Emirates',
+            'city'             => 'Dubai',
+            'description'      => 'Apple mac book air 2017',
+        ];
+    }
 }

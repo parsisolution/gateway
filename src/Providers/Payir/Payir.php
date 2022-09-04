@@ -36,22 +36,6 @@ class Payir extends AbstractProvider
      */
     const URL_GATE = 'https://pay.ir/pg/';
 
-    protected $factorNumber;
-
-    /**
-     * Set factor number (optional)
-     *
-     * @param $factorNumber
-     *
-     * @return $this
-     */
-    public function setFactorNumber($factorNumber)
-    {
-        $this->factorNumber = $factorNumber;
-
-        return $this;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -72,7 +56,7 @@ class Payir extends AbstractProvider
             'mobile'          => $transaction->getExtraField('mobile'),
             'factorNumber'    => $this->factorNumber ?? $transaction->getExtraField('factor_number'),
             'description'     => $transaction->getExtraField('description'),
-            'validCardNumber' => $transaction->getExtraField('valid_card_number'),
+            'validCardNumber' => $transaction->getExtraField('allowed_card'),
         ];
 
         list($response) = Curl::execute(self::SERVER_URL, $fields, true, [
@@ -132,5 +116,19 @@ class Payir extends AbstractProvider
         $toMatch = new FieldsToMatch();
 
         return new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'        => '09124441122',
+            'factor_number' => 'شماره فاکتور شما ( اختیاری )',
+            'description'   => 'توضیحات تراکنش ( اختیاری ، حداکثر 255 کاراکتر )',
+            'allowed_card'  => 'اعلام شماره کارت مجاز برای انجام تراکنش'.
+                ' ( اختیاری، بصورت عددی (لاتین) و چسبیده بهم در 16 رقم. مثال 6219861012345678 )',
+        ];
     }
 }

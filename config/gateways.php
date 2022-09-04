@@ -166,9 +166,8 @@ return [
         'active'       => false,
         'order'        => 22,
         'merchant-id'  => env('ZARINPAL_MERCHANT_ID', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
-        'type'         => 'normal',             // Types: [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
-        'server'       => 'test',                // Servers: [germany || iran || test]
-        'description'  => 'description',
+        'type'         => 'normal', // Types:   [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
+        'server'       => 'test',   // Servers: [germany || iran || test]
         'callback-url' => '/',
     ],
 
@@ -179,10 +178,9 @@ return [
         'name'         => 'جیبیت',
         'active'       => false,
         'order'        => 23,
-        'merchant-id'  => env('MERCHANT_ID'),
-        'password'     => env('JIBIT_PASSWORD'),
+        'api-key'      => env('JIBIT_API_KEY'),
+        'api-secret'   => env('JIBIT_API_SECRET'),
         'callback-url' => '/',
-        'user-mobile'  => '09xxxxxxxxx',
     ],
 
     //--------------------------------
@@ -216,6 +214,7 @@ return [
         'active'       => false,
         'order'        => 26,
         'api-key'      => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
+        'api-type'     => 'REST', // \Parsisolution\Gateway\ApiType::SOAP
         'callback-url' => '/',
         'settings'     => [
             'soap' => [

@@ -57,6 +57,7 @@ class Mellat extends AbstractProvider
             'callBackUrl'    => $this->getCallback($transaction),
             'payerId'        => $transaction->getExtraField('payer_id', 0),
             // following fields exist in SOAP reference but are not documented in Behpardakht documentation
+            // it seams corresponding fields send to gateway throw post fields in redirect
 //            'mobileNo'       => '',
 //            'encPan'         => '',
 //            'panHiddenMode'  => '',
@@ -90,9 +91,9 @@ class Mellat extends AbstractProvider
             $data['CartItem'] = $cartItem;
         }
 
-        $inputPan = $transaction->getExtraField('input_pan');
+        $inputPan = $transaction->getExtraField('allowed_card');
         if (!empty($inputPan)) {
-            $data['HiddenMode'] = $transaction->getExtraField('hidden_mode', 0);
+            $data['HiddenMode'] = ($transaction->getExtraField('hidden_mode', true) == true ? 0 : 1);
             $data['EncPan'] = $this->encrypt($inputPan);
         }
 
@@ -184,5 +185,24 @@ class Mellat extends AbstractProvider
         ));
 
         return $encryptedPan;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'        => '09124441122',
+            'description'   => 'send to additionalData filed (maximum 1000 characters)',
+            'payer_id'      => '(long) شناسه پرداخت کننده',
+            'cart_item'     => 'چنانچه پذيرنده بخواهد توضيحات اضافه‌تری را در صفحه دروازه پرداخت نمايش دهد',
+            'allowed_card'  => 'شماره کارت دارنده حساب مثال: 6037991020304050',
+            'hidden_mode'   =>
+                '(bool) true || false (اگر فعال باشد'.
+                ' صرفا ۴ شماره آخر شماره کارت ارسالی در درگاه پرداخت بصورت ReadOnly نمايش داده خواهد شد'.
+                ' در غیر این صورت شماره کارت ارسالی در درگاه پرداخت به صورت کامل و ReadOnly نمایش داده خواهد شد)',
+            'national_code' => 'کد ملي دارنده حساب مثال: 1233445566',
+        ];
     }
 }

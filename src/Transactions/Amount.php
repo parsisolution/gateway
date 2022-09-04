@@ -144,7 +144,7 @@ class Amount implements Comparable
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function compareTo($value)
     {

@@ -2,6 +2,7 @@
 
 namespace Parsisolution\Gateway\Providers\NextPay;
 
+use Illuminate\Container\Container;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
@@ -11,6 +12,7 @@ use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -20,20 +22,23 @@ class NextPay extends AbstractProvider
 {
 
     const SERVER_SOAP = "https://api.nextpay.org/gateway/token.wsdl";
-    const SERVER_HTTP = "https://api.nextpay.org/gateway/token.http";
-    const URL_PAYMENT = "https://api.nextpay.org/gateway/payment/";
+    const SERVER_REST = "https://nextpay.org/nx/gateway/token";
+    const URL_PAYMENT = "https://nextpay.org/nx/gateway/payment/";
     const SERVER_VERIFY_SOAP = "https://api.nextpay.org/gateway/verify.wsdl";
-    const SERVER_VERIFY_HTTP = "https://api.nextpay.org/gateway/verify.http";
-
-    protected $api_type = ApiType::SOAP;
+    const SERVER_VERIFY_REST = "https://nextpay.org/nx/gateway/verify";
 
     /**
-     * @param int $api_type
-     * from ApiType class
+     * Type of api to use
+     *
+     * @var string
      */
-    public function setApiType($api_type)
+    protected $apiType;
+
+    public function __construct(Container $app, array $config)
     {
-        $this->api_type = $api_type;
+        parent::__construct($app, $config);
+
+        $this->apiType = Arr::get($config, 'api-type', ApiType::REST);
     }
 
     /**
@@ -50,15 +55,21 @@ class NextPay extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api_key'      => $this->config['api-key'],
-            'order_id'     => $transaction->getOrderId(),
-            'amount'       => $transaction->getAmount()->getToman(),
-            'callback_uri' => $this->getCallback($transaction),
+            'api_key'            => $this->config['api-key'],
+            'order_id'           => $transaction->getOrderId(),
+            'amount'             => $transaction->getAmount(),
+            'callback_uri'       => $this->getCallback($transaction),
+            'customer_phone'     => $transaction->getExtraField('mobile'),
+            'custom_json_fields' => $transaction->getExtraField('custom_json_fields'),
+            'payer_name'         => $transaction->getExtraField('name'),
+            'payer_desc'         => $transaction->getExtraField('description'),
+            'auto_verify'        => ($transaction->getExtraField('auto_verify') ? 'yes' : 'no'),
+            'allowed_card'       => $transaction->getExtraField('allowed_card'),
         ];
 
-        switch ($this->api_type) {
+        switch ($this->apiType) {
             case ApiType::REST:
-                list($response) = Curl::execute(self::SERVER_HTTP, $fields, false, [
+                list($response) = Curl::execute(self::SERVER_REST, $fields, false, [
                     CURLOPT_SSL_VERIFYHOST => false,
                     CURLOPT_SSL_VERIFYPEER => false,
                 ]);
@@ -92,10 +103,9 @@ class NextPay extends AbstractProvider
             throw new InvalidRequestException();
         }
 
-        $order_id = $request->input('order_id');
-        $trans_id = $request->input('trans_id');
+        $amount = $request->input('amount');
 
-        return new FieldsToMatch($order_id, null, $trans_id);
+        return new FieldsToMatch($order_id, null, $trans_id, new Amount($amount));
     }
 
     /**
@@ -112,9 +122,9 @@ class NextPay extends AbstractProvider
             'trans_id' => $transaction->getToken(),
         ];
 
-        switch ($this->api_type) {
+        switch ($this->apiType) {
             case ApiType::REST:
-                list($response) = Curl::execute(self::SERVER_VERIFY_HTTP, $fields, false, [
+                list($response) = Curl::execute(self::SERVER_VERIFY_REST, $fields, false, [
                     CURLOPT_SSL_VERIFYHOST => false,
                     CURLOPT_SSL_VERIFYPEER => false,
                 ]);
@@ -185,7 +195,29 @@ class NextPay extends AbstractProvider
             $transaction,
             $transaction->getToken(),
             $toMatch,
-            $card_holder ?? ''
+            $response->card_holder ?? $card_holder ?? '',
+            $response->Shaparak_Ref_Id ?? '',
+            [
+                'transaction_date' => $response->created_at ?? '',
+            ]
         );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'             => '09124441122',
+            'custom_json_fields' => '(json_string) اطلاعات دلخواه',
+            'name'               => 'نام پرداخت کننده',
+            'description'        => 'توضیحات دلخواه',
+            'auto_verify'        => '(bool) true || false تایید خودکار بدون نیاز به فراخوانی وریفای',
+            'allowed_card'       => 'شماره کارت مجاز -'.
+                ' اگر پارامتر با مقدار 16 رقمی کارت خاصی مقدار دهی شود،'.
+                ' اگر تراکنش با شماره کارتی غیر از شماره کارتی که شما اعلام میکنید انجام شود، برگشت میخورد. بنابراین'.
+                ' اگر میخواهید تراکنش با هر شماره کارتی پذیرفته شود، این پارامتر را خالی بگذارید یا مقدار دهی نکنید',
+        ];
     }
 }

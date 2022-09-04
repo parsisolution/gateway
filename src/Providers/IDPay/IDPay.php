@@ -161,4 +161,17 @@ class IDPay extends AbstractProvider implements ProviderInterface
 
         return $status_codes[$code] ?? null;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'      => '09124441122',
+            'name'        => 'نام پرداخت کننده به طول حداکثر 255 کاراکتر',
+            'email'       => 'پست الکترونیک پرداخت کننده به طول حداکثر 255 کاراکتر',
+            'description' => 'توضیح تراکنش به طول حداکثر 255 کاراکتر',
+        ];
+    }
 }

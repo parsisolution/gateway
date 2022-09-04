@@ -157,4 +157,24 @@ class Sizpay extends AbstractProvider implements ProviderInterface
 
         return new SettledTransaction($transaction, $TraceNo, $toMatch, $CardNo, $RefNo, $result, $TransNo);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'         => '09124441122',
+            'name'           => 'نام پرداخت کننده',
+            'email'          => 'ایمیل',
+            'description'    => 'توضیحات',
+            'pay_type'       => 'نوع پرداخت',
+            'pay_title'      => 'عنوان پرداخت',
+            'pay_type_id'    => 0,
+            'pay_title_id'   => 0,
+            'payer_app_type' => 'نوع برنامه‌ی پرداخت کننده',
+            'payer_app_name' => 'نام برنامه‌ی پرداخت کننده',
+            'payer_app_id'   => 0,
+        ];
+    }
 }

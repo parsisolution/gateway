@@ -314,4 +314,17 @@ class AsanPardakht extends AbstractProvider
 
         return $headers;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'              => '09124441122',
+            'description'         => 'اطلاعات اضافی تراكنش را در این فیلد ارسال فرمائید.'.
+                ' این اطلاعات حداكثر می‌بایست طولی برابر ١٠٠ كاراكتر داشته باشند و در غیر اینصورت Truncate خواهند شد',
+            'settlement_portions' => 'قسمت آماده سازی رشته در حالت تمایل به تقسیم وجوه در مستندات آپ مطالعه شود',
+        ];
+    }
 }

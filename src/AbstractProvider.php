@@ -84,8 +84,6 @@ abstract class AbstractProvider implements ProviderContract
 
         $table_name = Arr::get($this->app['config'], GatewayManager::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
         $this->transactionDao = new TransactionDao($app->make('db'), $table_name);
-
-        return $this;
     }
 
     /**
@@ -288,6 +286,16 @@ abstract class AbstractProvider implements ProviderContract
         $this->parameters = $parameters;
 
         return $this;
+    }
+
+    /**
+     * Get supported extra fields sample
+     *
+     * @return array
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [];
     }
 
     /**
