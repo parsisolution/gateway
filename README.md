@@ -10,10 +10,11 @@ Available PSPs (Bank):
 3. SADAD (MELLI)
 4. PEC (PARSIAN)
 5. PEP (PASARGAD)
-6. IranKish
-7. Mabna **V1** `old method`
-8. Mabna **V2** `new method`
-9. Asan Pardakht
+6. Novin Pardakht (EN Bank, also known as Eghtesad Novin Bank)
+7. IranKish
+8. Mabna **V1** `old method`
+9. Mabna **V2** `new method`
+10. Asan Pardakht
 
 Available 3rd-parties:
 1. Vandar

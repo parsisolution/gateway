@@ -19,6 +19,7 @@ use Parsisolution\Gateway\Providers\Mabna\Mabna;
 use Parsisolution\Gateway\Providers\MabnaOld\MabnaOld;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
+use Parsisolution\Gateway\Providers\Novin\Novin;
 use Parsisolution\Gateway\Providers\Pardano\Pardano;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
 use Parsisolution\Gateway\Providers\Pasargad\Pasargad;
@@ -42,10 +43,11 @@ class GatewayManager extends Manager implements Contracts\Factory
     const SADAD = 3;
     const PARSIAN = 4;
     const PASARGAD = 5;
-    const IRANKISH = 6;
-    const MABNA = 7;
-    const MABNA_OLD = 8;
-    const ASANPARDAKHT = 9;
+    const NOVIN = 6;
+    const IRANKISH = 7;
+    const MABNA = 8;
+    const MABNA_OLD = 9;
+    const ASANPARDAKHT = 10;
     const VANDAR = 20;
     const PAYIR = 21;
     const ZARINPAL = 22;
@@ -72,6 +74,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::SADAD,
             self::PARSIAN,
             self::PASARGAD,
+            self::NOVIN,
             self::IRANKISH,
             self::MABNA,
             self::MABNA_OLD,
@@ -105,10 +108,11 @@ class GatewayManager extends Manager implements Contracts\Factory
             3  => 'SADAD',
             4  => 'PARSIAN',
             5  => 'PASARGAD',
-            6  => 'IRANKISH',
-            7  => 'MABNA',
-            8  => 'MABNA_OLD',
-            9  => 'ASANPARDAKHT',
+            6  => 'NOVIN',
+            7  => 'IRANKISH',
+            8  => 'MABNA',
+            9  => 'MABNA_OLD',
+            10 => 'ASANPARDAKHT',
             20 => 'VANDAR',
             21 => 'PAYIR',
             22 => 'ZARINPAL',
@@ -303,6 +307,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.pasargad'];
 
         return $this->buildProvider(Pasargad::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createNovinDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.novin'];
+
+        return $this->buildProvider(Novin::class, $config);
     }
 
     /**

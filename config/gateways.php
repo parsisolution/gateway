@@ -81,12 +81,32 @@ return [
     ],
 
     //--------------------------------
+    // Novin gateway
+    //--------------------------------
+    'novin'        => [
+        'name'                 => 'پرداخت نوین',
+        'active'               => false,
+        'order'                => 6,
+        'username'             => env('NOVIN_USERNAME'),
+        'password'             => env('NOVIN_PASSWORD'),
+        'merchant-id'          => env('NOVIN_MERCHANT_ID'), // optional
+        'terminal-id'          => env('NOVIN_TERMINAL_ID'), // required only if the merchant has more than one terminal
+        'no-sign-mode'         => false,
+        'auto-login'           => true,
+        'certificate-path'     => storage_path('gateways/novin/certificate.pem'),
+        'certificate-password' => env('NOVIN_CERTIFICATE_PASSWORD'),
+        'temp-files-dir'       => storage_path('gateways/novin/temp'),
+        'api-type'             => 'SOAP', // \Parsisolution\Gateway\ApiType::SOAP
+        'callback-url'         => '/',
+    ],
+
+    //--------------------------------
     // IranKish gateway
     //--------------------------------
     'irankish'     => [
         'name'         => 'ایران کیش',
         'active'       => false,
-        'order'        => 6,
+        'order'        => 7,
         'acceptor-id'  => env('IRANKISH_ACCEPTOR_ID'),
         'terminal-id'  => env('IRANKISH_TERMINAL_ID'),
         'password'     => env('IRANKISH_PASSWORD'),
@@ -101,7 +121,7 @@ return [
     'mabna'        => [
         'name'         => 'مبنا',
         'active'       => false,
-        'order'        => 7,
+        'order'        => 8,
         'terminal-id'  => env('MABNA_TERMINAL_ID'),
         'callback-url' => '/',
     ],
@@ -112,7 +132,7 @@ return [
     'mabna-old'    => [
         'name'         => 'مبنا',
         'active'       => false,
-        'order'        => 8,
+        'order'        => 9,
         'merchant-id'  => env('MABNA_MERCHANT_ID'),
         'terminal-id'  => env('MABNA_TERMINAL_ID'),
         'public-key'   => storage_path('gateways/mabna/mabna-public-key.pem'),
@@ -126,7 +146,7 @@ return [
     'asanpardakht' => [
         'name'               => 'آپ',
         'active'             => false,
-        'order'              => 9,
+        'order'              => 10,
         'merchant-config-id' => env('ASANPARDAKHT_MERCHANT_CONFIG_ID'),
         'username'           => env('ASANPARDAKHT_USERNAME'),
         'password'           => env('ASANPARDAKHT_PASSWORD'),
