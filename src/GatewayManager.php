@@ -15,8 +15,6 @@ use Parsisolution\Gateway\Providers\IDPay\IDPay;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
-use Parsisolution\Gateway\Providers\Mabna\Mabna;
-use Parsisolution\Gateway\Providers\MabnaOld\MabnaOld;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Novin\Novin;
@@ -28,6 +26,7 @@ use Parsisolution\Gateway\Providers\PayPing\PayPing;
 use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
+use Parsisolution\Gateway\Providers\Sepehr\Sepehr;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
 use Parsisolution\Gateway\Providers\Vandar\Vandar;
 use Parsisolution\Gateway\Providers\YekPay\YekPay;
@@ -45,9 +44,8 @@ class GatewayManager extends Manager implements Contracts\Factory
     const PASARGAD = 5;
     const NOVIN = 6;
     const IRANKISH = 7;
-    const MABNA = 8;
-    const MABNA_OLD = 9;
-    const ASANPARDAKHT = 10;
+    const SEPEHR = 8;
+    const ASANPARDAKHT = 9;
     const VANDAR = 20;
     const PAYIR = 21;
     const ZARINPAL = 22;
@@ -76,8 +74,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::PASARGAD,
             self::NOVIN,
             self::IRANKISH,
-            self::MABNA,
-            self::MABNA_OLD,
+            self::SEPEHR,
             self::ASANPARDAKHT,
             self::VANDAR,
             self::PAYIR,
@@ -110,9 +107,8 @@ class GatewayManager extends Manager implements Contracts\Factory
             5  => 'PASARGAD',
             6  => 'NOVIN',
             7  => 'IRANKISH',
-            8  => 'MABNA',
-            9  => 'MABNA_OLD',
-            10 => 'ASANPARDAKHT',
+            8  => 'SEPEHR',
+            9  => 'ASANPARDAKHT',
             20 => 'VANDAR',
             21 => 'PAYIR',
             22 => 'ZARINPAL',
@@ -263,11 +259,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createSadadDriver()
+    protected function createSamanDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.sadad'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.saman'];
 
-        return $this->buildProvider(Sadad::class, $config);
+        return $this->buildProvider(Saman::class, $config);
     }
 
     /**
@@ -276,11 +272,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createSamanDriver()
+    protected function createSadadDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.saman'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sadad'];
 
-        return $this->buildProvider(Saman::class, $config);
+        return $this->buildProvider(Sadad::class, $config);
     }
 
     /**
@@ -328,37 +324,24 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createMabnaDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.mabna'];
-
-        return $this->buildProvider(Mabna::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws GatewayException
-     */
-    protected function createMabnaOldDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.mabna-old'];
-
-        return $this->buildProvider(MabnaOld::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws GatewayException
-     */
     protected function createIrankishDriver()
     {
         $config = app()['config'][self::CONFIG_FILE_NAME.'.irankish'];
 
         return $this->buildProvider(Irankish::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createSepehrDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sepehr'];
+
+        return $this->buildProvider(Sepehr::class, $config);
     }
 
     /**
@@ -380,11 +363,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createPayirDriver()
+    protected function createVandarDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.payir'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.vandar'];
 
-        return $this->buildProvider(Payir::class, $config);
+        return $this->buildProvider(Vandar::class, $config);
     }
 
     /**
@@ -393,11 +376,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createPardanoDriver()
+    protected function createPayirDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.pardano'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.payir'];
 
-        return $this->buildProvider(Pardano::class, $config);
+        return $this->buildProvider(Payir::class, $config);
     }
 
     /**
@@ -419,50 +402,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createNextpayDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.nextpay'];
-
-        return $this->buildProvider(NextPay::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws GatewayException
-     */
     protected function createJibitDriver()
     {
         $config = app()['config'][self::CONFIG_FILE_NAME.'.jibit'];
 
         return $this->buildProvider(JiBit::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws GatewayException
-     */
-    protected function createSabapayDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.sabapay'];
-
-        return $this->buildProvider(SabaPay::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws GatewayException
-     */
-    protected function createSizpayDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.sizpay'];
-
-        return $this->buildProvider(Sizpay::class, $config);
     }
 
     /**
@@ -484,6 +428,45 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
+    protected function createIdpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.idpay'];
+
+        return $this->buildProvider(IDPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createNextpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.nextpay'];
+
+        return $this->buildProvider(NextPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createSizpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sizpay'];
+
+        return $this->buildProvider(Sizpay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
     protected function createIrandargahDriver()
     {
         $config = app()['config'][self::CONFIG_FILE_NAME.'.irandargah'];
@@ -497,11 +480,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createVandarDriver()
+    protected function createSabapayDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.vandar'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sabapay'];
 
-        return $this->buildProvider(Vandar::class, $config);
+        return $this->buildProvider(SabaPay::class, $config);
     }
 
     /**
@@ -510,11 +493,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createIdpayDriver()
+    protected function createPardanoDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.idpay'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.pardano'];
 
-        return $this->buildProvider(IDPay::class, $config);
+        return $this->buildProvider(Pardano::class, $config);
     }
 
     /**

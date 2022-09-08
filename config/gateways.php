@@ -116,27 +116,15 @@ return [
     ],
 
     //--------------------------------
-    // Mabna gateway
+    // Sepehr gateway
     //--------------------------------
-    'mabna'        => [
-        'name'         => 'مبنا',
+    'sepehr'       => [
+        'name'         => 'سپهر',
         'active'       => false,
         'order'        => 8,
-        'terminal-id'  => env('MABNA_TERMINAL_ID'),
-        'callback-url' => '/',
-    ],
-
-    //--------------------------------
-    // Mabna old gateway
-    //--------------------------------
-    'mabna-old'    => [
-        'name'         => 'مبنا',
-        'active'       => false,
-        'order'        => 9,
-        'merchant-id'  => env('MABNA_MERCHANT_ID'),
-        'terminal-id'  => env('MABNA_TERMINAL_ID'),
-        'public-key'   => storage_path('gateways/mabna/mabna-public-key.pem'),
-        'private-key'  => storage_path('gateways/mabna/mabna-private-key.pem'),
+        'terminal-id'  => env('SEPEHR_TERMINAL_ID'),
+        'get-method'   => false,
+        'api-type'     => 'REST', // \Parsisolution\Gateway\ApiType::REST
         'callback-url' => '/',
     ],
 
@@ -146,7 +134,7 @@ return [
     'asanpardakht' => [
         'name'               => 'آپ',
         'active'             => false,
-        'order'              => 10,
+        'order'              => 9,
         'merchant-config-id' => env('ASANPARDAKHT_MERCHANT_CONFIG_ID'),
         'username'           => env('ASANPARDAKHT_USERNAME'),
         'password'           => env('ASANPARDAKHT_PASSWORD'),
@@ -234,7 +222,7 @@ return [
         'active'       => false,
         'order'        => 26,
         'api-key'      => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
-        'api-type'     => 'REST', // \Parsisolution\Gateway\ApiType::SOAP
+        'api-type'     => 'REST', // \Parsisolution\Gateway\ApiType::REST
         'callback-url' => '/',
         'settings'     => [
             'soap' => [
