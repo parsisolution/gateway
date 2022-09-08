@@ -11,6 +11,7 @@ use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
 use Parsisolution\Gateway\Exceptions\NullConfigException;
 use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
+use Parsisolution\Gateway\Providers\Fanava\Fanava;
 use Parsisolution\Gateway\Providers\IDPay\IDPay;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
@@ -46,6 +47,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const IRANKISH = 7;
     const SEPEHR = 8;
     const ASANPARDAKHT = 9;
+    const FANAVA = 10;
     const VANDAR = 20;
     const PAYIR = 21;
     const ZARINPAL = 22;
@@ -76,6 +78,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::IRANKISH,
             self::SEPEHR,
             self::ASANPARDAKHT,
+            self::FANAVA,
             self::VANDAR,
             self::PAYIR,
             self::ZARINPAL,
@@ -109,6 +112,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             7  => 'IRANKISH',
             8  => 'SEPEHR',
             9  => 'ASANPARDAKHT',
+            10 => 'FANAVA',
             20 => 'VANDAR',
             21 => 'PAYIR',
             22 => 'ZARINPAL',
@@ -355,6 +359,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.asanpardakht'];
 
         return $this->buildProvider(AsanPardakht::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createFanavaDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.fanava'];
+
+        return $this->buildProvider(Fanava::class, $config);
     }
 
     /**

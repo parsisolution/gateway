@@ -145,6 +145,17 @@ return [
     ],
 
     //--------------------------------
+    // Fanava gateway
+    //--------------------------------
+    'fanava'       => [
+        'name'         => 'فن آوا کارت',
+        'active'       => false,
+        'order'        => 10,
+        'terminal-id'  => env('FANAVA_TERMINAL_ID'),
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // Vandar gateway
     //--------------------------------
     'vandar'       => [

@@ -5,15 +5,16 @@ Iranian Payment Gateways
 This library is inspired by laravel [Socialite](https://github.com/laravel/socialite) and [PoolPort](https://github.com/PoolPort/PoolPort) and [larabook/gateway](https://github.com/larabook/gateway) and [ShirazSoft/Gateway](https://github.com/ShirazSoft/Gateway)
 
 Available PSPs (Bank):
-1. Beh Pardakht (`MELLAT`)
-2. SEP (`SAMAN`)
-3. SADAD (`MELLI`)
-4. PEC (`PARSIAN`)
-5. PEP (`PASARGAD`)
-6. Novin Pardakht (`EN Bank`, also known as `Eghtesad Novin Bank`)
-7. IranKish
-8. Sepehr
-9. Asan Pardakht
+1. [Beh Pardakht](https://behpardakht.com) (`MELLAT`)
+2. [SEP](https://sep.ir) (`SAMAN`)
+3. [SADAD](https://sadadpsp.ir) (`MELLI`)
+4. [PEC](https://pec.ir) (`PARSIAN`)
+5. [PEP](https://pep.co.ir) (`PASARGAD`)
+6. [Novin Pardakht](https://pna.co.ir) (`EN Bank`, also known as `Eghtesad Novin Bank`)
+7. [IranKish](https://irankish.com)
+8. [Sepehr](https://sepehrpay.com)
+9. [Asan Pardakht](https://asanpardakht.ir)
+10. [Fanava Card](https://fanavacard.ir)
 
 Available 3rd-parties:
 1. Vandar
