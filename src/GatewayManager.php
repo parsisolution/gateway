@@ -15,6 +15,7 @@ use Parsisolution\Gateway\Providers\Fanava\Fanava;
 use Parsisolution\Gateway\Providers\IDPay\IDPay;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
+use Parsisolution\Gateway\Providers\Jibimo\Jibimo;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
@@ -61,6 +62,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const SABAPAY = 29;
     const PARDANO = 30;
     const ZIBAL = 31;
+    const JIBIMO = 32;
     const YEKPAY = 50;
 
     /**
@@ -93,6 +95,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::SABAPAY,
             self::PARDANO,
             self::ZIBAL,
+            self::JIBIMO,
             self::YEKPAY,
         ];
     }
@@ -128,6 +131,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             29 => 'SABAPAY',
             30 => 'PARDANO',
             31 => 'ZIBAL',
+            32 => 'JIBIMO',
             50 => 'YEKPAY',
         ];
 
@@ -532,6 +536,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.zibal'];
 
         return $this->buildProvider(Zibal::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createJibimoDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.jibimo'];
+
+        return $this->buildProvider(Jibimo::class, $config);
     }
 
     /**

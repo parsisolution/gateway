@@ -29,7 +29,8 @@ Available 3rd-parties:
 10. SabaPay (Saba Novin)
 11. Pardano
 12. Zibal
-13. YekPay
+13. Jibimo
+14. YekPay
 
 ## Install
  

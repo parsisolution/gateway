@@ -34,24 +34,27 @@ class Curl
         $curl = curl_init();
 
         curl_setopt_array($curl, $options + [
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING       => '',
-            CURLOPT_MAXREDIRS      => 10,
-            CURLOPT_TIMEOUT        => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST  => (strtoupper($method) == self::METHOD_GET) ? null : $method,
-            CURLOPT_POSTFIELDS     => (strtoupper($method) == self::METHOD_GET) ?
-                http_build_query($fields) : json_encode($fields),
-            CURLOPT_HTTPHEADER     => (strtoupper($method) == self::METHOD_GET) ?
-                [
-                    'Accept: application/json',
-                ] : [
-                    'Accept: application/json',
-                    'Content-Type: application/json',
-                ],
-        ]);
+                CURLOPT_URL            => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING       => '',
+                CURLOPT_MAXREDIRS      => 10,
+                CURLOPT_TIMEOUT        => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST  => (strtoupper($method) == self::METHOD_GET) ? null : $method,
+                CURLOPT_HTTPHEADER     => (strtoupper($method) == self::METHOD_GET) ?
+                    [
+                        'Accept: application/json',
+                    ] : [
+                        'Accept: application/json',
+                        'Content-Type: application/json',
+                    ],
+            ] + (
+            ((strtoupper($method) == self::METHOD_GET) && empty($fields)) ? [] : [
+                CURLOPT_POSTFIELDS => (strtoupper($method) == self::METHOD_GET) ?
+                    http_build_query($fields) : json_encode($fields),
+            ]
+            ));
 
         $response = curl_exec($curl);
         $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
