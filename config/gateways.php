@@ -304,6 +304,17 @@ return [
     ],
 
     //--------------------------------
+    // Zibal gateway
+    //--------------------------------
+    'zibal'        => [
+        'name'         => 'زیبال',
+        'active'       => false,
+        'order'        => 31,
+        'merchant'     => env('ZIBAL_MERCHANT', 'zibal'), // use zibal for test
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'       => [

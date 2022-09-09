@@ -28,7 +28,8 @@ Available 3rd-parties:
 9. IranDargah
 10. SabaPay (Saba Novin)
 11. Pardano
-12. YekPay
+12. Zibal
+13. YekPay
 
 ## Install
  

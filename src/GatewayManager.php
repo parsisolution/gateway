@@ -32,6 +32,7 @@ use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
 use Parsisolution\Gateway\Providers\Vandar\Vandar;
 use Parsisolution\Gateway\Providers\YekPay\YekPay;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
+use Parsisolution\Gateway\Providers\Zibal\Zibal;
 
 class GatewayManager extends Manager implements Contracts\Factory
 {
@@ -59,6 +60,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const IRANDARGAH = 28;
     const SABAPAY = 29;
     const PARDANO = 30;
+    const ZIBAL = 31;
     const YEKPAY = 50;
 
     /**
@@ -90,6 +92,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::IRANDARGAH,
             self::SABAPAY,
             self::PARDANO,
+            self::ZIBAL,
             self::YEKPAY,
         ];
     }
@@ -124,6 +127,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             28 => 'IRANDARGAH',
             29 => 'SABAPAY',
             30 => 'PARDANO',
+            31 => 'ZIBAL',
             50 => 'YEKPAY',
         ];
 
@@ -515,6 +519,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.pardano'];
 
         return $this->buildProvider(Pardano::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createZibalDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.zibal'];
+
+        return $this->buildProvider(Zibal::class, $config);
     }
 
     /**

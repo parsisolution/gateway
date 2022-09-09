@@ -123,6 +123,7 @@ class TransactionDao
         return $this->getTable()->where('id', $transaction->getId())->update([
             'reference_id' => $transaction->getReferenceId(),
             'token'        => $transaction->getToken(),
+            'extra'        => json_encode($transaction->getExtra()),
             'updated_at'   => date('Y-m-d H:i:s'),
         ]);
     }
