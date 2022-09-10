@@ -10,6 +10,7 @@ use Parsisolution\Gateway\Exceptions\GatewayException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
 use Parsisolution\Gateway\Exceptions\NullConfigException;
+use Parsisolution\Gateway\Providers\AqayePardakht\AqayePardakht;
 use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
 use Parsisolution\Gateway\Providers\Fanava\Fanava;
 use Parsisolution\Gateway\Providers\IDPay\IDPay;
@@ -63,6 +64,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const SHEPA = 30;
     const ZIBAL = 31;
     const JIBIMO = 32;
+    const AQAYEPARDAKHT = 33;
     const YEKPAY = 50;
 
     /**
@@ -96,6 +98,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::SHEPA,
             self::ZIBAL,
             self::JIBIMO,
+            self::AQAYEPARDAKHT,
             self::YEKPAY,
         ];
     }
@@ -132,6 +135,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             30 => 'SHEPA',
             31 => 'ZIBAL',
             32 => 'JIBIMO',
+            33 => 'AQAYEPARDAKHT',
             50 => 'YEKPAY',
         ];
 
@@ -549,6 +553,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.jibimo'];
 
         return $this->buildProvider(Jibimo::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createAqayepardakhtDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.aqayepardakht'];
+
+        return $this->buildProvider(AqayePardakht::class, $config);
     }
 
     /**

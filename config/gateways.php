@@ -5,19 +5,19 @@ return [
     //-------------------------------
     // Tables names
     //--------------------------------
-    'table'        => 'gateway_transactions',
+    'table'         => 'gateway_transactions',
 
     //--------------------------------
     // Soap configuration
     //--------------------------------
-    'soap'         => [
+    'soap'          => [
         'attempts' => 2 // Attempts if soap connection fails
     ],
 
     //--------------------------------
     // Mellat gateway
     //--------------------------------
-    'mellat'       => [
+    'mellat'        => [
         'name'         => 'ملت',
         'active'       => false,
         'order'        => 1,
@@ -30,7 +30,7 @@ return [
     //--------------------------------
     // Saman gateway
     //--------------------------------
-    'saman'        => [
+    'saman'         => [
         'name'         => 'سامان',
         'active'       => false,
         'order'        => 2,
@@ -43,7 +43,7 @@ return [
     //--------------------------------
     // Sadad gateway
     //--------------------------------
-    'sadad'        => [
+    'sadad'         => [
         'name'         => 'ملی',
         'active'       => false,
         'order'        => 3,
@@ -56,7 +56,7 @@ return [
     //--------------------------------
     // Parsian gateway
     //--------------------------------
-    'parsian'      => [
+    'parsian'       => [
         'name'          => 'پارسیان',
         'active'        => false,
         'order'         => 4,
@@ -67,7 +67,7 @@ return [
     //--------------------------------
     // Pasargad gateway
     //--------------------------------
-    'pasargad'     => [
+    'pasargad'      => [
         'name'             => 'پاسارگاد',
         'active'           => false,
         'order'            => 5,
@@ -83,7 +83,7 @@ return [
     //--------------------------------
     // Novin gateway
     //--------------------------------
-    'novin'        => [
+    'novin'         => [
         'name'                 => 'پرداخت نوین',
         'active'               => false,
         'order'                => 6,
@@ -103,7 +103,7 @@ return [
     //--------------------------------
     // IranKish gateway
     //--------------------------------
-    'irankish'     => [
+    'irankish'      => [
         'name'         => 'ایران کیش',
         'active'       => false,
         'order'        => 7,
@@ -118,7 +118,7 @@ return [
     //--------------------------------
     // Sepehr gateway
     //--------------------------------
-    'sepehr'       => [
+    'sepehr'        => [
         'name'         => 'سپهر',
         'active'       => false,
         'order'        => 8,
@@ -131,7 +131,7 @@ return [
     //--------------------------------
     // Asan Pardakht gateway
     //--------------------------------
-    'asanpardakht' => [
+    'asanpardakht'  => [
         'name'               => 'آپ',
         'active'             => false,
         'order'              => 9,
@@ -147,7 +147,7 @@ return [
     //--------------------------------
     // Fanava gateway
     //--------------------------------
-    'fanava'       => [
+    'fanava'        => [
         'name'         => 'فن آوا کارت',
         'active'       => false,
         'order'        => 10,
@@ -158,7 +158,7 @@ return [
     //--------------------------------
     // Vandar gateway
     //--------------------------------
-    'vandar'       => [
+    'vandar'        => [
         'name'         => 'وندار',
         'active'       => false,
         'order'        => 20,
@@ -169,7 +169,7 @@ return [
     //--------------------------------
     // PayIr gateway
     //--------------------------------
-    'payir'        => [
+    'payir'         => [
         'name'         => 'شبکه پرداخت پی',
         'active'       => false,
         'order'        => 21,
@@ -180,7 +180,7 @@ return [
     //--------------------------------
     // Zarinpal gateway
     //--------------------------------
-    'zarinpal'     => [
+    'zarinpal'      => [
         'name'         => 'زرین پال',
         'active'       => false,
         'order'        => 22,
@@ -193,7 +193,7 @@ return [
     //--------------------------------
     // JiBit gateway
     //--------------------------------
-    'jibit'        => [
+    'jibit'         => [
         'name'         => 'جیبیت',
         'active'       => false,
         'order'        => 23,
@@ -205,7 +205,7 @@ return [
     //--------------------------------
     // PayPing gateway
     //--------------------------------
-    'payping'      => [
+    'payping'       => [
         'name'         => 'پی پینگ',
         'active'       => false,
         'order'        => 24,
@@ -216,7 +216,7 @@ return [
     //--------------------------------
     // IDPay gateway
     //--------------------------------
-    'idpay'        => [
+    'idpay'         => [
         'name'         => 'آیدی پی',
         'active'       => false,
         'order'        => 25,
@@ -228,7 +228,7 @@ return [
     //--------------------------------
     // NextPay gateway
     //--------------------------------
-    'nextpay'      => [
+    'nextpay'       => [
         'name'         => 'نکست پی',
         'active'       => false,
         'order'        => 26,
@@ -257,7 +257,7 @@ return [
     //--------------------------------
     // Sizpay gateway
     //--------------------------------
-    'sizpay'       => [
+    'sizpay'        => [
         'name'         => 'سیزپی',
         'active'       => false,
         'order'        => 27,
@@ -271,7 +271,7 @@ return [
     //--------------------------------
     // IranDargah gateway
     //--------------------------------
-    'irandargah'   => [
+    'irandargah'    => [
         'name'         => 'ایران درگاه',
         'active'       => false,
         'order'        => 28,
@@ -284,7 +284,7 @@ return [
     //--------------------------------
     // SabaPay gateway
     //--------------------------------
-    'sabapay'      => [
+    'sabapay'       => [
         'name'         => 'صبا پی',
         'active'       => false,
         'order'        => 29,
@@ -295,7 +295,7 @@ return [
     //--------------------------------
     // Shepa gateway
     //--------------------------------
-    'shepa'        => [
+    'shepa'         => [
         'name'         => 'شپا (شبکه پرداخت آنلاین)',
         'active'       => false,
         'order'        => 30,
@@ -307,7 +307,7 @@ return [
     //--------------------------------
     // Zibal gateway
     //--------------------------------
-    'zibal'        => [
+    'zibal'         => [
         'name'         => 'زیبال',
         'active'       => false,
         'order'        => 31,
@@ -318,7 +318,7 @@ return [
     //--------------------------------
     // Jibimo gateway
     //--------------------------------
-    'jibimo'       => [
+    'jibimo'        => [
         'name'         => 'جیبی‌مو',
         'active'       => false,
         'order'        => 32,
@@ -327,9 +327,20 @@ return [
     ],
 
     //--------------------------------
+    // AqayePardakht gateway
+    //--------------------------------
+    'aqayepardakht' => [
+        'name'         => 'آقای پرداخت',
+        'active'       => false,
+        'order'        => 33,
+        'pin'          => env('AQAYEPARDAKHT_PIN', 'sandbox'), // use sandbox for test
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
-    'yekpay'       => [
+    'yekpay'        => [
         'name'         => 'یک‌پی',
         'active'       => false,
         'order'        => 50,

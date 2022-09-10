@@ -28,9 +28,10 @@ Available 3rd-parties:
 9. [NextPay](https://nextpay.org)
 10. [SizPay](https://sizpay.ir)
 11. [Shepa](https://shepa.com)
-12. [IranDargah](https://irandargah.com)
-13. [SabaPay](https://sabanovin.com)
-14. [YekPay](https://yekpay.com)
+12. [AqayePardakht](https://aqayepardakht.ir)
+13. [IranDargah](https://irandargah.com)
+14. [SabaPay](https://sabanovin.com)
+15. [YekPay](https://yekpay.com)
 
 ## Install
  
