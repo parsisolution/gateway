@@ -293,13 +293,14 @@ return [
     ],
 
     //--------------------------------
-    // Pardano gateway
+    // Shepa gateway
     //--------------------------------
-    'pardano'      => [
-        'name'         => 'پردانو',
+    'shepa'        => [
+        'name'         => 'شپا (شبکه پرداخت آنلاین)',
         'active'       => false,
         'order'        => 30,
-        'api-key'      => env('PARDANO_API_KEY', 'test'), // use test or your api key
+        'api-key'      => env('SHEPA_API_KEY', 'sandbox'), // use sandbox for test
+        'sandbox'      => true,
         'callback-url' => '/',
     ],
 

@@ -17,20 +17,20 @@ Available PSPs (Bank):
 10. [Fanava Card](https://fanavacard.ir)
 
 Available 3rd-parties:
-1. Vandar
-2. Pay.ir
-3. ZarinPal
-4. JibIt
-5. PayPing
-6. IDPay
-7. NextPay
-8. SizPay
-9. IranDargah
-10. SabaPay (Saba Novin)
-11. Pardano
-12. Zibal
-13. Jibimo
-14. YekPay
+1. [Vandar](https://vandar.io)
+2. [Pay.ir](https://pay.ir)
+3. [ZarinPal](https://zarinpal.com)
+4. [Zibal](https://zibal.ir)
+5. [JibIt](https://jibit.ir)
+6. [PayPing](https://payping.ir)
+7. [IDPay](https://idpay.ir)
+8. [Jibimo](https://jibimo.com)
+9. [NextPay](https://nextpay.org)
+10. [SizPay](https://sizpay.ir)
+11. [Shepa](https://shepa.com)
+12. [IranDargah](https://irandargah.com)
+13. [SabaPay](https://sabanovin.com)
+14. [YekPay](https://yekpay.com)
 
 ## Install
  

@@ -20,7 +20,6 @@ use Parsisolution\Gateway\Providers\JiBit\JiBit;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Novin\Novin;
-use Parsisolution\Gateway\Providers\Pardano\Pardano;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
 use Parsisolution\Gateway\Providers\Pasargad\Pasargad;
 use Parsisolution\Gateway\Providers\Payir\Payir;
@@ -29,6 +28,7 @@ use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
 use Parsisolution\Gateway\Providers\Sepehr\Sepehr;
+use Parsisolution\Gateway\Providers\Shepa\Shepa;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
 use Parsisolution\Gateway\Providers\Vandar\Vandar;
 use Parsisolution\Gateway\Providers\YekPay\YekPay;
@@ -60,7 +60,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const SIZPAY = 27;
     const IRANDARGAH = 28;
     const SABAPAY = 29;
-    const PARDANO = 30;
+    const SHEPA = 30;
     const ZIBAL = 31;
     const JIBIMO = 32;
     const YEKPAY = 50;
@@ -93,7 +93,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::SIZPAY,
             self::IRANDARGAH,
             self::SABAPAY,
-            self::PARDANO,
+            self::SHEPA,
             self::ZIBAL,
             self::JIBIMO,
             self::YEKPAY,
@@ -129,7 +129,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             27 => 'SIZPAY',
             28 => 'IRANDARGAH',
             29 => 'SABAPAY',
-            30 => 'PARDANO',
+            30 => 'SHEPA',
             31 => 'ZIBAL',
             32 => 'JIBIMO',
             50 => 'YEKPAY',
@@ -518,11 +518,11 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @return \Parsisolution\Gateway\AbstractProvider
      * @throws GatewayException
      */
-    protected function createPardanoDriver()
+    protected function createShepaDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.pardano'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.shepa'];
 
-        return $this->buildProvider(Pardano::class, $config);
+        return $this->buildProvider(Shepa::class, $config);
     }
 
     /**
