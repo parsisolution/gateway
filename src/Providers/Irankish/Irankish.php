@@ -66,10 +66,14 @@ class Irankish extends AbstractProvider
         ];
         $mobile = $transaction->getExtraField('mobile');
         if (!empty($mobile)) {
-            $fields['cmsPreservationId'] = '98'.substr($mobile, 1);
+            $fields['request']['cmsPreservationId'] = '98'.substr($mobile, 1);
         }
 
-        list($response) = Curl::execute(self::SERVER_URL, $fields);
+        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL, $fields);
+
+        if (!($response['result'] ?? false)) {
+            throw new IrankishException($response['responseCode'] ?? $http_code, $response['description'] ?? $error);
+        }
 
         $data = ['tokenIdentity' => $response['result']['token']];
 
