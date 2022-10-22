@@ -149,10 +149,13 @@ class Shepa extends AbstractProvider implements ProviderInterface
      */
     protected function callApi(string $path, array $fields)
     {
-        list($response, $http_code) = Curl::execute($this->serverUrl.$path, $fields);
+        list($response, $http_code, $error) = Curl::execute($this->serverUrl.$path, $fields);
 
         if ($http_code != 200 || empty($response['success']) || ! $response['success']) {
-            throw new ShepaException($response['errorCode'] ?? $http_code, implode('; ', $response['error']) ?? null);
+            throw new ShepaException(
+                $response['errorCode'] ?? $http_code,
+                implode('; ', $response['error']) ?? $error ?? null
+            );
         }
 
         return $response['result'];
