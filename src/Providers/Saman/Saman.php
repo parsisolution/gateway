@@ -103,11 +103,7 @@ class Saman extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $RRN = $request->input('RRN');
         $refId = $request->input('RefNum');
-        $traceNumber = $request->input('TraceNo');
-        $cardNumber = $request->input('SecurePan');
-        $cardId = $request->input('CID');
 
         $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
         $response = $soap->VerifyTransaction($refId, $this->config['terminal-id']);
@@ -118,13 +114,18 @@ class Saman extends AbstractProvider
 //            $toMatch = new FieldsToMatch(null, null, null, new Amount($response, 'IRR'));
             $toMatch = new FieldsToMatch();
 
+            $trace_number = $request->input('TraceNo');
+            $hashed_card_number = $request->input('HashedCardNumber');
+            $affective_amount = $request->input('AffectiveAmount');
+            $wage = $request->input('Wage');
+
             return new SettledTransaction(
                 $transaction,
                 $refId,
                 $toMatch,
-                $cardNumber,
-                $RRN,
-                compact('traceNumber', 'cardId'),
+                $request->input('SecurePan'),
+                $request->input('Rrn'),
+                compact('trace_number', 'hashed_card_number', 'affective_amount', 'wage'),
                 $refId
             );
         }

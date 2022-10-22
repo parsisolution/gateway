@@ -45,7 +45,7 @@ class SamanException extends TransactionException
             -18 => "IP Address فروشنده نا معتبر است",
         ];
 
-        return array_merge($errors, [
+        return array_replace($errors, [
             1  => $errors['CanceledByUser'],
             2  => $errors['OK'],
             3  => $errors['Failed'],

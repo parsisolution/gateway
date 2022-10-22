@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: hamed
- * Date: 8/22/22
- * Time: 11:40 AM
- */
 
 namespace Parsisolution\Gateway;
 
