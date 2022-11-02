@@ -76,17 +76,12 @@ class YekPay extends AbstractProvider implements ProviderInterface
      */
     protected function setServer()
     {
-        $server = Arr::get($this->config, 'server', 'main');
-        switch ($server) {
-            case 'main':
-                $this->serverUrl = self::SERVER_URL;
-                $this->gateUrl = self::GATE_URL;
-                break;
-
-            case 'test':
-                $this->serverUrl = self::SERVER_SANDBOX_URL;
-                $this->gateUrl = self::GATE_SANDBOX_URL;
-                break;
+        if (Arr::get($this->config, 'sandbox', false)) {
+            $this->serverUrl = self::SERVER_SANDBOX_URL;
+            $this->gateUrl = self::GATE_SANDBOX_URL;
+        } else {
+            $this->serverUrl = self::SERVER_URL;
+            $this->gateUrl = self::GATE_URL;
         }
     }
 
@@ -117,24 +112,24 @@ class YekPay extends AbstractProvider implements ProviderInterface
             'toCurrencyCode'   => $this->convertCurrencyCode(
                 $transaction->getExtraField('to_currency_code', $amount->getCurrency())
             ),
-            'email'            => $transaction->getExtraField('email'),
-            'mobile'           => $transaction->getExtraField('mobile'),
-            'firstName'        => $transaction->getExtraField('first_name'),
-            'lastName'         => $transaction->getExtraField('last_name'),
-            'address'          => $transaction->getExtraField('address'),
-            'postalCode'       => $transaction->getExtraField('postal_code'),
-            'country'          => $transaction->getExtraField('country'),
-            'city'             => $transaction->getExtraField('city'),
+            'email'            => $transaction->getExtraField('email', 'empty@mail.com'),
+            'mobile'           => $transaction->getExtraField('mobile', '09000000000'),
+            'firstName'        => $transaction->getExtraField('first_name', 'empty'),
+            'lastName'         => $transaction->getExtraField('last_name', 'empty'),
+            'address'          => $transaction->getExtraField('address', 'empty'),
+            'postalCode'       => $transaction->getExtraField('postal_code', 'empty'),
+            'country'          => $transaction->getExtraField('country', 'empty'),
+            'city'             => $transaction->getExtraField('city', 'empty'),
             'description'      => $transaction->getExtraField('description'),
             'amount'           => number_format($amount->getTotal(), 2),
             'orderNumber'      => $transaction->getOrderId(),
             'callback'         => $this->getCallback($transaction),
         ];
 
-        list($result, $http_code) = Curl::execute($this->serverUrl.'/request', $fields, false);
+        list($result, $http_code, $error) = Curl::execute($this->serverUrl.'/request', $fields, false);
 
         if ($http_code != 200 || empty($result->Code) || $result->Code != 100) {
-            throw new YekPayException($result->Code ?? $http_code, $result->Description ?? null);
+            throw new YekPayException($result->Code ?? $http_code, $result->Description ?? $error ?? null);
         }
 
         $gateUrl = $this->gateUrl.$result->Authority;
@@ -169,27 +164,22 @@ class YekPay extends AbstractProvider implements ProviderInterface
             'authority'  => $transaction->getReferenceId(),
         ];
 
-        list($result, $http_code) = Curl::execute($this->serverUrl.'/verify', $fields);
+        list($result, $http_code, $error) = Curl::execute($this->serverUrl.'/verify', $fields);
 
-        if ($http_code != 200 || empty($result['Code']) || $result['Code'] != 100) {
-            throw new YekPayException($result['Code'] ?? $http_code, $result['Description'] ?? null);
+        // -9 code means the transaction has been verified already
+        if ($http_code != 200 || empty($result['Code']) || ! in_array($result['Code'], [100, -9])) {
+            throw new YekPayException($result['Code'] ?? $http_code, $result['Description'] ?? $error ?? null);
         }
 
-        if (empty($result['status']) || $result['status'] != 1) {
-            throw new YekPayException(
-                $result['status'] ?? $request->input('status', $request->input('error_code')),
-                $result['Description'] ?? $request->input('description')
-            );
-        }
-
-        $authority = $result['Authority'];
+        $authority = $result['Authority'] ?? null;
+        $traceNumber = $result['Tracking'] ?? $authority;
 //        $reference = $result['Reference'];
 
-        $toMatch = new FieldsToMatch($result['Order number'], $authority);
+        $toMatch = new FieldsToMatch($result['OrderNo'] ?? $result['Order number'] ?? null, $authority);
 
         return new SettledTransaction(
             $transaction,
-            $authority,
+            $traceNumber,
             $toMatch,
             '',
             '',

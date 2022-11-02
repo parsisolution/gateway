@@ -345,6 +345,7 @@ return [
         'active'       => false,
         'order'        => 50,
         'merchant-id'  => env('YEKPAY_MERCHANT_ID'),
+        'sandbox'      => true,
         'callback-url' => '/',
     ],
 ];
