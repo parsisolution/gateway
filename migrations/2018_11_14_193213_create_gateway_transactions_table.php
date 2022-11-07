@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-class CreateGatewayTransactionsTable extends Migration
+return new class extends Migration
 {
 
-    private function getTable()
+    private function getTableName()
     {
         return config(\Parsisolution\Gateway\GatewayManager::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
     }
@@ -19,7 +19,7 @@ class CreateGatewayTransactionsTable extends Migration
      */
     public function up()
     {
-        Schema::create($this->getTable(), function (Blueprint $table) {
+        Schema::create($this->getTableName(), function (Blueprint $table) {
             $table->engine = "innoDB";
             $table->unsignedBigInteger('id', true);
             $table->unsignedTinyInteger('provider');
@@ -48,6 +48,6 @@ class CreateGatewayTransactionsTable extends Migration
      */
     public function down()
     {
-        Schema::drop($this->getTable());
+        Schema::dropIfExists($this->getTableName());
     }
-}
+};
