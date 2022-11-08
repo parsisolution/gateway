@@ -338,6 +338,18 @@ return [
     ],
 
     //--------------------------------
+    // Bahamta gateway
+    //--------------------------------
+    'bahamta'       => [
+        'name'         => 'باهمتا',
+        'active'       => false,
+        'order'        => 34,
+        'api-key'      => env('BAHAMTA_API_KEY'),
+        'sandbox'      => true,
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [

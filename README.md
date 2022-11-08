@@ -30,8 +30,9 @@ Available 3rd-parties:
 11. [Shepa](https://shepa.com)
 12. [AqayePardakht](https://aqayepardakht.ir)
 13. [IranDargah](https://irandargah.com)
-14. [SabaPay](https://sabanovin.com)
-15. [YekPay](https://yekpay.com)
+14. [Bahamta](https://bahamta.com)
+15. [SabaPay](https://sabanovin.com)
+16. [YekPay](https://yekpay.com)
 
 ## Install
  
