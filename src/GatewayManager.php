@@ -13,6 +13,7 @@ use Parsisolution\Gateway\Exceptions\NullConfigException;
 use Parsisolution\Gateway\Providers\AqayePardakht\AqayePardakht;
 use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
 use Parsisolution\Gateway\Providers\Bahamta\Bahamta;
+use Parsisolution\Gateway\Providers\BitPay\BitPay;
 use Parsisolution\Gateway\Providers\Fanava\Fanava;
 use Parsisolution\Gateway\Providers\IDPay\IDPay;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
@@ -69,6 +70,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const AQAYEPARDAKHT = 33;
     const BAHAMTA = 34;
     const PARSPAL = 35;
+    const BITPAY = 36;
     const YEKPAY = 50;
 
     /**
@@ -105,6 +107,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::AQAYEPARDAKHT,
             self::BAHAMTA,
             self::PARSPAL,
+            self::BITPAY,
             self::YEKPAY,
         ];
     }
@@ -144,6 +147,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             33 => 'AQAYEPARDAKHT',
             34 => 'BAHAMTA',
             35 => 'PARSPAL',
+            36 => 'BITPAY',
             50 => 'YEKPAY',
         ];
 
@@ -600,6 +604,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.parspal'];
 
         return $this->buildProvider(ParsPal::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createBitpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.bitpay'];
+
+        return $this->buildProvider(BitPay::class, $config);
     }
 
     /**

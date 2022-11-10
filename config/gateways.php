@@ -362,6 +362,18 @@ return [
     ],
 
     //--------------------------------
+    // BitPay gateway
+    //--------------------------------
+    'bitpay'        => [
+        'name'         => 'بیت پی',
+        'active'       => false,
+        'order'        => 36,
+        'api-key'      => env('BITPAY_API_KEY', 'adxcv-zzadq-polkjsad-opp13opoz-1sdf455aadzmck1244567'),
+        'sandbox'      => true,
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [
