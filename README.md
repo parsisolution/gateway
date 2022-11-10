@@ -31,8 +31,9 @@ Available 3rd-parties:
 12. [AqayePardakht](https://aqayepardakht.ir)
 13. [IranDargah](https://irandargah.com)
 14. [Bahamta](https://bahamta.com)
-15. [SabaPay](https://sabanovin.com)
-16. [YekPay](https://yekpay.com)
+15. [ParsPal](https://parspal.com)
+16. [SabaPay](https://sabanovin.com)
+17. [YekPay](https://yekpay.com)
 
 ## Install
  

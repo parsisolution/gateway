@@ -350,6 +350,18 @@ return [
     ],
 
     //--------------------------------
+    // ParsPal gateway
+    //--------------------------------
+    'parspal'       => [
+        'name'         => 'پارس پال',
+        'active'       => false,
+        'order'        => 35,
+        'api-key'      => env('PARSPAL_API_KEY'),
+        'sandbox'      => true,
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [

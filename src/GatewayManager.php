@@ -23,6 +23,7 @@ use Parsisolution\Gateway\Providers\Mellat\Mellat;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Novin\Novin;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
+use Parsisolution\Gateway\Providers\ParsPal\ParsPal;
 use Parsisolution\Gateway\Providers\Pasargad\Pasargad;
 use Parsisolution\Gateway\Providers\Payir\Payir;
 use Parsisolution\Gateway\Providers\PayPing\PayPing;
@@ -67,10 +68,11 @@ class GatewayManager extends Manager implements Contracts\Factory
     const JIBIMO = 32;
     const AQAYEPARDAKHT = 33;
     const BAHAMTA = 34;
+    const PARSPAL = 35;
     const YEKPAY = 50;
 
     /**
-     * Get all of the available "drivers".
+     * Get all the available "drivers".
      *
      * @return array
      */
@@ -102,6 +104,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::JIBIMO,
             self::AQAYEPARDAKHT,
             self::BAHAMTA,
+            self::PARSPAL,
             self::YEKPAY,
         ];
     }
@@ -140,6 +143,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             32 => 'JIBIMO',
             33 => 'AQAYEPARDAKHT',
             34 => 'BAHAMTA',
+            35 => 'PARSPAL',
             50 => 'YEKPAY',
         ];
 
@@ -583,6 +587,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.bahamta'];
 
         return $this->buildProvider(Bahamta::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createParspalDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.parspal'];
+
+        return $this->buildProvider(ParsPal::class, $config);
     }
 
     /**
