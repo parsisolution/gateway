@@ -34,8 +34,9 @@ Available 3rd-parties:
 15. [ParsPal](https://parspal.com)
 16. [BitPay](https://bitpay.ir)
 17. [Milyoona](https://milyoona.com)
-18. [SabaPay](https://sabanovin.com)
-19. [YekPay](https://yekpay.com)
+18. [Sepal](https://sepal.ir)
+19. [SabaPay](https://sabanovin.com)
+20. [YekPay](https://yekpay.com)
 
 ## Install
  

@@ -32,6 +32,7 @@ use Parsisolution\Gateway\Providers\PayPing\PayPing;
 use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
+use Parsisolution\Gateway\Providers\Sepal\Sepal;
 use Parsisolution\Gateway\Providers\Sepehr\Sepehr;
 use Parsisolution\Gateway\Providers\Shepa\Shepa;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
@@ -73,6 +74,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const PARSPAL = 35;
     const BITPAY = 36;
     const MILYOONA = 37;
+    const SEPAL = 38;
     const YEKPAY = 50;
 
     /**
@@ -111,6 +113,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::PARSPAL,
             self::BITPAY,
             self::MILYOONA,
+            self::SEPAL,
             self::YEKPAY,
         ];
     }
@@ -152,6 +155,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             35 => 'PARSPAL',
             36 => 'BITPAY',
             37 => 'MILYOONA',
+            38 => 'SEPAL',
             50 => 'YEKPAY',
         ];
 
@@ -634,6 +638,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.milyoona'];
 
         return $this->buildProvider(Milyoona::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createSepalDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sepal'];
+
+        return $this->buildProvider(Sepal::class, $config);
     }
 
     /**

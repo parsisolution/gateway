@@ -385,6 +385,18 @@ return [
     ],
 
     //--------------------------------
+    // Sepal gateway
+    //--------------------------------
+    'sepal'         => [
+        'name'         => 'سپال',
+        'active'       => false,
+        'order'        => 38,
+        'api-key'      => env('SEPAL_API_KEY', 'test'), // use "test" for test
+        'sandbox'      => true,
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [
