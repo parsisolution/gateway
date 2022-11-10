@@ -374,6 +374,17 @@ return [
     ],
 
     //--------------------------------
+    // Milyoona gateway
+    //--------------------------------
+    'milyoona'      => [
+        'name'         => 'میلیونا',
+        'active'       => false,
+        'order'        => 37,
+        'terminal-id'  => env('MILYOONA_TERMINAL', 'milyoona'), // use milyoona for test
+        'callback-url' => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [

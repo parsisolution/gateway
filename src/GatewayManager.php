@@ -21,6 +21,7 @@ use Parsisolution\Gateway\Providers\Irankish\Irankish;
 use Parsisolution\Gateway\Providers\Jibimo\Jibimo;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
+use Parsisolution\Gateway\Providers\Milyoona\Milyoona;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
 use Parsisolution\Gateway\Providers\Novin\Novin;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
@@ -71,6 +72,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const BAHAMTA = 34;
     const PARSPAL = 35;
     const BITPAY = 36;
+    const MILYOONA = 37;
     const YEKPAY = 50;
 
     /**
@@ -108,6 +110,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::BAHAMTA,
             self::PARSPAL,
             self::BITPAY,
+            self::MILYOONA,
             self::YEKPAY,
         ];
     }
@@ -148,6 +151,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             34 => 'BAHAMTA',
             35 => 'PARSPAL',
             36 => 'BITPAY',
+            37 => 'MILYOONA',
             50 => 'YEKPAY',
         ];
 
@@ -617,6 +621,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.bitpay'];
 
         return $this->buildProvider(BitPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createMilyoonaDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.milyoona'];
+
+        return $this->buildProvider(Milyoona::class, $config);
     }
 
     /**

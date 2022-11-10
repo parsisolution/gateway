@@ -15,6 +15,7 @@
     ],
     "require": {
         "php": ">=7.1",
+        "ext-json": "*",
         "ext-soap": "*",
         "ext-curl": "*",
         "illuminate/contracts": ">=5.4",
@@ -102,6 +103,7 @@
         "bahamta",
         "parspal",
         "bitpay",
+        "milyoona",
         "yekpay"
     ]
 }
