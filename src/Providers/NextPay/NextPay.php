@@ -21,11 +21,11 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 class NextPay extends AbstractProvider
 {
 
-    const SERVER_SOAP = "https://api.nextpay.org/gateway/token.wsdl";
-    const SERVER_REST = "https://nextpay.org/nx/gateway/token";
-    const URL_PAYMENT = "https://nextpay.org/nx/gateway/payment/";
-    const SERVER_VERIFY_SOAP = "https://api.nextpay.org/gateway/verify.wsdl";
-    const SERVER_VERIFY_REST = "https://nextpay.org/nx/gateway/verify";
+    const SERVER_SOAP = 'https://api.nextpay.org/gateway/token.wsdl';
+    const SERVER_REST = 'https://nextpay.org/nx/gateway/token';
+    const URL_PAYMENT = 'https://nextpay.org/nx/gateway/payment/';
+    const SERVER_VERIFY_SOAP = 'https://api.nextpay.org/gateway/verify.wsdl';
+    const SERVER_VERIFY_REST = 'https://nextpay.org/nx/gateway/verify';
 
     /**
      * Type of api to use
@@ -75,7 +75,6 @@ class NextPay extends AbstractProvider
                 ]);
 
                 return $this->verifyAuthorizationResponse($transaction, $response);
-                break;
             case ApiType::SOAP:
             default:
                 $soap_client = new SoapClient(
@@ -87,7 +86,6 @@ class NextPay extends AbstractProvider
                 $response = $response->TokenGeneratorResult;
 
                 return $this->verifyAuthorizationResponse($transaction, $response);
-                break;
         }
     }
 
@@ -130,7 +128,6 @@ class NextPay extends AbstractProvider
                 ]);
 
                 return $this->verifyVerificationResponse($transaction, $response, $card_holder);
-                break;
             case ApiType::SOAP:
             default:
                 $soap_client = new SoapClient(
@@ -142,7 +139,6 @@ class NextPay extends AbstractProvider
                 $response = $response->PaymentVerificationResult;
 
                 return $this->verifyVerificationResponse($transaction, $response, $card_holder);
-                break;
         }
     }
 
@@ -154,21 +150,21 @@ class NextPay extends AbstractProvider
      */
     protected function verifyAuthorizationResponse(UnAuthorizedTransaction $transaction, $response)
     {
-        if (! empty($response) && is_object($response)) {
-            $code = intval($response->code);
-            if ($code == -1) {
-                $redirectResponse = new RedirectResponse(
-                    RedirectResponse::TYPE_GET,
-                    self::URL_PAYMENT.$response->trans_id
-                );
-
-                return AuthorizedTransaction::make($transaction, null, $response->trans_id, $redirectResponse);
-            } else {
-                throw new NextPayException($code);
-            }
-        } else {
-            throw new \RuntimeException();
+        if (empty($response) || !is_object($response)) {
+            throw new NextPayException(-1000);
         }
+
+        $code = intval($response->code);
+        if ($code != -1) {
+            throw new NextPayException($code);
+        }
+
+        $redirectResponse = new RedirectResponse(
+            RedirectResponse::TYPE_GET,
+            self::URL_PAYMENT . $response->trans_id
+        );
+
+        return AuthorizedTransaction::make($transaction, null, $response->trans_id, $redirectResponse);
     }
 
     /**
@@ -180,8 +176,8 @@ class NextPay extends AbstractProvider
      */
     protected function verifyVerificationResponse(AuthorizedTransaction $transaction, $response, $card_holder)
     {
-        if (empty($response) || ! is_object($response)) {
-            throw new \RuntimeException();
+        if (empty($response) || !is_object($response)) {
+            throw new NextPayException(-1000);
         }
 
         $code = intval($response->code);
@@ -214,9 +210,9 @@ class NextPay extends AbstractProvider
             'name'               => 'نام پرداخت کننده',
             'description'        => 'توضیحات دلخواه',
             'auto_verify'        => '(bool) true || false تایید خودکار بدون نیاز به فراخوانی وریفای',
-            'allowed_card'       => 'شماره کارت مجاز -'.
-                ' اگر پارامتر با مقدار 16 رقمی کارت خاصی مقدار دهی شود،'.
-                ' اگر تراکنش با شماره کارتی غیر از شماره کارتی که شما اعلام میکنید انجام شود، برگشت میخورد. بنابراین'.
+            'allowed_card'       => 'شماره کارت مجاز -' .
+                ' اگر پارامتر با مقدار 16 رقمی کارت خاصی مقدار دهی شود،' .
+                ' اگر تراکنش با شماره کارتی غیر از شماره کارتی که شما اعلام میکنید انجام شود، برگشت میخورد. بنابراین' .
                 ' اگر میخواهید تراکنش با هر شماره کارتی پذیرفته شود، این پارامتر را خالی بگذارید یا مقدار دهی نکنید',
         ];
     }

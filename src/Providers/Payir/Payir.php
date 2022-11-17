@@ -5,8 +5,10 @@ namespace Parsisolution\Gateway\Providers\Payir;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
+use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
@@ -16,18 +18,11 @@ class Payir extends AbstractProvider
 {
 
     /**
-     * Address of main CURL server
+     * Address of server
      *
      * @var string
      */
-    const SERVER_URL = 'https://pay.ir/pg/send';
-
-    /**
-     * Address of CURL server for verify payment
-     *
-     * @var string
-     */
-    const SERVER_VERIFY_URL = 'https://pay.ir/pg/verify';
+    const SERVER_URL = 'https://pay.ir/pg/';
 
     /**
      * Address of gate for redirect
@@ -50,29 +45,19 @@ class Payir extends AbstractProvider
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'api'             => $this->config['api-key'],
             'amount'          => $transaction->getAmount()->getRiyal(),
             'redirect'        => $this->getCallback($transaction, true),
             'mobile'          => $transaction->getExtraField('mobile'),
-            'factorNumber'    => $this->factorNumber ?? $transaction->getExtraField('factor_number'),
+            'factorNumber'    => $transaction->getOrderId(),
             'description'     => $transaction->getExtraField('description'),
             'validCardNumber' => $transaction->getExtraField('allowed_card'),
         ];
 
-        list($response) = Curl::execute(self::SERVER_URL, $fields, true, [
-            CURLOPT_SSL_VERIFYPEER => false,
-        ], Curl::METHOD_GET);
+        $result = $this->callApi('send', $fields);
 
-        if (! is_numeric($response['status']) || $response['status'] <= 0) {
-            throw new PayirSendException($response['errorCode'], $response['errorMessage']);
-        }
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE . $result['token']);
 
-        $redirectResponse = new RedirectResponse(
-            RedirectResponse::TYPE_GET,
-            self::URL_GATE.$response['token']
-        );
-
-        return AuthorizedTransaction::make($transaction, null, $response['token'], $redirectResponse);
+        return AuthorizedTransaction::make($transaction, null, $result['token'], $redirectResponse);
     }
 
     /**
@@ -80,11 +65,13 @@ class Payir extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $status = $request->input('status');
-        $message = $request->input('message');
+        if (!$request->has('status')) {
+            throw new InvalidRequestException();
+        }
 
-        if (! is_numeric($status) || $status <= 0) {
-            throw new PayirReceiveException(-5, $message);
+        $status = $request->input('status');
+        if ($status != 1) {
+            throw new PayirException($status ?: -5);
         }
 
         $token = $request->input('token');
@@ -97,25 +84,41 @@ class Payir extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $traceNumber = $request->input('token');
-        $cardNumber = $request->input('cardNumber');
+        $result = $this->callApi('verify', ['token' => $transaction->getToken()]);
 
-        $fields = [
-            'api'   => $this->config['api-key'],
-            'token' => $transaction->getToken(),
-        ];
+        $toMatch = new FieldsToMatch($result['factorNumber'], null, null, new Amount($result['amount'], 'IRR'));
 
-        list($response) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
+        return new SettledTransaction(
+            $transaction,
+            $result['transId'],
+            $toMatch,
+            $result['cardNumber'],
+            '',
+            ['verify_result' => $result]
+        );
+    }
+
+    /**
+     * @param string $path
+     * @param array $fields
+     * @return mixed
+     * @throws PayirException
+     */
+    protected function callApi(string $path, array $fields)
+    {
+        $fields['api'] = $this->config['api-key'];
+        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL . $path, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
         ], Curl::METHOD_GET);
 
-        if ($response['status'] != 1) {
-            throw new PayirReceiveException($response['errorCode'], $response['errorMessage']);
+        if ($http_code != 200 || empty($response['status']) || $response['status'] != 1) {
+            throw new PayirException(
+                $response['errorCode'] ?? $http_code,
+                $response['errorMessage'] ?? $error ?? null
+            );
         }
 
-        $toMatch = new FieldsToMatch();
-
-        return new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber);
+        return $response;
     }
 
     /**
@@ -127,7 +130,7 @@ class Payir extends AbstractProvider
             'mobile'        => '09124441122',
             'factor_number' => 'شماره فاکتور شما ( اختیاری )',
             'description'   => 'توضیحات تراکنش ( اختیاری ، حداکثر 255 کاراکتر )',
-            'allowed_card'  => 'اعلام شماره کارت مجاز برای انجام تراکنش'.
+            'allowed_card'  => 'اعلام شماره کارت مجاز برای انجام تراکنش' .
                 ' ( اختیاری، بصورت عددی (لاتین) و چسبیده بهم در 16 رقم. مثال 6219861012345678 )',
         ];
     }

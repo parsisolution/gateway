@@ -3,10 +3,12 @@
 namespace Parsisolution\Gateway\Exceptions;
 
 use Illuminate\Support\Arr;
+use Parsisolution\Gateway\Traits\HasTransaction;
 use Throwable;
 
 abstract class TransactionException extends \Exception
 {
+    use HasTransaction;
 
     /**
      * returns an associative array of `code` => `message`

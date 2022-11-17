@@ -5,6 +5,7 @@ namespace Parsisolution\Gateway\Providers\PayPing;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
+use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -54,8 +55,8 @@ class PayPing extends AbstractProvider
             'clientRefId'   => $transaction->getOrderId(),
             'payerIdentity' => $transaction->getExtraField('mobile'),
             'payerName'     => $transaction->getExtraField('name'),
-            'Amount'        => $transaction->getAmount()->getToman(),
-            'Description'   => $transaction->getExtraField('description'),
+            'amount'        => $transaction->getAmount()->getToman(),
+            'description'   => $transaction->getExtraField('description'),
             'returnUrl'     => $this->getCallback($transaction),
         ];
 
@@ -88,13 +89,16 @@ class PayPing extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $referenceId = $request->input('refid');
+        if (!$request->has('refid')) {
+            throw new InvalidRequestException();
+        }
 
+        $referenceId = $request->input('refid');
         if (!$referenceId) {
             throw new PayPingException($referenceId);
         }
 
-        return new FieldsToMatch(null, $referenceId);
+        return new FieldsToMatch($request->input('clientrefid'));
     }
 
     /**
@@ -103,14 +107,16 @@ class PayPing extends AbstractProvider
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $refId = $request->input('refid');
+        $code = $request->input('code');
         $cardNumber = $request->input('cardnumber');
+        $hashed_card_number = $request->input('cardhashpan');
 
         $fields = [
             'refId'  => $refId,
             'amount' => $transaction->getAmount()->getToman(),
         ];
 
-        list($response, $http_code, $error) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
+        list($result, $http_code, $error) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
             CURLOPT_TIMEOUT    => 45,
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
@@ -120,7 +126,7 @@ class PayPing extends AbstractProvider
         }
 
         if ($http_code == 400) {
-            throw new PayPingException(400, json_encode($response, JSON_UNESCAPED_UNICODE));
+            throw new PayPingException(400, json_encode($result, JSON_UNESCAPED_UNICODE));
         } elseif ($http_code != 200) {
             throw new PayPingException($http_code);
         }
@@ -132,9 +138,11 @@ class PayPing extends AbstractProvider
             );
         }
 
+        $cardNumber = $result['cardNumber'] ?? $cardNumber ?? '';
+        $extra = ['verify_result' => $result] + compact('code', 'hashed_card_number');
         $toMatch = new FieldsToMatch();
 
-        return new SettledTransaction($transaction, $refId, $toMatch, $cardNumber, '', $response);
+        return new SettledTransaction($transaction, $refId, $toMatch, $cardNumber, '', $extra);
     }
 
     /**

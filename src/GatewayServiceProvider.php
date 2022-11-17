@@ -31,8 +31,6 @@ class GatewayServiceProvider extends ServiceProvider
             $config => config_path(GatewayManager::CONFIG_FILE_NAME.'.php'),
         ], 'config');
 
-        //$this->mergeConfigFrom( $config, Gate)
-
         // php artisan vendor:publish --provider="Parsisolution\Gateway\GatewayServiceProvider" --tag=migrations
         $this->publishes([
             $migrations => base_path('database/migrations'),
@@ -53,6 +51,10 @@ class GatewayServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $config = __DIR__ . '/../config/' . GatewayManager::CONFIG_FILE_NAME . '.php';
+
+        $this->mergeConfigFrom($config, GatewayManager::CONFIG_FILE_NAME);
+
         $this->app->singleton(Factory::class, function ($app) {
             return new GatewayManager($app);
         });

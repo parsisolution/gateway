@@ -78,7 +78,7 @@ class Parsian extends AbstractProvider
             );
         }
 
-        throw new ParsianErrorException(
+        throw new ParsianException(
             $response->SalePaymentRequestResult->Status,
             $response->SalePaymentRequestResult->Message
         );
@@ -92,7 +92,7 @@ class Parsian extends AbstractProvider
         $status = $request->input('status');
 
         if ($status != 0) {
-            throw new ParsianErrorException($status);
+            throw new ParsianException($status);
         }
 
         $orderId = $request->input('OrderId');
@@ -118,11 +118,11 @@ class Parsian extends AbstractProvider
         $result = $soap->ConfirmPayment(['requestData' => $params]);
 
         if ($result === false || ! isset($result->ConfirmPaymentResult->Status)) {
-            throw new ParsianErrorException(-1);
+            throw new ParsianException(-1);
         }
 
         if ($result->ConfirmPaymentResult->Status !== 0) {
-            throw new ParsianErrorException($result->ConfirmPaymentResult->Status);
+            throw new ParsianException($result->ConfirmPaymentResult->Status);
         }
 
         $toMatch = new FieldsToMatch(null, null, $result->ConfirmPaymentResult->Token);

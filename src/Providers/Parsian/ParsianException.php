@@ -4,7 +4,7 @@ namespace Parsisolution\Gateway\Providers\Parsian;
 
 use Parsisolution\Gateway\Exceptions\TransactionException;
 
-class ParsianErrorException extends TransactionException
+class ParsianException extends TransactionException
 {
 
     /**

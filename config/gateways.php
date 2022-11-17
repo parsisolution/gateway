@@ -185,7 +185,7 @@ return [
         'order'        => 22,
         'merchant-id'  => env('ZARINPAL_MERCHANT_ID', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
         'type'         => 'normal', // Types:   [zarin-gate || normal || zarin-gate-sad || zarin-gate-sep]
-        'server'       => 'test',   // Servers: [germany || iran || test]
+        'server'       => 'iran',   // Servers: [germany || iran || test]
         'callback-url' => '/',
     ],
 
@@ -220,7 +220,7 @@ return [
         'active'       => false,
         'order'        => 25,
         'api-key'      => env('IDPAY_API_KEY', '6a7f99eb-7c20-4412-a972-6dfb7cd253a4'),
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -275,7 +275,7 @@ return [
         'active'       => false,
         'order'        => 28,
         'merchant-id'  => env('IRANDARGAH_MERCHANT_ID'),
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -298,7 +298,7 @@ return [
         'active'       => false,
         'order'        => 30,
         'api-key'      => env('SHEPA_API_KEY', 'sandbox'), // use sandbox for test
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -343,7 +343,7 @@ return [
         'active'       => false,
         'order'        => 34,
         'api-key'      => env('BAHAMTA_API_KEY'),
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -355,7 +355,7 @@ return [
         'active'       => false,
         'order'        => 35,
         'api-key'      => env('PARSPAL_API_KEY'),
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -367,7 +367,7 @@ return [
         'active'       => false,
         'order'        => 36,
         'api-key'      => env('BITPAY_API_KEY', 'adxcv-zzadq-polkjsad-opp13opoz-1sdf455aadzmck1244567'),
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -390,7 +390,7 @@ return [
         'active'       => false,
         'order'        => 38,
         'api-key'      => env('SEPAL_API_KEY', 'test'), // use "test" for test
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 
@@ -431,7 +431,7 @@ return [
         'active'       => false,
         'order'        => 50,
         'merchant-id'  => env('YEKPAY_MERCHANT_ID'),
-        'sandbox'      => true,
+        'sandbox'      => false,
         'callback-url' => '/',
     ],
 ];

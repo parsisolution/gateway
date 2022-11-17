@@ -143,15 +143,19 @@ class TransactionDao
 
         $transaction = $this->getTable()->where('order_id', $orderId)->lockForUpdate()->first();
 
-        if (! $transaction) {
+        if (!$transaction) {
             throw new NotFoundTransactionException;
         }
 
+        $authorizedTransaction = AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
+
         if (in_array($transaction->status, [self::STATE_SUCCEEDED])) {
-            throw new RetryException;
+            $exception = new RetryException;
+            $exception->setTransaction($authorizedTransaction);
+            throw $exception;
         }
 
-        return AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
+        return $authorizedTransaction;
     }
 
     /**
@@ -195,6 +199,11 @@ class TransactionDao
             'paid_at'      => date('Y-m-d H:i:s'),
             'updated_at'   => date('Y-m-d H:i:s'),
         ]);
+        $attributes = array_merge($transaction->getAttributes(), $fields, [
+            'extra' => $transaction->getExtra(),
+            'log'   => $log,
+        ]);
+        $transaction->setAttributes($attributes);
 
         $result = $this->getTable()->where('id', $transaction->getId())->update($fields);
 
@@ -232,6 +241,10 @@ class TransactionDao
         if ($referenceId) {
             $fields['reference_id'] = $referenceId;
         }
+        $attributes = array_merge($transaction->getAttributes(), $fields, [
+            'log' => $log,
+        ]);
+        $transaction->setAttributes($attributes);
 
         $result = $this->getTable()->where('id', $transaction->getId())->update($fields);
 

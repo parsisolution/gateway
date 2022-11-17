@@ -2,8 +2,12 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Contracts\Support\Jsonable;
+use JsonSerializable;
 use Parsisolution\Gateway\Contracts\Comparable;
 use Parsisolution\Gateway\Exceptions\UncomparableException;
+use RuntimeException;
 
 /**
  * Class Amount
@@ -13,7 +17,7 @@ use Parsisolution\Gateway\Exceptions\UncomparableException;
  * @property string currency
  * @property float total
  */
-class Amount implements Comparable
+class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
 {
 
     /**
@@ -89,7 +93,7 @@ class Amount implements Comparable
      */
     public function setTotal($total)
     {
-        if (! is_float($total)) {
+        if (!is_float($total)) {
             $total = floatval(preg_replace('/[^0-9.]/', '', $total));
         }
         $this->total = $total;
@@ -179,5 +183,57 @@ class Amount implements Comparable
         } catch (\Exception $exception) {
             return false;
         }
+    }
+
+    /**
+     * Get the instance as an array.
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return [
+            'total'    => $this->getTotal(),
+            'currency' => $this->getCurrency(),
+        ];
+    }
+
+    /**
+     * Convert the object to its JSON representation.
+     *
+     * @param int $options
+     * @return string
+     */
+    public function toJson($options = 0)
+    {
+        $json = json_encode($this->jsonSerialize(), $options);
+
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+
+        return $json;
+    }
+
+    /**
+     * Specify data which should be serialized to JSON
+     *
+     * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     * @return mixed data which can be serialized by <b>json_encode</b>,
+     * which is a value of any type other than a resource.
+     * @since 5.4.0
+     */
+    public function jsonSerialize()
+    {
+        return $this->toArray();
+    }
+
+    public function __toString(): string
+    {
+        $decimals = 2;
+        if (in_array($this->getCurrency(), ['IRR', 'IRT'])) {
+            $decimals = 0;
+        }
+        return number_format($this->getTotal(), $decimals) . ' ' . $this->getCurrency();
     }
 }

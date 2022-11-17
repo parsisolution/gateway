@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Parsisolution\Gateway\Contracts\Provider as ProviderContract;
+use Parsisolution\Gateway\Exceptions\GeneralTransactionException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
@@ -157,7 +158,10 @@ abstract class AbstractProvider implements ProviderContract
                 get_class($e).' : '.$e->getCode(),
                 $e->getMessage()
             );
-            throw $e;
+
+            $exception = new GeneralTransactionException($e->getCode(), $e->getMessage(), $e);
+            $exception->setTransaction($unAuthorizedTransaction);
+            throw $exception;
         }
     }
 
@@ -203,7 +207,9 @@ abstract class AbstractProvider implements ProviderContract
 
             // prevent "Double Spending"
             if ($this->transactionDao->isSpent($settledTransaction)) {
-                throw new RetryException('The Transaction has been Spent Before');
+                $retryException = new RetryException('The Transaction has been Spent Before');
+                $retryException->setTransaction($settledTransaction);
+                throw $retryException;
             }
 
             $this->transactionDao->succeeded($settledTransaction, $fieldsToUpdateOnSuccess);
@@ -212,11 +218,19 @@ abstract class AbstractProvider implements ProviderContract
         } catch (TransactionException $exception) {
             $this->transactionDao->failed($authorizedTransaction, $exception->getCode(), $exception->getMessage());
 
+            $exception->setTransaction($authorizedTransaction);
             throw $exception;
+        } catch (InvalidRequestException $e) {
+            $this->transactionDao->failed($authorizedTransaction, get_class($e).' : '.$e->getCode(), $e->getMessage());
+
+            $e->setTransaction($authorizedTransaction);
+            throw $e;
         } catch (Exception $e) {
             $this->transactionDao->failed($authorizedTransaction, get_class($e).' : '.$e->getCode(), $e->getMessage());
 
-            throw $e;
+            $exception = new GeneralTransactionException($e->getCode(), $e->getMessage(), $e);
+            $exception->setTransaction($authorizedTransaction);
+            throw $exception;
         }
     }
 

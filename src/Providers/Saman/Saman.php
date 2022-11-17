@@ -146,6 +146,26 @@ class Saman extends AbstractProvider
     }
 
     /**
+     * @param string $refNum
+     * @return array
+     * @throws \SoapFault
+     */
+    public function reverse(string $refNum): array
+    {
+        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
+        $response = $soap->ReverseTransaction(
+            $refNum,
+            $this->config['terminal-id'],
+            $this->config['username'],
+            $this->config['password']
+        );
+
+        $message = (new SamanException($response))->getMessage();
+
+        return compact('response', 'message');
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getSupportedExtraFieldsSample()
