@@ -69,7 +69,7 @@ class PayPing extends AbstractProvider
         }
 
         if ($http_code == 400) {
-            throw new PayPingException(400, json_encode($response));
+            throw new PayPingException(400, json_encode($response, JSON_UNESCAPED_UNICODE));
         } elseif ($http_code != 200) {
             throw new PayPingException($http_code);
         }
@@ -78,7 +78,7 @@ class PayPing extends AbstractProvider
             throw new PayPingException(200, 'تراکنش ناموفق بود - شرح خطا: عدم وجود کد ارجاع');
         }
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$response['code']);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE . $response['code']);
 
         return AuthorizedTransaction::make($transaction, $response['code'], null, $redirectResponse);
     }
@@ -90,7 +90,7 @@ class PayPing extends AbstractProvider
     {
         $referenceId = $request->input('refid');
 
-        if (! $referenceId) {
+        if (!$referenceId) {
             throw new PayPingException($referenceId);
         }
 
@@ -120,7 +120,7 @@ class PayPing extends AbstractProvider
         }
 
         if ($http_code == 400) {
-            throw new PayPingException(400, json_encode($response));
+            throw new PayPingException(400, json_encode($response, JSON_UNESCAPED_UNICODE));
         } elseif ($http_code != 200) {
             throw new PayPingException($http_code);
         }
@@ -128,7 +128,7 @@ class PayPing extends AbstractProvider
         if (empty($refId)) {
             throw new PayPingException(
                 200,
-                'متافسانه سامانه قادر به دریافت کد پیگیری نمی‌باشد! نتیجه درخواست: '.$http_code
+                'متافسانه سامانه قادر به دریافت کد پیگیری نمی‌باشد! نتیجه درخواست: ' . $http_code
             );
         }
 
@@ -145,7 +145,7 @@ class PayPing extends AbstractProvider
         return [
             'Accept: application/json',
             'Content-Type: application/json',
-            'Authorization: Bearer '.$this->config['api-key'],
+            'Authorization: Bearer ' . $this->config['api-key'],
             'Cache-Control: no-cache',
         ];
     }
