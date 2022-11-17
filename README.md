@@ -35,8 +35,9 @@ Available 3rd-parties:
 16. [BitPay](https://bitpay.ir)
 17. [Milyoona](https://milyoona.com)
 18. [Sepal](https://sepal.ir)
-19. [SabaPay](https://sabanovin.com)
-20. [YekPay](https://yekpay.com)
+19. [TiPoul](https://tipoul.com)
+20. [SabaPay](https://sabanovin.com)
+21. [YekPay](https://yekpay.com)
 
 ## Install
  

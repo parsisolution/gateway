@@ -36,6 +36,7 @@ use Parsisolution\Gateway\Providers\Sepal\Sepal;
 use Parsisolution\Gateway\Providers\Sepehr\Sepehr;
 use Parsisolution\Gateway\Providers\Shepa\Shepa;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
+use Parsisolution\Gateway\Providers\TiPoul\TiPoul;
 use Parsisolution\Gateway\Providers\Vandar\Vandar;
 use Parsisolution\Gateway\Providers\YekPay\YekPay;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
@@ -75,6 +76,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const BITPAY = 36;
     const MILYOONA = 37;
     const SEPAL = 38;
+    const TIPOUL = 39;
     const YEKPAY = 50;
 
     /**
@@ -114,6 +116,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::BITPAY,
             self::MILYOONA,
             self::SEPAL,
+            self::TIPOUL,
             self::YEKPAY,
         ];
     }
@@ -156,6 +159,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             36 => 'BITPAY',
             37 => 'MILYOONA',
             38 => 'SEPAL',
+            39 => 'TIPOUL',
             50 => 'YEKPAY',
         ];
 
@@ -163,7 +167,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     }
 
     /**
-     * Get all of the active "drivers" with their names and in specified order.
+     * Get all the active "drivers" with their names and in specified order.
      *
      * @param string $name_prefix
      * @return array
@@ -651,6 +655,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.sepal'];
 
         return $this->buildProvider(Sepal::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createTipoulDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.tipoul'];
+
+        return $this->buildProvider(TiPoul::class, $config);
     }
 
     /**

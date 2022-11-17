@@ -397,6 +397,19 @@ return [
     ],
 
     //--------------------------------
+    // TiPoul gateway
+    //--------------------------------
+    'tipoul'        => [
+        'name'            => 'تیپول',
+        'active'          => false,
+        'order'           => 39,
+        // use 66b3cebc-b125-4c73-90d3-d9ace2a68b44 for test
+        'token'           => env('TIPOUL_TOKEN', '66b3cebc-b125-4c73-90d3-d9ace2a68b44'),
+        'redirect-method' => 'Get',  // Methods: [Get || Post]
+        'callback-url'    => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [

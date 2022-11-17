@@ -24,7 +24,7 @@ class TransactionDao
     const MESSAGE_FAILED = 'عملیات پرداخت با خطا مواجه شد.';
 
     /**
-     * Get all of the available transaction states.
+     * Get all the available transaction states.
      *
      * @return array
      */
