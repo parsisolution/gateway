@@ -74,7 +74,7 @@ return [
         'merchant-code'    => env('PASARGAD_MERCHANT_CODE'),
         'terminal-code'    => env('PASARGAD_TERMINAL_CODE'),
         'ssl-verification' => true,
-        'redirect-method'  => 'Get',  // Methods: [Get || Post]
+        'redirect-method'  => 'Get',  // Methods: [Get || Post] \Parsisolution\Gateway\RedirectResponse::TYPE_GET
         'rsa-key-type'     => 'file', // Types:   [File || String]
         'rsa-key'          => storage_path('gateways/pasargad/certificate.xml'),
         'callback-url'     => '/',
@@ -96,7 +96,7 @@ return [
         'certificate-path'     => storage_path('gateways/novin/certificate.pem'),
         'certificate-password' => env('NOVIN_CERTIFICATE_PASSWORD'),
         'temp-files-dir'       => storage_path('gateways/novin/temp'),
-        'api-type'             => 'SOAP', // \Parsisolution\Gateway\ApiType::SOAP
+        'api-type'             => 'SOAP', // Types: [SOAP || REST] \Parsisolution\Gateway\ApiType::SOAP
         'callback-url'         => '/',
     ],
 
@@ -111,7 +111,6 @@ return [
         'terminal-id'  => env('IRANKISH_TERMINAL_ID'),
         'password'     => env('IRANKISH_PASSWORD'),
         'public-key'   => env('IRANKISH_PUBLIC_KEY'),
-        'description'  => 'description',
         'callback-url' => '/',
     ],
 
@@ -124,7 +123,7 @@ return [
         'order'        => 8,
         'terminal-id'  => env('SEPEHR_TERMINAL_ID'),
         'get-method'   => false,
-        'api-type'     => 'REST', // \Parsisolution\Gateway\ApiType::REST
+        'api-type'     => 'REST', // Types: [SOAP || REST] \Parsisolution\Gateway\ApiType::REST
         'callback-url' => '/',
     ],
 
@@ -140,7 +139,7 @@ return [
         'password'           => env('ASANPARDAKHT_PASSWORD'),
         'key'                => env('ASANPARDAKHT_KEY'),
         'iv'                 => env('ASANPARDAKHT_IV'),
-        'api-type'           => 'SOAP', // \Parsisolution\Gateway\ApiType::SOAP
+        'api-type'           => 'SOAP', // Types: [SOAP || REST] \Parsisolution\Gateway\ApiType::SOAP
         'callback-url'       => '/',
     ],
 
@@ -233,7 +232,7 @@ return [
         'active'       => false,
         'order'        => 26,
         'api-key'      => env('NEXTPAY_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'),
-        'api-type'     => 'REST', // \Parsisolution\Gateway\ApiType::REST
+        'api-type'     => 'REST', // Types: [SOAP || REST] \Parsisolution\Gateway\ApiType::REST
         'callback-url' => '/',
         'settings'     => [
             'soap' => [
@@ -276,8 +275,7 @@ return [
         'active'       => false,
         'order'        => 28,
         'merchant-id'  => env('IRANDARGAH_MERCHANT_ID'),
-        'server'       => 'test',                // Servers: [main || test]
-        'description'  => 'description',
+        'sandbox'      => true,
         'callback-url' => '/',
     ],
 
@@ -405,7 +403,7 @@ return [
         'order'           => 39,
         // use 66b3cebc-b125-4c73-90d3-d9ace2a68b44 for test
         'token'           => env('TIPOUL_TOKEN', '66b3cebc-b125-4c73-90d3-d9ace2a68b44'),
-        'redirect-method' => 'Get',  // Methods: [Get || Post]
+        'redirect-method' => 'Get',  // Methods: [Get || Post] \Parsisolution\Gateway\RedirectResponse::TYPE_GET
         'callback-url'    => '/',
     ],
 

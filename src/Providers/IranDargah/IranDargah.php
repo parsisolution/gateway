@@ -83,19 +83,14 @@ class IranDargah extends AbstractProvider implements ProviderInterface
      */
     protected function setServer()
     {
-        $server = Arr::get($this->config, 'server', 'main');
-        switch ($server) {
-            case 'main':
-                $this->serverUrl = self::SERVER_URL;
-                $this->gateUrl = self::GATE_URL;
-                $this->merchantId = Arr::get($this->config, 'merchant-id');
-                break;
-
-            case 'test':
-                $this->serverUrl = self::SERVER_SANDBOX_URL;
-                $this->gateUrl = self::GATE_SANDBOX_URL;
-                $this->merchantId = 'TEST';
-                break;
+        if (Arr::get($this->config, 'sandbox', false)) {
+            $this->serverUrl = self::SERVER_SANDBOX_URL;
+            $this->gateUrl = self::GATE_SANDBOX_URL;
+            $this->merchantId = 'TEST';
+        } else {
+            $this->serverUrl = self::SERVER_URL;
+            $this->gateUrl = self::GATE_URL;
+            $this->merchantId = Arr::get($this->config, 'merchant-id');
         }
     }
 
@@ -118,26 +113,26 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             'callbackURL' => $this->getCallback($transaction),
             'orderId'     => $transaction->getOrderId(),
             'mobile'      => $transaction->getExtraField('mobile'),
-            'description' => $transaction->getExtraField('description', Arr::get($this->config, 'description', '')),
+            'description' => $transaction->getExtraField('description'),
         ];
         $cardNumber = $transaction->getExtraField('allowed_card');
-        if (! empty($cardNumber)) {
+        if (!empty($cardNumber)) {
             // by sending cardnumber , your user can not pay with another card number // OPTIONAL
             $fields['cardNumber'] = $cardNumber;
         }
 
-        list($result, $http_code) = Curl::execute($this->serverUrl.'/payment', $fields, false, [
+        list($result, $http_code) = Curl::execute($this->serverUrl . '/payment', $fields, false, [
             # if you get SSL error (curl error 60) add 2 lines below
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_SSL_VERIFYPEER => false,
             # end SSL error
         ]);
 
-        if (! isset($result->status) || $result->status != '200') {
+        if (!isset($result->status) || $result->status != '200') {
             throw new IranDargahException($result->status ?? $http_code, $result->message);
         }
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$result->authority);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl . $result->authority);
 
         return AuthorizedTransaction::make($transaction, $result->authority, null, $redirectResponse);
     }
@@ -147,7 +142,7 @@ class IranDargah extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (! $request->has('code')) {
+        if (!$request->has('code')) {
             throw new InvalidRequestException();
         }
 
@@ -175,7 +170,7 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             'orderId'    => $transaction->getOrderId(),
         ];
 
-        list($result) = Curl::execute($this->serverUrl.'/verification', $fields, false, [
+        list($result) = Curl::execute($this->serverUrl . '/verification', $fields, false, [
             # if you get SSL error (curl error 60) add 2 lines below
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_SSL_VERIFYPEER => false,
@@ -200,8 +195,8 @@ class IranDargah extends AbstractProvider implements ProviderInterface
         return [
             'mobile'       => '09124441122',
             'description'  => 'توضیحات تراکنش',
-            'allowed_card' => 'شماره کارت پرداخت‌کننده است'.
-                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود'.
+            'allowed_card' => 'شماره کارت پرداخت‌کننده است' .
+                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود' .
                 ' و درصورتی که یکسان نباشد، مبلغ تراکنش به حساب پرداخت‌کننده برمی‌گردد.',
         ];
     }
