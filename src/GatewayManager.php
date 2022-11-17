@@ -14,6 +14,7 @@ use Parsisolution\Gateway\Providers\AqayePardakht\AqayePardakht;
 use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
 use Parsisolution\Gateway\Providers\Bahamta\Bahamta;
 use Parsisolution\Gateway\Providers\BitPay\BitPay;
+use Parsisolution\Gateway\Providers\DigiPay\DigiPay;
 use Parsisolution\Gateway\Providers\Fanava\Fanava;
 use Parsisolution\Gateway\Providers\IDPay\IDPay;
 use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
@@ -77,6 +78,7 @@ class GatewayManager extends Manager implements Contracts\Factory
     const MILYOONA = 37;
     const SEPAL = 38;
     const TIPOUL = 39;
+    const DIGIPAY = 40;
     const YEKPAY = 50;
 
     /**
@@ -117,6 +119,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             self::MILYOONA,
             self::SEPAL,
             self::TIPOUL,
+            self::DIGIPAY,
             self::YEKPAY,
         ];
     }
@@ -160,6 +163,7 @@ class GatewayManager extends Manager implements Contracts\Factory
             37 => 'MILYOONA',
             38 => 'SEPAL',
             39 => 'TIPOUL',
+            40 => 'DIGIPAY',
             50 => 'YEKPAY',
         ];
 
@@ -668,6 +672,19 @@ class GatewayManager extends Manager implements Contracts\Factory
         $config = app()['config'][self::CONFIG_FILE_NAME.'.tipoul'];
 
         return $this->buildProvider(TiPoul::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createDigipayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.digipay'];
+
+        return $this->buildProvider(DigiPay::class, $config);
     }
 
     /**

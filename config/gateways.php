@@ -410,6 +410,22 @@ return [
     ],
 
     //--------------------------------
+    // DigiPay gateway
+    //--------------------------------
+    'digipay'       => [
+        'name'          => 'دیجی‌پی',
+        'active'        => false,
+        'order'         => 40,
+        'type'          => env('DIGIPAY_TYPE', 'UPG'), // Types: [UPG || IPG || WPG]
+        'username'      => env('DIGIPAY_USERNAME'),
+        'password'      => env('DIGIPAY_PASSWORD'),
+        'client-id'     => env('DIGIPAY_CLIENT_ID'),
+        'client-secret' => env('DIGIPAY_CLIENT_SECRET'),
+        'sandbox'       => false,
+        'callback-url'  => '/',
+    ],
+
+    //--------------------------------
     // YekPay gateway
     //--------------------------------
     'yekpay'        => [
