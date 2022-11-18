@@ -10,7 +10,9 @@ use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -32,13 +34,9 @@ class Sizpay extends AbstractProvider implements ProviderInterface
     const GATE_URL = 'https://rt.sizpay.ir/Route/Payment';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::SIZPAY;
     }
@@ -48,67 +46,73 @@ class Sizpay extends AbstractProvider implements ProviderInterface
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        $fields = array(
+        $appExtraInformation = [
+            "PayTyp"      => $transaction->getExtraField('pay_type', 0),
+            "PayTypID"    => $transaction->getExtraField('pay_type_id', 0),
+            "PayerNm"     => $transaction->getExtraField('name', ''),
+            "PayerMobile" => $transaction->getExtraField('mobile', ''),
+            "PayerEmail"  => $transaction->getExtraField('email', ''),
+            "PayerIP"     => $this->request->getClientIp(),
+            "Descr"       => $transaction->getExtraField('description', ''),
+            "PayTitle"    => $transaction->getExtraField('pay_title', ''),
+            "PayTitleID"  => $transaction->getExtraField('pay_title_id', 0),
+            "PayerAppTyp" => $transaction->getExtraField('payer_app_type'),
+            "PayerAppID"  => $transaction->getExtraField('payer_app_id'),
+            "PayerAppNm"  => $transaction->getExtraField('payer_app_name'),
+        ];
+
+        $fields = [
             'MerchantID'  => Arr::get($this->config, 'merchant-id'),
             'TerminalID'  => Arr::get($this->config, 'terminal-id'),
             'Amount'      => $transaction->getAmount()->getRiyal(),
             'DocDate'     => '',
-            'OrderID'     => $transaction->getId(),
+            'OrderID'     => $transaction->getOrderId(),
             'ReturnURL'   => $this->getCallback($transaction),
             'ExtraInf'    => json_encode($transaction->getExtra()),
-            'InvoiceNo'   => $transaction->getId(),
-            'AppExtraInf' => '',
+            'InvoiceNo'   => $transaction->getOrderId(),
+            'AppExtraInf' => $appExtraInformation,
             'SignData'    => '',
             'UserName'    => Arr::get($this->config, 'username'),
             'Password'    => Arr::get($this->config, 'password'),
-        );
+        ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig(), ['encoding' => 'UTF-8']);
-        $response = $soap->GetToken2($fields);
+        $response = $soap->GetToken(['GenerateTokenData' => $fields]);
 
-        $result = json_decode($response->GetToken2Result, true);
-        $Token = $result["Token"];
-        $ResCod = $result["ResCod"];
-        $Message = $result["Message"];
+        $result = $response->GetTokenResult;
+        $Token = $result->Token;
+        $ResCod = $result->ResCod;
+        $Message = $result->Message;
 
-        if ($ResCod == '0' || $ResCod == '00') {
-            return AuthorizedTransaction::make($transaction, $Token);
-        } else {
+        if ($ResCod != '0' && $ResCod != '00') {
             throw new SizpayException($ResCod, $Message);
         }
-    }
 
-    /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
         $data = [
             'MerchantID' => $this->config['merchant-id'],
             'TerminalID' => $this->config['terminal-id'],
             'UserName'   => $this->config['username'],
             'Password'   => $this->config['password'],
-            'Token'      => $transaction->getReferenceId(),
+            'Token'      => $Token,
         ];
 
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
+
+        return AuthorizedTransaction::make($transaction, null, $Token, $redirectResponse);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $ResCod = $request->input('ResCod');
 
-        if ($ResCod == '0' || $ResCod == '00') {
-            return true;
+        if ($ResCod != '0' && $ResCod != '00') {
+            throw new InvalidRequestException();
         }
 
-        throw new InvalidRequestException();
+        return new FieldsToMatch();
     }
 
     /**
@@ -119,7 +123,7 @@ class Sizpay extends AbstractProvider implements ProviderInterface
         $fields = [
             'MerchantID' => Arr::get($this->config, 'merchant-id'),
             'TerminalID' => Arr::get($this->config, 'terminal-id'),
-            'Token'      => $transaction->getReferenceId(),
+            'Token'      => $transaction->getToken(),
             'SignData'   => '',
             'UserName'   => Arr::get($this->config, 'username'),
             'Password'   => Arr::get($this->config, 'password'),
@@ -128,27 +132,49 @@ class Sizpay extends AbstractProvider implements ProviderInterface
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig(), ['encoding' => 'UTF-8']);
         $response = $soap->Confirm2($fields);
 
-        $result = json_decode($response->Confirm2Result, true);
+        $result = json_decode($response->Confirm2Result, JSON_OBJECT_AS_ARRAY);
         $CardNo = $result["CardNo"];
         $TraceNo = $result["TraceNo"];
 //        $TransDate = $result["TransDate"];
-//        $TransNo = $result["TransNo"];
+        $TransNo = $result["TransNo"];
 //        $MerchantID = $result["MerchantID"];
 //        $TerminalID = $result["TerminalID"];
-//        $OrderID = $result["OrderID"];
-//        $RefNo = $result["RefNo"];
-//        $Amount = $result["Amount"];
+        $OrderID = $result["OrderID"];
+        $RefNo = $result["RefNo"];
+        $Amount = $result["Amount"];
 //        $InvoiceNo = $result["InvoiceNo"];
 //        $ExtraInf = $result["ExtraInf"];
 //        $AppExtraInf = $result["AppExtraInf"];
-//        $Token = $result["Token"];
+        $Token = $result["Token"];
         $ResCod = $result["ResCod"];
         $Message = $result["Message"];
 
-        if ($ResCod == '0' || $ResCod == '00') {
-            return new SettledTransaction($transaction, $TraceNo, $CardNo);
+        if ($ResCod != '0' && $ResCod != '00') {
+            throw new SizpayException($ResCod, $Message);
         }
 
-        throw new SizpayException($ResCod, $Message);
+        $toMatch = new FieldsToMatch($OrderID, null, $Token, new Amount($Amount, 'IRR'));
+
+        return new SettledTransaction($transaction, $TraceNo, $toMatch, $CardNo, $RefNo, $result, $TransNo);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'         => '09124441122',
+            'name'           => 'نام پرداخت کننده',
+            'email'          => 'ایمیل',
+            'description'    => 'توضیحات',
+            'pay_type'       => 'نوع پرداخت',
+            'pay_title'      => 'عنوان پرداخت',
+            'pay_type_id'    => 0,
+            'pay_title_id'   => 0,
+            'payer_app_type' => 'نوع برنامه‌ی پرداخت کننده',
+            'payer_app_name' => 'نام برنامه‌ی پرداخت کننده',
+            'payer_app_id'   => 0,
+        ];
     }
 }

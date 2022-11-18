@@ -2,186 +2,143 @@
 
 namespace Parsisolution\Gateway\Providers\NextPay;
 
-use Exception;
+use Illuminate\Container\Container;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\ApiType;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class NextPay extends AbstractProvider
 {
 
-    const SERVER_SOAP = "https://api.nextpay.org/gateway/token.wsdl";
-    const SERVER_HTTP = "https://api.nextpay.org/gateway/token.http";
-    const URL_PAYMENT = "https://api.nextpay.org/gateway/payment/";
-    const SERVER_VERIFY_SOAP = "https://api.nextpay.org/gateway/verify.wsdl";
-    const SERVER_VERIFY_HTTP = "https://api.nextpay.org/gateway/verify.http";
-
-    protected $api_type = ApiType::SOAP_CLIENT;
+    const SERVER_SOAP = 'https://api.nextpay.org/gateway/token.wsdl';
+    const SERVER_REST = 'https://nextpay.org/nx/gateway/token';
+    const URL_PAYMENT = 'https://nextpay.org/nx/gateway/payment/';
+    const SERVER_VERIFY_SOAP = 'https://api.nextpay.org/gateway/verify.wsdl';
+    const SERVER_VERIFY_REST = 'https://nextpay.org/nx/gateway/verify';
 
     /**
-     * @param int $api_type
-     * from ApiType class
+     * Type of api to use
+     *
+     * @var string
      */
-    public function setApiType($api_type)
+    protected $apiType;
+
+    public function __construct(Container $app, array $config)
     {
-        $this->api_type = $api_type;
+        parent::__construct($app, $config);
+
+        $this->apiType = Arr::get($config, 'api-type', ApiType::REST);
     }
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::NEXTPAY;
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        switch ($this->api_type) {
-            case ApiType::HTTP:
-                $curl = curl_init();
-                curl_setopt($curl, CURLOPT_URL, self::SERVER_HTTP);
-                curl_setopt($curl, CURLOPT_POST, true);
-                curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt(
-                    $curl,
-                    CURLOPT_POSTFIELDS,
-                    "api_key=".$this->config['api'].
-                    "&order_id=".$transaction->getId().
-                    "&amount=".$transaction->getAmount()->getToman().
-                    "&callback_uri=".$this->getCallback($transaction)
-                );
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-                /** @var int | string $server_output */
-                $response = json_decode(curl_exec($curl));
-                curl_close($curl);
+        $fields = [
+            'api_key'            => $this->config['api-key'],
+            'order_id'           => $transaction->getOrderId(),
+            'amount'             => $transaction->getAmount(),
+            'callback_uri'       => $this->getCallback($transaction),
+            'customer_phone'     => $transaction->getExtraField('mobile'),
+            'custom_json_fields' => $transaction->getExtraField('custom_json_fields'),
+            'payer_name'         => $transaction->getExtraField('name'),
+            'payer_desc'         => $transaction->getExtraField('description'),
+            'auto_verify'        => ($transaction->getExtraField('auto_verify') ? 'yes' : 'no'),
+            'allowed_card'       => $transaction->getExtraField('allowed_card'),
+        ];
+
+        switch ($this->apiType) {
+            case ApiType::REST:
+                list($response) = Curl::execute(self::SERVER_REST, $fields, false, [
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                ]);
 
                 return $this->verifyAuthorizationResponse($transaction, $response);
-                break;
-            case ApiType::SOAP_CLIENT:
+            case ApiType::SOAP:
             default:
-                $soap_client = new SoapClient(self::SERVER_SOAP, $this->soapConfig());
-                $response = $soap_client->TokenGenerator([
-                    'api_key'      => $this->config['api'],
-                    'order_id'     => $transaction->getId(),
-                    'amount'       => $transaction->getAmount()->getToman(),
-                    'callback_uri' => $this->getCallback($transaction),
-                ]);
+                $soap_client = new SoapClient(
+                    self::SERVER_SOAP,
+                    $this->soapConfig(),
+                    Arr::get($this->config, 'settings.soap.options', [])
+                );
+                $response = $soap_client->TokenGenerator($fields);
                 $response = $response->TokenGeneratorResult;
 
                 return $this->verifyAuthorizationResponse($transaction, $response);
-                break;
         }
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        return new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_PAYMENT.$transaction->getReferenceId());
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws InvalidRequestException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
         $order_id = $request->input('order_id');
         $trans_id = $request->input('trans_id');
 
-        if (! empty($order_id) && ! empty($trans_id)) {
-            return true;
+        if (empty($order_id) || empty($trans_id)) {
+            throw new InvalidRequestException();
         }
 
-        throw new InvalidRequestException();
+        $amount = $request->input('amount');
+
+        return new FieldsToMatch($order_id, null, $trans_id, new Amount($amount));
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $order_id = $request->input('order_id');
-        $trans_id = $request->input('trans_id');
         $card_holder = $request->input('card_holder');
 
-        switch ($this->api_type) {
-            case ApiType::HTTP:
-                $curl = curl_init();
-                curl_setopt($curl, CURLOPT_URL, self::SERVER_VERIFY_HTTP);
-                curl_setopt($curl, CURLOPT_POST, 1);
-                curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt(
-                    $curl,
-                    CURLOPT_POSTFIELDS,
-                    "api_key=".$this->config['api'].
-                    "&order_id=".$order_id.
-                    "&amount=".$transaction->getAmount()->getToman().
-                    "&trans_id=".$trans_id
-                );
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-                /** @var int | string $server_output */
-                $response = json_decode(curl_exec($curl));
-                curl_close($curl);
+        $fields = [
+            'api_key'  => $this->config['api-key'],
+            'order_id' => $transaction->getOrderId(),
+            'amount'   => $transaction->getAmount()->getToman(),
+            'trans_id' => $transaction->getToken(),
+        ];
+
+        switch ($this->apiType) {
+            case ApiType::REST:
+                list($response) = Curl::execute(self::SERVER_VERIFY_REST, $fields, false, [
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                ]);
 
                 return $this->verifyVerificationResponse($transaction, $response, $card_holder);
-                break;
-            case ApiType::SOAP_CLIENT:
+            case ApiType::SOAP:
             default:
-                $soap_client = new SoapClient(self::SERVER_VERIFY_SOAP, $this->soapConfig());
-                $response = $soap_client->PaymentVerification(
-                    [
-                        'api_key'  => $this->config['api'],
-                        "order_id" => $order_id,
-                        "amount"   => $transaction->getAmount()->getToman(),
-                        "trans_id" => $trans_id,
-                    ]
+                $soap_client = new SoapClient(
+                    self::SERVER_VERIFY_SOAP,
+                    $this->soapConfig(),
+                    Arr::get($this->config, 'settings.soap.options', [])
                 );
+                $response = $soap_client->PaymentVerification($fields);
                 $response = $response->PaymentVerificationResult;
 
                 return $this->verifyVerificationResponse($transaction, $response, $card_holder);
-                break;
         }
     }
 
@@ -193,16 +150,21 @@ class NextPay extends AbstractProvider
      */
     protected function verifyAuthorizationResponse(UnAuthorizedTransaction $transaction, $response)
     {
-        if (! empty($response) && is_object($response)) {
-            $code = intval($response->code);
-            if ($code == -1) {
-                return AuthorizedTransaction::make($transaction, $response->trans_id);
-            } else {
-                throw new NextPayException($code);
-            }
-        } else {
-            throw new \RuntimeException();
+        if (empty($response) || !is_object($response)) {
+            throw new NextPayException(-1000);
         }
+
+        $code = intval($response->code);
+        if ($code != -1) {
+            throw new NextPayException($code);
+        }
+
+        $redirectResponse = new RedirectResponse(
+            RedirectResponse::TYPE_GET,
+            self::URL_PAYMENT . $response->trans_id
+        );
+
+        return AuthorizedTransaction::make($transaction, null, $response->trans_id, $redirectResponse);
     }
 
     /**
@@ -214,15 +176,44 @@ class NextPay extends AbstractProvider
      */
     protected function verifyVerificationResponse(AuthorizedTransaction $transaction, $response, $card_holder)
     {
-        if (! empty($response) && is_object($response)) {
-            $code = intval($response->code);
-            if ($code == 0) {
-                return new SettledTransaction($transaction, $transaction->getReferenceId(), $card_holder ?: '');
-            } else {
-                throw new NextPayException($code);
-            }
-        } else {
-            throw new \RuntimeException();
+        if (empty($response) || !is_object($response)) {
+            throw new NextPayException(-1000);
         }
+
+        $code = intval($response->code);
+        if ($code != 0) {
+            throw new NextPayException($code);
+        }
+
+        $toMatch = new FieldsToMatch();
+
+        return new SettledTransaction(
+            $transaction,
+            $transaction->getToken(),
+            $toMatch,
+            $response->card_holder ?? $card_holder ?? '',
+            $response->Shaparak_Ref_Id ?? '',
+            [
+                'transaction_date' => $response->created_at ?? '',
+            ]
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'             => '09124441122',
+            'custom_json_fields' => '(json_string) اطلاعات دلخواه',
+            'name'               => 'نام پرداخت کننده',
+            'description'        => 'توضیحات دلخواه',
+            'auto_verify'        => '(bool) true || false تایید خودکار بدون نیاز به فراخوانی وریفای',
+            'allowed_card'       => 'شماره کارت مجاز -' .
+                ' اگر پارامتر با مقدار 16 رقمی کارت خاصی مقدار دهی شود،' .
+                ' اگر تراکنش با شماره کارتی غیر از شماره کارتی که شما اعلام میکنید انجام شود، برگشت میخورد. بنابراین' .
+                ' اگر میخواهید تراکنش با هر شماره کارتی پذیرفته شود، این پارامتر را خالی بگذارید یا مقدار دهی نکنید',
+        ];
     }
 }

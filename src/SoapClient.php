@@ -31,7 +31,7 @@ class SoapClient
      * @param array $config
      * @param array $options
      */
-    public function __construct($soapServer, $config, $options = array())
+    public function __construct($soapServer, $config, $options = [])
     {
         $this->config = $config;
 

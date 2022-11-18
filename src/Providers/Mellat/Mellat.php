@@ -3,14 +3,13 @@
 namespace Parsisolution\Gateway\Providers\Mellat;
 
 use DateTime;
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -32,106 +31,116 @@ class Mellat extends AbstractProvider
     const GATE_URL = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::MELLAT;
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $dateTime = new DateTime();
 
-        $fields = array(
-            'terminalId'     => $this->config['terminalId'],
+        $fields = [
+            'terminalId'     => $this->config['terminal-id'],
             'userName'       => $this->config['username'],
             'userPassword'   => $this->config['password'],
-            'orderId'        => $transaction->getId(),
+            'orderId'        => $transaction->getOrderId(),
             'amount'         => $transaction->getAmount()->getRiyal(),
             'localDate'      => $dateTime->format('Ymd'),
             'localTime'      => $dateTime->format('His'),
             'additionalData' => $transaction->getExtraField('description'),
             'callBackUrl'    => $this->getCallback($transaction),
-            'payerId'        => $transaction->getExtraField('payer.id', 0),
-        );
+            'payerId'        => $transaction->getExtraField('payer_id', 0),
+            // following fields exist in SOAP reference but are not documented in Behpardakht documentation
+            // it seams corresponding fields send to gateway throw post fields in redirect
+//            'mobileNo'       => '',
+//            'encPan'         => '',
+//            'panHiddenMode'  => '',
+//            'cartItem'       => '',
+//            'enc'            => '',
+        ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpPayRequest($fields);
 
         $response = explode(',', $response->return);
 
-        if ($response[0] != '0') {
-            throw new MellatException($response[0]);
+        $resCode = $response[0];
+        if ($resCode != '0') {
+            throw new MellatException($resCode);
         }
 
-        return AuthorizedTransaction::make($transaction, $response[1]);
-    }
+        $referenceId = $response[1];
 
-    /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
         $data = [
-            'RefId' => $transaction->getReferenceId()
+            'RefId' => $referenceId,
         ];
 
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $data['MobileNo'] = '98'.substr($mobile, 1);
+        }
+
+        $cartItem = $transaction->getExtraField('cart_item');
+        if (!empty($cartItem)) {
+            $data['CartItem'] = $cartItem;
+        }
+
+        $inputPan = $transaction->getExtraField('allowed_card');
+        if (!empty($inputPan)) {
+            $data['HiddenMode'] = ($transaction->getExtraField('hidden_mode', true) == true ? 0 : 1);
+            $data['EncPan'] = $this->encrypt($inputPan);
+        }
+
+        $nationalCode = $transaction->getExtraField('national_code');
+        if (!empty($nationalCode)) {
+            $data['ENC'] = $this->encrypt($nationalCode, false);
+        }
+
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
+
+        return AuthorizedTransaction::make($transaction, $referenceId, null, $redirectResponse);
     }
 
     /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $payRequestResCode = $request->input('ResCode');
+        $resCode = $request->input('ResCode');
 
-        if ($payRequestResCode == '0') {
-            return true;
+        if ($resCode != '0') {
+            throw new MellatException($resCode);
         }
 
-        throw new MellatException($payRequestResCode);
+        $refId = $request->input('RefId');
+        $saleOrderId = $request->input('SaleOrderId');
+
+        return new FieldsToMatch($saleOrderId, $refId);
     }
 
     /**
-     * Verify user payment from bank server
-     *
-     * @param SettledTransaction $transaction
-     * @return bool
-     *
-     * @throws MellatException
-     * @throws \SoapFault
+     * {@inheritdoc}
      */
-    protected function verifyPayment(SettledTransaction $transaction)
+    protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
+        $traceNumber = $request->input('SaleReferenceId');
+        $cardNumber = $request->input('CardHolderPan');
+        $credit_card_sale_response_detail = $request->input('CreditCardSaleResponseDetail');
+        $final_amount = $request->input('FinalAmount');
+
         $fields = [
-            'terminalId'      => $this->config['terminalId'],
+            'terminalId'      => $this->config['terminal-id'],
             'userName'        => $this->config['username'],
             'userPassword'    => $this->config['password'],
-            'orderId'         => $transaction->getId(),
-            'saleOrderId'     => $transaction->getId(),
-            'saleReferenceId' => $transaction->getTrackingCode(),
+            'orderId'         => $transaction->getOrderId(),
+            'saleOrderId'     => $transaction->getOrderId(),
+            'saleReferenceId' => $traceNumber,
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -141,59 +150,59 @@ class Mellat extends AbstractProvider
             throw new MellatException($response->return);
         }
 
-        return true;
-    }
-
-    /**
-     * Send settle request
-     *
-     * @param SettledTransaction $transaction
-     * @return bool
-     *
-     * @throws MellatException
-     * @throws \SoapFault
-     */
-    protected function settleRequest(SettledTransaction $transaction)
-    {
-        $fields = [
-            'terminalId'      => $this->config['terminalId'],
-            'userName'        => $this->config['username'],
-            'userPassword'    => $this->config['password'],
-            'orderId'         => $transaction->getId(),
-            'saleOrderId'     => $transaction->getId(),
-            'saleReferenceId' => $transaction->getTrackingCode(),
-        ];
-
-        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
         $response = $soap->bpSettleRequest($fields);
 
-        if ($response->return == '0' || $response->return == '45') {
-            return true;
+        if ($response->return != '0' && $response->return != '45') {
+            throw new MellatException($response->return);
         }
 
-        throw new MellatException($response->return);
+        $toMatch = new FieldsToMatch();
+
+        return new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber, '', compact(
+            'credit_card_sale_response_detail',
+            'final_amount'
+        ));
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
+     * Encrypts data with predefined gateway's key
      *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * @param string $data
+     * @param bool $no_padding
+     * @return string
      */
-    protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
+    protected function encrypt(string $data, bool $no_padding = true): string
     {
-        $trackingCode = $request->input('SaleReferenceId');
-        $cardNumber = $request->input('CardHolderPan');
-        $settledTransaction = new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        $options = OPENSSL_RAW_DATA;
+        if ($no_padding) {
+            $options |= OPENSSL_NO_PADDING;
+        }
+        $encryptedPan = bin2hex(openssl_encrypt(
+            hex2bin($data),
+            'DES-ECB',
+            hex2bin('2C7D202B960A96AA'),
+            $options
+        ));
 
-        $this->verifyPayment($settledTransaction);
-        $this->settleRequest($settledTransaction);
+        return $encryptedPan;
+    }
 
-        return $settledTransaction;
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'        => '09124441122',
+            'description'   => 'send to additionalData filed (maximum 1000 characters)',
+            'payer_id'      => '(long) شناسه پرداخت کننده',
+            'cart_item'     => 'چنانچه پذيرنده بخواهد توضيحات اضافه‌تری را در صفحه دروازه پرداخت نمايش دهد',
+            'allowed_card'  => 'شماره کارت دارنده حساب مثال: 6037991020304050',
+            'hidden_mode'   =>
+                '(bool) true || false (اگر فعال باشد'.
+                ' صرفا ۴ شماره آخر شماره کارت ارسالی در درگاه پرداخت بصورت ReadOnly نمايش داده خواهد شد'.
+                ' در غیر این صورت شماره کارت ارسالی در درگاه پرداخت به صورت کامل و ReadOnly نمایش داده خواهد شد)',
+            'national_code' => 'کد ملي دارنده حساب مثال: 1233445566',
+        ];
     }
 }

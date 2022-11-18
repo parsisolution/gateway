@@ -6,51 +6,83 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Parsisolution\Gateway\Exceptions\GatewayException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
-use Parsisolution\Gateway\Exceptions\NotFoundTransactionException;
-use Parsisolution\Gateway\Exceptions\RetryException;
-use Parsisolution\Gateway\Providers\Asanpardakht\Asanpardakht;
+use Parsisolution\Gateway\Exceptions\NullConfigException;
+use Parsisolution\Gateway\Providers\AqayePardakht\AqayePardakht;
+use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
+use Parsisolution\Gateway\Providers\Bahamta\Bahamta;
+use Parsisolution\Gateway\Providers\BitPay\BitPay;
+use Parsisolution\Gateway\Providers\DigiPay\DigiPay;
+use Parsisolution\Gateway\Providers\Fanava\Fanava;
+use Parsisolution\Gateway\Providers\IDPay\IDPay;
+use Parsisolution\Gateway\Providers\IranDargah\IranDargah;
 use Parsisolution\Gateway\Providers\Irankish\Irankish;
+use Parsisolution\Gateway\Providers\Jibimo\Jibimo;
 use Parsisolution\Gateway\Providers\JiBit\JiBit;
-use Parsisolution\Gateway\Providers\Mabna\Mabna;
-use Parsisolution\Gateway\Providers\MabnaOld\MabnaOld;
 use Parsisolution\Gateway\Providers\Mellat\Mellat;
+use Parsisolution\Gateway\Providers\Milyoona\Milyoona;
 use Parsisolution\Gateway\Providers\NextPay\NextPay;
-use Parsisolution\Gateway\Providers\Pardano\Pardano;
+use Parsisolution\Gateway\Providers\Novin\Novin;
 use Parsisolution\Gateway\Providers\Parsian\Parsian;
+use Parsisolution\Gateway\Providers\ParsPal\ParsPal;
+use Parsisolution\Gateway\Providers\Pasargad\Pasargad;
 use Parsisolution\Gateway\Providers\Payir\Payir;
 use Parsisolution\Gateway\Providers\PayPing\PayPing;
 use Parsisolution\Gateway\Providers\SabaPay\SabaPay;
 use Parsisolution\Gateway\Providers\Sadad\Sadad;
 use Parsisolution\Gateway\Providers\Saman\Saman;
+use Parsisolution\Gateway\Providers\Sepal\Sepal;
+use Parsisolution\Gateway\Providers\Sepehr\Sepehr;
+use Parsisolution\Gateway\Providers\Shepa\Shepa;
 use Parsisolution\Gateway\Providers\Sizpay\Sizpay;
+use Parsisolution\Gateway\Providers\TiPoul\TiPoul;
+use Parsisolution\Gateway\Providers\Vandar\Vandar;
+use Parsisolution\Gateway\Providers\YekPay\YekPay;
 use Parsisolution\Gateway\Providers\Zarinpal\Zarinpal;
+use Parsisolution\Gateway\Providers\Zibal\Zibal;
 
 class GatewayManager extends Manager implements Contracts\Factory
 {
 
     const CONFIG_FILE_NAME = 'gateways';
 
-    const MELLAT = 'MELLAT';
-    const SADAD = 'SADAD';
-    const SAMAN = 'SAMAN';
-    const PARSIAN = 'PARSIAN';
-    const MABNA = 'MABNA';
-    const MABNA_OLD = 'MABNA_OLD';
-    const IRANKISH = 'IRANKISH';
-    const ASANPARDAKHT = 'ASANPARDAKHT';
-    const PAYIR = 'PAYIR';
-    const PARDANO = 'PARDANO';
-    const ZARINPAL = 'ZARINPAL';
-    const NEXTPAY = 'NEXTPAY';
-    const JIBIT = 'JIBIT';
-    const SABAPAY = 'SABAPAY';
-    const SIZPAY = 'SIZPAY';
-    const PAYPING = 'PAYPING';
+    const MELLAT = 1;
+    const SAMAN = 2;
+    const SADAD = 3;
+    const PARSIAN = 4;
+    const PASARGAD = 5;
+    const NOVIN = 6;
+    const IRANKISH = 7;
+    const SEPEHR = 8;
+    const ASANPARDAKHT = 9;
+    const FANAVA = 10;
+    const VANDAR = 20;
+    const PAYIR = 21;
+    const ZARINPAL = 22;
+    const JIBIT = 23;
+    const PAYPING = 24;
+    const IDPAY = 25;
+    const NEXTPAY = 26;
+    const SIZPAY = 27;
+    const IRANDARGAH = 28;
+    const SABAPAY = 29;
+    const SHEPA = 30;
+    const ZIBAL = 31;
+    const JIBIMO = 32;
+    const AQAYEPARDAKHT = 33;
+    const BAHAMTA = 34;
+    const PARSPAL = 35;
+    const BITPAY = 36;
+    const MILYOONA = 37;
+    const SEPAL = 38;
+    const TIPOUL = 39;
+    const DIGIPAY = 40;
+    const YEKPAY = 50;
 
     /**
-     * Get all of the available "drivers".
+     * Get all the available "drivers".
      *
      * @return array
      */
@@ -58,26 +90,88 @@ class GatewayManager extends Manager implements Contracts\Factory
     {
         return [
             self::MELLAT,
-            self::SADAD,
             self::SAMAN,
+            self::SADAD,
             self::PARSIAN,
-            self::MABNA,
-            self::MABNA_OLD,
+            self::PASARGAD,
+            self::NOVIN,
             self::IRANKISH,
+            self::SEPEHR,
             self::ASANPARDAKHT,
+            self::FANAVA,
+            self::VANDAR,
             self::PAYIR,
-            self::PARDANO,
             self::ZARINPAL,
-            self::NEXTPAY,
             self::JIBIT,
-            self::SABAPAY,
-            self::SIZPAY,
             self::PAYPING,
+            self::IDPAY,
+            self::NEXTPAY,
+            self::SIZPAY,
+            self::IRANDARGAH,
+            self::SABAPAY,
+            self::SHEPA,
+            self::ZIBAL,
+            self::JIBIMO,
+            self::AQAYEPARDAKHT,
+            self::BAHAMTA,
+            self::PARSPAL,
+            self::BITPAY,
+            self::MILYOONA,
+            self::SEPAL,
+            self::TIPOUL,
+            self::DIGIPAY,
+            self::YEKPAY,
         ];
     }
 
     /**
-     * Get all of the active "drivers" with their names and in specified order.
+     * Get name of driver from its id number if it is provided by package and return id otherwise
+     *
+     * @param integer $id
+     * @return string
+     */
+    public function getDriverName($id)
+    {
+        $map = [
+            1  => 'MELLAT',
+            2  => 'SAMAN',
+            3  => 'SADAD',
+            4  => 'PARSIAN',
+            5  => 'PASARGAD',
+            6  => 'NOVIN',
+            7  => 'IRANKISH',
+            8  => 'SEPEHR',
+            9  => 'ASANPARDAKHT',
+            10 => 'FANAVA',
+            20 => 'VANDAR',
+            21 => 'PAYIR',
+            22 => 'ZARINPAL',
+            23 => 'JIBIT',
+            24 => 'PAYPING',
+            25 => 'IDPAY',
+            26 => 'NEXTPAY',
+            27 => 'SIZPAY',
+            28 => 'IRANDARGAH',
+            29 => 'SABAPAY',
+            30 => 'SHEPA',
+            31 => 'ZIBAL',
+            32 => 'JIBIMO',
+            33 => 'AQAYEPARDAKHT',
+            34 => 'BAHAMTA',
+            35 => 'PARSPAL',
+            36 => 'BITPAY',
+            37 => 'MILYOONA',
+            38 => 'SEPAL',
+            39 => 'TIPOUL',
+            40 => 'DIGIPAY',
+            50 => 'YEKPAY',
+        ];
+
+        return $map[$id] ?? $id;
+    }
+
+    /**
+     * Get all the active "drivers" with their names and in specified order.
      *
      * @param string $name_prefix
      * @return array
@@ -117,7 +211,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      *
      * @param bool $stateless
      *
-     * @return \stdClass
+     * @return \Parsisolution\Gateway\Transactions\AuthorizedTransaction
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
      * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
      * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
@@ -148,54 +242,28 @@ class GatewayManager extends Manager implements Contracts\Factory
             $parameters = $request->input();
         }
 
-        if (! key_exists('transaction_id', $parameters) && ! key_exists('iN', $parameters)) {
+        if (! key_exists('_order_id', $parameters) && ! key_exists('iN', $parameters)) {
             throw new InvalidRequestException;
         }
-        if (key_exists('transaction_id', $parameters)) {
-            $id = $parameters['transaction_id'];
+        if (key_exists('_order_id', $parameters)) {
+            $orderId = $parameters['_order_id'];
         } else {
-            $id = $parameters['iN'];
+            $orderId = $parameters['iN'];
         }
 
         $db = app()['db'];
-        $transaction = $db->table($this->getTable())->where('id', $id)->first();
+        $transactionDao = new TransactionDao($db, $this->getTable());
 
-        if (! $transaction) {
-            throw new NotFoundTransactionException;
-        }
+        $authorizedTransaction = $transactionDao->find($orderId);
 
-        if (in_array($transaction->status, [Transaction::STATE_SUCCEEDED, Transaction::STATE_FAILED])) {
-            throw new RetryException;
-        }
-
-        return $transaction;
-    }
-
-    /**
-     * retrieve respective driver instance from request
-     *
-     * @param bool $stateless
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
-     * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
-     * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
-     * @throws \Parsisolution\Gateway\Exceptions\RetryException
-     * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
-     */
-    public function fromSettleRequest($stateless = false)
-    {
-        $transaction = $this->transactionFromSettleRequest($stateless);
-
-        $driver = $this->of(strtoupper($transaction->provider));
-        $driver->setTransactionId($transaction->id);
-
-        return $driver;
+        return $authorizedTransaction;
     }
 
     /**
      * Verify and Settle the callback request and get the settled transaction instance.
      *
      * @param bool $stateless
+     * @param array $fieldsToUpdateOnSuccess
      *
      * @return \Parsisolution\Gateway\Transactions\SettledTransaction
      * @throws \Parsisolution\Gateway\Exceptions\TransactionException
@@ -204,20 +272,23 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @throws \Parsisolution\Gateway\Exceptions\RetryException
      * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
      */
-    public function settle($stateless = false)
+    public function settle($stateless = false, $fieldsToUpdateOnSuccess = [])
     {
-        $driver = $this->fromSettleRequest($stateless);
+        $authorizedTransaction = $this->transactionFromSettleRequest($stateless);
+
+        $driver = $this->of($this->getDriverName($authorizedTransaction['provider']));
         if ($stateless) {
             $driver->stateless();
         }
 
-        return $driver->settle();
+        return $driver->settle($authorizedTransaction, $fieldsToUpdateOnSuccess);
     }
 
     /**
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createMellatDriver()
     {
@@ -230,18 +301,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
-     */
-    protected function createSadadDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.sadad'];
-
-        return $this->buildProvider(Sadad::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createSamanDriver()
     {
@@ -254,6 +314,20 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createSadadDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sadad'];
+
+        return $this->buildProvider(Sadad::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createParsianDriver()
     {
@@ -266,30 +340,33 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
-    protected function createMabnaDriver()
+    protected function createPasargadDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.mabna'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.pasargad'];
 
-        return $this->buildProvider(Mabna::class, $config);
+        return $this->buildProvider(Pasargad::class, $config);
     }
 
     /**
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
-    protected function createMabnaOldDriver()
+    protected function createNovinDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.mabna-old'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.novin'];
 
-        return $this->buildProvider(MabnaOld::class, $config);
+        return $this->buildProvider(Novin::class, $config);
     }
 
     /**
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createIrankishDriver()
     {
@@ -302,18 +379,59 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
-    protected function createAsanpardakhtDriver()
+    protected function createSepehrDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.asanpardakht'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sepehr'];
 
-        return $this->buildProvider(Asanpardakht::class, $config);
+        return $this->buildProvider(Sepehr::class, $config);
     }
 
     /**
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createAsanpardakhtDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.asanpardakht'];
+
+        return $this->buildProvider(AsanPardakht::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createFanavaDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.fanava'];
+
+        return $this->buildProvider(Fanava::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createVandarDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.vandar'];
+
+        return $this->buildProvider(Vandar::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createPayirDriver()
     {
@@ -326,18 +444,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
-     */
-    protected function createPardanoDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.pardano'];
-
-        return $this->buildProvider(Pardano::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createZarinpalDriver()
     {
@@ -350,18 +457,7 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
-     */
-    protected function createNextpayDriver()
-    {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.nextpay'];
-
-        return $this->buildProvider(NextPay::class, $config);
-    }
-
-    /**
-     * Create an instance of the specified driver.
-     *
-     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createJibitDriver()
     {
@@ -374,18 +470,46 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
-    protected function createSabapayDriver()
+    protected function createPaypingDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.sabapay'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.payping'];
 
-        return $this->buildProvider(SabaPay::class, $config);
+        return $this->buildProvider(PayPing::class, $config);
     }
 
     /**
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createIdpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.idpay'];
+
+        return $this->buildProvider(IDPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createNextpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.nextpay'];
+
+        return $this->buildProvider(NextPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     protected function createSizpayDriver()
     {
@@ -398,12 +522,182 @@ class GatewayManager extends Manager implements Contracts\Factory
      * Create an instance of the specified driver.
      *
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
-    protected function createPaypingDriver()
+    protected function createIrandargahDriver()
     {
-        $config = app()['config'][self::CONFIG_FILE_NAME.'.payping'];
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.irandargah'];
 
-        return $this->buildProvider(PayPing::class, $config);
+        return $this->buildProvider(IranDargah::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createSabapayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sabapay'];
+
+        return $this->buildProvider(SabaPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createShepaDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.shepa'];
+
+        return $this->buildProvider(Shepa::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createZibalDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.zibal'];
+
+        return $this->buildProvider(Zibal::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createJibimoDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.jibimo'];
+
+        return $this->buildProvider(Jibimo::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createAqayepardakhtDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.aqayepardakht'];
+
+        return $this->buildProvider(AqayePardakht::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createBahamtaDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.bahamta'];
+
+        return $this->buildProvider(Bahamta::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createParspalDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.parspal'];
+
+        return $this->buildProvider(ParsPal::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createBitpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.bitpay'];
+
+        return $this->buildProvider(BitPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createMilyoonaDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.milyoona'];
+
+        return $this->buildProvider(Milyoona::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createSepalDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.sepal'];
+
+        return $this->buildProvider(Sepal::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createTipoulDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.tipoul'];
+
+        return $this->buildProvider(TiPoul::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createDigipayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.digipay'];
+
+        return $this->buildProvider(DigiPay::class, $config);
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
+     */
+    protected function createYekpayDriver()
+    {
+        $config = app()['config'][self::CONFIG_FILE_NAME.'.yekpay'];
+
+        return $this->buildProvider(YekPay::class, $config);
     }
 
     /**
@@ -422,9 +716,14 @@ class GatewayManager extends Manager implements Contracts\Factory
      * @param  string $provider
      * @param  array $config
      * @return \Parsisolution\Gateway\AbstractProvider
+     * @throws GatewayException
      */
     public function buildProvider($provider, $config)
     {
+        if (! $config) {
+            throw new NullConfigException();
+        }
+
         return new $provider(app(), $this->formatConfig($config));
     }
 

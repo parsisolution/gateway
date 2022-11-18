@@ -29,9 +29,9 @@ interface Transaction
     public function getExtraField($key, $default = null);
 
     /**
-     * Get the raw transaction array.
+     * Get transaction's attributes.
      *
      * @return array
      */
-    public function getRaw();
+    public function getAttributes();
 }

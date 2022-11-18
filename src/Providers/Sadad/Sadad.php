@@ -2,13 +2,15 @@
 
 namespace Parsisolution\Gateway\Providers\Sadad;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
+use Parsisolution\Gateway\Curl;
+use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -20,122 +22,110 @@ class Sadad extends AbstractProvider
      *
      * @var string
      */
-    const SERVER_URL = 'https://sadad.shaparak.ir/vpg/api/v0';
+    const SERVER_URL = 'https://sadad.shaparak.ir/api/v0';
 
     /**
      * Url of sadad gateway redirect path
      *
      * @var string
      */
-    const GATE_URL = 'https://sadad.shaparak.ir/VPG/Purchase?Token=';
+    const GATE_URL = 'https://sadad.shaparak.ir/Purchase?Token=';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::SADAD;
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        $key = $this->config['key'];
-        $TerminalId = $this->config['terminalId'];
+        $TerminalId = $this->config['terminal-id'];
+        $OrderId = $transaction->getOrderId();
         $Amount = $transaction->getAmount()->getRiyal();
-        $OrderId = $transaction->getId();
-        $SignData = $this->encryptPKCS7("$TerminalId;$OrderId;$Amount", "$key");
-        $data = [
-            'TerminalId'    => $TerminalId,
-            'MerchantId'    => $this->config['merchantId'],
-            'Amount'        => $Amount,
-            'SignData'      => $SignData,
-            'ReturnUrl'     => $this->getCallback($transaction),
-            'LocalDateTime' => date("m/d/Y g:i:s a"),
-            'OrderId'       => $transaction->getId(),
+        $SignData = $this->encryptPKCS7("$TerminalId;$OrderId;$Amount", $this->config['terminal-key']);
+        $fields = [
+            'MerchantId'       => $this->config['merchant-id'],
+            'TerminalId'       => $TerminalId,
+            'Amount'           => $Amount,
+            'OrderId'          => $OrderId,
+            'LocalDateTime'    => date('m/d/Y g:i:s a'),
+            'ReturnUrl'        => $this->getCallback($transaction),
+            'SignData'         => $SignData,
+            'AdditionalData'   => $transaction->getExtraField('description'),
+            'MultiplexingData' => $transaction->getExtraField('multiplexing_data'),
+            'ApplicationName'  => $transaction->getExtraField('application_name'),
         ];
-        $str_data = json_encode($data);
-        $res = $this->callAPI(self::SERVER_URL.'/Request/PaymentRequest', $str_data);
-        $response = json_decode($res);
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $fields['UserId'] = '98'.substr($mobile, 1);
+        }
+
+        list($response) = Curl::execute(self::SERVER_URL.'/Request/PaymentRequest', $fields, false);
+
         if ($response->ResCode != 0) {
             throw new SadadException($response->ResCode, $response->Description);
         }
 
-        return AuthorizedTransaction::make($transaction, $response->Token);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL.$response->Token);
+
+        return AuthorizedTransaction::make($transaction, null, $response->Token, $redirectResponse);
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        return new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL.$transaction->getReferenceId());
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $ResCode = $request->input("ResCode");
+        $ResCode = $request->input('ResCode');
+//        $SwitchResCode = $request->input('SwitchResCode');
 
-        if ($ResCode == 0) {
-            return true;
+        if ($ResCode != 0) {
+            throw new InvalidRequestException();
         }
 
-        throw new SadadException($ResCode);
+        $OrderId = $request->input('OrderId');
+        $Token = $request->input('Token');
+
+        return new FieldsToMatch($OrderId, null, $Token);
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $key = $this->config['key'];
-        $Token = $request->input("token");
+        $masked_card_number = $request->input('PrimaryAccNo');
+        $hashed_card_number = $request->input('HashedCardNo');
 
-        $verifyData = array('Token' => $Token, 'SignData' => $this->encryptPKCS7($Token, $key));
-        $str_data = json_encode($verifyData);
-        $res = $this->callAPI(self::SERVER_URL.'/Advice/Verify', $str_data);
-        $response = json_decode($res);
+        $fields = [
+            'Token'    => $transaction->getToken(),
+            'SignData' => $this->encryptPKCS7($transaction->getToken(), $this->config['terminal-key']),
+        ];
 
-        if ($response->ResCode != -1 && $response->ResCode == 0) {
-            $trackingCode = $response->SystemTraceNo;
-            $cardNumber = $response->CustomerCardNumber;
+        list($response) = Curl::execute(self::SERVER_URL.'/Advice/Verify', $fields);
 
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber, json_decode($res, true));
+        if ($response['ResCode'] != 0) {
+            throw new SadadException($response['ResCode'], $response['Description']);
         }
 
-        throw new SadadException(
-            $response->ResCode,
-            "تراکنش نا موفق بود در صورت کسر مبلغ از حساب شما حداکثر پس از 72 ساعت مبلغ به حسابتان برمی گردد."
+        $orderId = $response['OrderId'];
+        $amount = $response['Amount'];
+        $traceNumber = $response['SystemTraceNo'];
+        $cardNumber = $response['CustomerCardNumber'];
+        $RRN = $response['RetrivalRefNo'];
+
+        return new SettledTransaction(
+            $transaction,
+            $traceNumber,
+            new FieldsToMatch($orderId, null, null, new Amount($amount, 'IRR')),
+            $cardNumber,
+            $RRN,
+            compact('masked_card_number', 'hashed_card_number')
         );
     }
 
@@ -149,30 +139,35 @@ class Sadad extends AbstractProvider
     private function encryptPKCS7($str, $key)
     {
         $key = base64_decode($key);
-        $cipherText = OpenSSL_encrypt($str, "DES-EDE3", $key, OPENSSL_RAW_DATA);
+        $cipherText = OpenSSL_encrypt($str, 'DES-EDE3', $key, OPENSSL_RAW_DATA);
 
         return base64_encode($cipherText);
     }
 
     /**
-     * @param string $url
-     * @param mixed $data
-     * @return string
+     * {@inheritdoc}
      */
-    private function callAPI($url, $data = false)
+    public function getSupportedExtraFieldsSample()
     {
-        $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt(
-            $curl,
-            CURLOPT_HTTPHEADER,
-            array('Content-Type: application/json', 'Content-Length: '.strlen($data))
-        );
-        $result = curl_exec($curl);
-        curl_close($curl);
-
-        return $result;
+        return [
+            'mobile'            => '09124441122',
+            'description'       => 'اطلاعات اضافی تراکنش',
+            'multiplexing_data' => [
+                'Type'             => 'Amount || Percentage',
+                'MultiplexingRows' =>
+                    [
+                        [
+                            'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
+                            'Value'      => '(integer) مبلغ يا درصد',
+                        ],
+                        [
+                            'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
+                            'Value'      => '(integer) مبلغ يا درصد',
+                        ],
+                    ],
+            ],
+            'application_name'  => 'نام اپلیکیشن درخواست کننده - '.
+                'اختیاری (برای گزارشات لازم است که اين فیلد مقدار دهی شود)',
+        ];
     }
 }

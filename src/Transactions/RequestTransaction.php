@@ -26,7 +26,6 @@ class RequestTransaction extends AbstractTransaction
     public function setAmount($amount)
     {
         $this['amount'] = $amount;
-        $this->amount = $amount;
 
         return $this;
     }
@@ -39,7 +38,6 @@ class RequestTransaction extends AbstractTransaction
      */
     public function setExtra($extra)
     {
-        $this->extra = $extra;
         $this['extra'] = $extra;
 
         return $this;
@@ -54,8 +52,9 @@ class RequestTransaction extends AbstractTransaction
      */
     public function setExtraField($key, $value)
     {
-        Arr::set($this->extra, $key, $value);
-        $this['extra'] = $this->extra;
+        $extra = $this['extra'];
+        Arr::set($extra, $key, $value);
+        $this['extra'] = $extra;
 
         return $this;
     }

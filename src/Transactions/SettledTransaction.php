@@ -2,54 +2,63 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-class SettledTransaction extends AbstractTransaction
+use Parsisolution\Gateway\Contracts\HasId;
+use Parsisolution\Gateway\Traits\HasIdField;
+use Parsisolution\Gateway\Traits\HasOrderIdField;
+
+class SettledTransaction extends AbstractTransaction implements HasId
 {
-
-    /**
-     * The transaction's tracking code.
-     *
-     * @var string
-     */
-    protected $trackingCode;
-
-    /**
-     * The transaction's card number.
-     *
-     * @var string
-     */
-    protected $cardNumber;
+    use HasIdField, HasOrderIdField;
 
     /**
      * SettledTransaction constructor.
      *
      * @param AuthorizedTransaction $transaction
-     * @param string $trackingCode
+     * @param string $traceNumber
+     * @param FieldsToMatch $toMatch
      * @param string $cardNumber
+     * @param string $RRN
      * @param array $extraFields
+     * @param string $referenceId
      */
-    public function __construct(AuthorizedTransaction $transaction, $trackingCode, $cardNumber = '', $extraFields = [])
-    {
-        $this->setRaw($transaction->getRaw());
-        $this['trackingCode'] = $trackingCode;
-        $this['cardNumber'] = $cardNumber;
-        $this->map([
-            'amount'       => $transaction->getAmount(),
-            'extra'        => array_merge($transaction->getExtra(), $extraFields),
-            'id'           => $transaction->getId(),
-            'referenceId'  => $transaction->getReferenceId(),
-            'trackingCode' => $trackingCode,
-            'cardNumber'   => $cardNumber,
-        ]);
+    public function __construct(
+        AuthorizedTransaction $transaction,
+        $traceNumber,
+        $toMatch,
+        $cardNumber = '',
+        $RRN = '',
+        $extraFields = [],
+        $referenceId = ''
+    ) {
+        $this->setAttributes($transaction->getAttributes());
+        $this['trace_number'] = $traceNumber;
+        $this['to_match'] = $toMatch;
+        $this['card_number'] = $cardNumber;
+        $this['rrn'] = $RRN;
+        $this['extra'] = array_merge($transaction->getExtra(), $extraFields);
+        if (! empty($referenceId)) {
+            $this['reference_id'] = $referenceId;
+        }
     }
 
     /**
-     * Get the tracking code of transaction.
+     * Get the trace number of transaction.
      *
      * @return string
      */
-    public function getTrackingCode()
+    public function getTraceNumber()
     {
-        return $this->trackingCode;
+        return $this['trace_number'];
+    }
+
+    /**
+     * Get fields to match.
+     *
+     * @return FieldsToMatch
+     */
+    public function getFieldsToMatch()
+    {
+        return $this['to_match'];
     }
 
     /**
@@ -59,7 +68,17 @@ class SettledTransaction extends AbstractTransaction
      */
     public function getCardNumber()
     {
-        return $this->cardNumber;
+        return $this['card_number'];
+    }
+
+    /**
+     * Get the Retrieval Reference Number of transaction.
+     *
+     * @return string
+     */
+    public function getRRN()
+    {
+        return $this['rrn'];
     }
 
     /**
@@ -69,16 +88,6 @@ class SettledTransaction extends AbstractTransaction
      */
     public function getReferenceId()
     {
-        return $this['referenceId'];
-    }
-
-    /**
-     * Get the unique identifier of the transaction.
-     *
-     * @return string
-     */
-    public function getId()
-    {
-        return $this['id'];
+        return $this['reference_id'];
     }
 }

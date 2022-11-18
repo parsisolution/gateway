@@ -8,9 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Parsisolution\Gateway\Contracts\Provider as ProviderContract;
+use Parsisolution\Gateway\Exceptions\GeneralTransactionException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
+use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
+use Parsisolution\Gateway\Transactions\RequestTransaction;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 use RuntimeException;
@@ -60,11 +64,11 @@ abstract class AbstractProvider implements ProviderContract
     private $callbackUrl;
 
     /**
-     * Transaction db model
+     * Transaction Data Access Object
      *
-     * @var Transaction
+     * @var TransactionDao
      */
-    protected $transaction;
+    protected $transactionDao;
 
     /**
      * Create a new provider instance.
@@ -80,18 +84,8 @@ abstract class AbstractProvider implements ProviderContract
         $this->request = $app->make('request');
 
         $table_name = Arr::get($this->app['config'], GatewayManager::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
-        $this->transaction = new Transaction($app->make('db'), $table_name);
-
-        return $this;
+        $this->transactionDao = new TransactionDao($app->make('db'), $table_name);
     }
-
-    /**
-     * Map the raw transaction array to a Gateway Transaction instance.
-     *
-     * @param  array $transaction
-     * @return \Parsisolution\Gateway\Transaction
-     */
-//    abstract protected function mapTransactionToObject(array $transaction);
 
     /**
      * {@inheritdoc}
@@ -101,14 +95,6 @@ abstract class AbstractProvider implements ProviderContract
         $this->callbackUrl = $url;
 
         return $this;
-    }
-
-    /**
-     * @param string $id
-     */
-    public function setTransactionId($id)
-    {
-        $this->transaction->setId($id);
     }
 
     /**
@@ -130,13 +116,13 @@ abstract class AbstractProvider implements ProviderContract
     }
 
     /**
-     * Get this provider name to save on transaction table.
+     * Get this provider id to save on transaction table.
      * and later use that to verify and settle
      * callback request (from transaction)
      *
-     * @return string
+     * @return integer
      */
-    abstract protected function getProviderName();
+    abstract protected function getProviderId();
 
     /**
      * Authorize payment request from provider's server and return
@@ -152,62 +138,38 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * {@inheritdoc}
      */
-    final public function authorize($transaction)
+    final public function authorize(RequestTransaction $transaction)
     {
-        $id = $this->transaction->create($transaction, $this->getProviderName(), $this->request->getClientIp());
+        $unAuthorizedTransaction = $this->transactionDao->create(
+            $transaction,
+            $this->getProviderId(),
+            $this->request->getClientIp()
+        );
 
         try {
-            $authorizedTransaction = $this->authorizeTransaction(new UnAuthorizedTransaction($transaction, $id));
+            $authorizedTransaction = $this->authorizeTransaction($unAuthorizedTransaction);
 
-            $this->transaction->updateReferenceId($authorizedTransaction->getReferenceId());
+            $this->transactionDao->updateTransaction($authorizedTransaction);
 
             return $authorizedTransaction;
         } catch (Exception $e) {
-            $this->transaction->failed();
-            $this->transaction->createLog(get_class($e).' : '.$e->getCode(), $e->getMessage());
-            throw $e;
+            $this->transactionDao->failed(
+                $unAuthorizedTransaction,
+                get_class($e).' : '.$e->getCode(),
+                $e->getMessage()
+            );
+
+            $exception = new GeneralTransactionException($e->getCode(), $e->getMessage(), $e);
+            $exception->setTransaction($unAuthorizedTransaction);
+            throw $exception;
         }
-    }
-
-    /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return \Parsisolution\Gateway\RedirectResponse
-     */
-    abstract protected function redirectToGateway(AuthorizedTransaction $transaction);
-
-    /**
-     * {@inheritdoc}
-     */
-    final public function redirect($transaction)
-    {
-        $response = $this->redirectToGateway($transaction);
-
-        if ($response->getType() === RedirectResponse::TYPE_GET) {
-            return new \Symfony\Component\HttpFoundation\RedirectResponse($response->getUrl());
-        } else {
-            $data = [
-                'URL'=> $response->getUrl(),
-                'Data' => $response->getData()
-            ];
-            return $this->view('gateway::redirector')->with($data);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    final public function redirectResponse($transaction)
-    {
-        return $this->redirectToGateway($transaction);
     }
 
     /**
      * Validate the settlement request to see if it has all necessary fields
      *
      * @param Request $request
-     * @return bool
+     * @return FieldsToMatch
      * @throws InvalidRequestException|TransactionException
      */
     abstract protected function validateSettlementRequest(Request $request);
@@ -228,47 +190,48 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * {@inheritdoc}
      */
-    final public function settle()
+    final public function settle(AuthorizedTransaction $authorizedTransaction, $fieldsToUpdateOnSuccess = [])
     {
         try {
-            $this->validateSettlementRequest($this->request);
+            $fieldsToMatch = $this->validateSettlementRequest($this->request);
 
-            $transaction = $this->transaction->get();
-            $authorizedTransaction = AuthorizedTransaction::makeFromDB(get_object_vars($transaction));
+            if (! $fieldsToMatch->matches($authorizedTransaction)) {
+                throw new InvalidRequestException();
+            }
 
             $settledTransaction = $this->settleTransaction($this->request, $authorizedTransaction);
 
-            $this->transaction->succeeded($settledTransaction);
-            $this->transaction->createLog(Transaction::STATE_SUCCEEDED, Transaction::MESSAGE_SUCCEEDED);
+            if (! $settledTransaction->getFieldsToMatch()->matches($settledTransaction)) {
+                throw new InvalidRequestException();
+            }
+
+            // prevent "Double Spending"
+            if ($this->transactionDao->isSpent($settledTransaction)) {
+                $retryException = new RetryException('The Transaction has been Spent Before');
+                $retryException->setTransaction($settledTransaction);
+                throw $retryException;
+            }
+
+            $this->transactionDao->succeeded($settledTransaction, $fieldsToUpdateOnSuccess);
 
             return $settledTransaction;
         } catch (TransactionException $exception) {
-            $this->transaction->failed();
-            $this->transaction->createLog($exception->getCode(), $exception->getMessage());
+            $this->transactionDao->failed($authorizedTransaction, $exception->getCode(), $exception->getMessage());
 
+            $exception->setTransaction($authorizedTransaction);
             throw $exception;
-        } catch (Exception $e) {
-            $this->transaction->failed();
-            $this->transaction->createLog(get_class($e).' : '.$e->getCode(), $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            $this->transactionDao->failed($authorizedTransaction, get_class($e).' : '.$e->getCode(), $e->getMessage());
 
+            $e->setTransaction($authorizedTransaction);
             throw $e;
+        } catch (Exception $e) {
+            $this->transactionDao->failed($authorizedTransaction, get_class($e).' : '.$e->getCode(), $e->getMessage());
+
+            $exception = new GeneralTransactionException($e->getCode(), $e->getMessage(), $e);
+            $exception->setTransaction($authorizedTransaction);
+            throw $exception;
         }
-    }
-
-    /**
-     * Determine if the current request / session has a mismatching "state".
-     *
-     * @return bool
-     */
-    protected function hasInvalidState()
-    {
-        if ($this->isStateless()) {
-            return false;
-        }
-
-        $state = $this->request->session()->pull('gateway__state');
-
-        return ! (strlen($state) > 0 && $this->request->input('_state') === $state);
     }
 
     /**
@@ -340,6 +303,16 @@ abstract class AbstractProvider implements ProviderContract
     }
 
     /**
+     * Get supported extra fields sample
+     *
+     * @return array
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [];
+    }
+
+    /**
      * Get the CSRF token value.
      *
      * @return string
@@ -372,7 +345,7 @@ abstract class AbstractProvider implements ProviderContract
 
         $this->with(array_merge(
             $this->parameters,
-            ['transaction_id' => $transaction->getId()]
+            ['_order_id' => $transaction->getOrderId()]
         ));
 
         if ($this->usesState()) {
@@ -432,24 +405,5 @@ abstract class AbstractProvider implements ProviderContract
     protected function soapConfig()
     {
         return Arr::get($this->config, 'settings.soap');
-    }
-
-    /**
-     * Get the evaluated view contents for the given view.
-     *
-     * @param  string $view
-     * @param  array $data
-     * @param  array $mergeData
-     * @return \Illuminate\View\View
-     */
-    protected function view($view = null, $data = [], $mergeData = [])
-    {
-        $factory = $this->app->make(\Illuminate\Contracts\View\Factory::class);
-
-        if (func_num_args() === 0) {
-            return $factory;
-        }
-
-        return $factory->make($view, $data, $mergeData);
     }
 }

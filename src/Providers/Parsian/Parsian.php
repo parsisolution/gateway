@@ -2,14 +2,14 @@
 
 namespace Parsisolution\Gateway\Providers\Parsian;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -38,113 +38,109 @@ class Parsian extends AbstractProvider
     const SERVER_VERIFY_URL = 'https://pec.shaparak.ir/NewIPGServices/Confirm/ConfirmService.asmx?wsdl';
 
     /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::PARSIAN;
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $params = [
-            'LoginAccount' => $this->config['pin'],
-            'Amount'       => intval($transaction->getAmount()->getRiyal()),
-            'OrderId'      => intval($transaction->getId()),
-            'CallBackUrl'  => $this->getCallback($transaction),
+            'LoginAccount'   => $this->config['login-account'],
+            'Amount'         => $transaction->getAmount()->getRiyal(),
+            'OrderId'        => $transaction->getOrderId(),
+            'CallBackUrl'    => $this->getCallback($transaction),
+            'AdditionalData' => $transaction->getExtraField('description'),
         ];
-
-        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
-        $response = $soap->SalePaymentRequest(array('requestData' => $params));
-
-        if ($response->SalePaymentRequestResult->Status === 0) {
-            return AuthorizedTransaction::make($transaction, $response->SalePaymentRequestResult->Token);
+        $mobile = $transaction->getExtraField('mobile');
+        if (!empty($mobile)) {
+            $params['Originator'] = '98'.substr($mobile, 1);
         }
 
-        throw new ParsianErrorException(
+        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
+        $response = $soap->SalePaymentRequest(['requestData' => $params]);
+
+        if ($response->SalePaymentRequestResult->Status === 0) {
+            $url = self::URL_GATE.$response->SalePaymentRequestResult->Token;
+
+            $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, $url, []);
+
+            return AuthorizedTransaction::make(
+                $transaction,
+                null,
+                $response->SalePaymentRequestResult->Token,
+                $redirectResponse
+            );
+        }
+
+        throw new ParsianException(
             $response->SalePaymentRequestResult->Status,
             $response->SalePaymentRequestResult->Message
         );
     }
 
     /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        $url = self::URL_GATE.$transaction->getReferenceId();
-
-        return new RedirectResponse(RedirectResponse::TYPE_POST, $url, []);
-    }
-
-    /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
-//        $refId = $request->input('Token');
-        $payRequestResCode = $request->input('status');
+        $status = $request->input('status');
 
-        if ($payRequestResCode == 0) {
-            return true;
+        if ($status != 0) {
+            throw new ParsianException($status);
         }
 
-        throw new ParsianErrorException($payRequestResCode);
+        $orderId = $request->input('OrderId');
+        $token = $request->input('Token');
+        $amount = $request->input('Amount');
+
+        return new FieldsToMatch($orderId, null, $token, new Amount($amount, 'IRR'));
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        $trackingCode = $request->input('RRN');
+        $traceNumber = $request->input('RRN');
 
-        $params = array(
-            'LoginAccount' => $this->config['pin'],
-            'Token'        => $transaction->getReferenceId(),
-        );
+        $params = [
+            'LoginAccount' => $this->config['login-account'],
+            'Token'        => $transaction->getToken(),
+        ];
 
         $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
-        $result = $soap->ConfirmPayment(array('requestData' => $params));
+        $result = $soap->ConfirmPayment(['requestData' => $params]);
 
         if ($result === false || ! isset($result->ConfirmPaymentResult->Status)) {
-            throw new ParsianErrorException(-1);
+            throw new ParsianException(-1);
         }
 
         if ($result->ConfirmPaymentResult->Status !== 0) {
-            throw new ParsianErrorException($result->ConfirmPaymentResult->Status);
+            throw new ParsianException($result->ConfirmPaymentResult->Status);
         }
+
+        $toMatch = new FieldsToMatch(null, null, $result->ConfirmPaymentResult->Token);
 
         $cardNumber = $result->ConfirmPaymentResult->CardNumberMasked;
 
-        return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+        return new SettledTransaction($transaction, $traceNumber, $toMatch, $cardNumber);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'      => '09124441122',
+            'description' => 'رشته با طول حداکثر ۵۰۰ کاراکتر حاوی داده‌های اضافی است'.
+                ' که پذیرنده می‌تواند به منظور بهره برداری‌های بعدی آن را به درگاه پرداخت ارسال نماید',
+        ];
     }
 }

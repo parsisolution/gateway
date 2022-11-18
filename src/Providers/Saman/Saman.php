@@ -2,14 +2,15 @@
 
 namespace Parsisolution\Gateway\Providers\Saman;
 
-use Exception;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\Exceptions\TransactionException;
+use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
+use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
+use Parsisolution\Gateway\Transactions\FieldsToMatch;
 use Parsisolution\Gateway\Transactions\SettledTransaction;
 use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
@@ -17,149 +18,170 @@ class Saman extends AbstractProvider
 {
 
     /**
-     * Address of main SOAP server
+     * Url of parsian gateway web service
      *
      * @var string
      */
-    const SERVER_URL = 'https://sep.shaparak.ir/payments/referencepayment.asmx?wsdl';
+    const SERVER_URL = 'https://sep.shaparak.ir/MobilePG/MobilePayment';
 
     /**
      * Address of gate for redirect
      *
      * @var string
      */
-    const GATE_URL = 'https://sep.shaparak.ir/Payment.aspx';
+    const URL_GATE = 'https://sep.shaparak.ir/OnlinePG/OnlinePG';
 
     /**
+     * Address of SOAP server for verify payment
      *
-     * @var array $optional_data An array of optional data
-     *  that will be sent with the payment request
-     *
+     * @var string
      */
-    protected $optional_data = [];
+    const SERVER_VERIFY_URL = 'https://sep.shaparak.ir/Payments/ReferencePayment.asmx?WSDL';
 
     /**
-     *
-     * Add optional data to the request
-     *
-     * @param array $data an array of data
-     *
+     * {@inheritdoc}
      */
-    public function setOptionalData(Array $data)
-    {
-        $this->optional_data = $data;
-    }
-
-    /**
-     * Get this provider name to save on transaction table.
-     * and later use that to verify and settle
-     * callback request (from transaction)
-     *
-     * @return string
-     */
-    protected function getProviderName()
+    protected function getProviderId()
     {
         return GatewayManager::SAMAN;
     }
 
     /**
-     * Authorize payment request from provider's server and return
-     * authorization response as AuthorizedTransaction
-     * or throw an Error (most probably SoapFault)
-     *
-     * @param UnAuthorizedTransaction $transaction
-     * @return AuthorizedTransaction
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
-        return AuthorizedTransaction::make($transaction, $transaction->getId());
-    }
-
-    /**
-     * Redirect the user of the application to the provider's payment screen.
-     *
-     * @param \Parsisolution\Gateway\Transactions\AuthorizedTransaction $transaction
-     * @return RedirectResponse
-     */
-    protected function redirectToGateway(AuthorizedTransaction $transaction)
-    {
-        $main_data = [
+        $fields = [
+            'Action'      => 'Token',
+            'TerminalId'  => $this->config['terminal-id'],
+            'RedirectUrl' => $this->getCallback($transaction),
+            'ResNum'      => $transaction->getOrderId(),
             'Amount'      => $transaction->getAmount()->getRiyal(),
-            'MID'    => $this->config['merchant'],
-            'ResNum'      => $transaction->getId(),
-            'RedirectURL' => $this->getCallback($transaction->generateUnAuthorized()),
+            'CellNumber'  => $transaction->getExtraField('mobile'),
         ];
 
-        $data = array_merge($main_data, $this->optional_data);
+        $fields = array_merge($fields, $transaction->getExtraField('optional_data', []));
 
-        return new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL, $data);
+        list($result) = Curl::execute(self::SERVER_URL, $fields);
+
+        if ($result['status'] != 1) {
+            throw new SamanException($result['errorCode'], $result['errorDesc']);
+        }
+
+        $token = $result['token'];
+        $data = [
+            'Token'     => $token,
+            'GetMethod' => '', /* true | false | empty string | null */
+        ];
+
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::URL_GATE, $data);
+
+        return AuthorizedTransaction::make($transaction, null, $token, $redirectResponse);
     }
 
     /**
-     * Validate the settlement request to see if it has all necessary fields
-     *
-     * @param Request $request
-     * @return bool
-     * @throws TransactionException
+     * {@inheritdoc}
      */
     protected function validateSettlementRequest(Request $request)
     {
-        $payRequestRes = $request->input('State');
-        $payRequestResCode = $request->input('StateCode');
+        $state = $request->input('State');
+        $status = $request->input('Status');
 
-        if ($payRequestRes == 'OK') {
-            return true;
+        if ($state != 'OK') {
+            throw new SamanException($status);
         }
 
-        throw new SamanException($payRequestRes);
+        $orderId = $request->input('ResNum');
+        $token = $request->input('Token');
+        $amount = $request->input('Amount');
+
+        return new FieldsToMatch($orderId, null, $token, new Amount($amount, 'IRR'));
     }
 
     /**
-     * Verify and Settle the transaction and return
-     * settlement response as SettledTransaction
-     * or throw a TransactionException
-     *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
-     * @return SettledTransaction
-     * @throws TransactionException
-     * @throws Exception
+     * {@inheritdoc}
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
         $refId = $request->input('RefNum');
-        $trackingCode = $request->input('TRACENO');
-        $cardNumber = $request->input('SecurePan');
 
-        $fields = [
-            "merchantID" => $this->config['merchant'],
-            "password"   => $this->config['password'],
-            "RefNum"     => $refId,
-        ];
-
-        $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
-        $response = $soap->VerifyTransaction($fields["RefNum"], $fields["merchantID"]);
+        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
+        $response = $soap->VerifyTransaction($refId, $this->config['terminal-id']);
 
         $response = intval($response);
 
         if ($response == $transaction->getAmount()->getRiyal()) {
-            $this->transaction->updateReferenceId($refId);
+//            $toMatch = new FieldsToMatch(null, null, null, new Amount($response, 'IRR'));
+            $toMatch = new FieldsToMatch();
 
-            return new SettledTransaction($transaction, $trackingCode, $cardNumber);
+            $trace_number = $request->input('TraceNo');
+            $hashed_card_number = $request->input('HashedCardNumber');
+            $affective_amount = $request->input('AffectiveAmount');
+            $wage = $request->input('Wage');
+
+            return new SettledTransaction(
+                $transaction,
+                $refId,
+                $toMatch,
+                $request->input('SecurePan'),
+                $request->input('Rrn'),
+                compact('trace_number', 'hashed_card_number', 'affective_amount', 'wage'),
+                $refId
+            );
         }
 
         //Reverse Transaction
         if ($response > 0) {
-            $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
             $response = $soap->ReverseTransaction(
-                $fields["RefNum"],
-                $fields["merchantID"],
-                $fields["password"],
-                $response
+                $refId,
+                $this->config['terminal-id'],
+                $this->config['username'],
+                $this->config['password']
             );
+
+            throw new SamanException($response, 'Invalid Amount');
         }
 
         throw new SamanException($response);
+    }
+
+    /**
+     * @param string $refNum
+     * @return array
+     * @throws \SoapFault
+     */
+    public function reverse(string $refNum): array
+    {
+        $soap = new SoapClient(self::SERVER_VERIFY_URL, $this->soapConfig());
+        $response = $soap->ReverseTransaction(
+            $refNum,
+            $this->config['terminal-id'],
+            $this->config['username'],
+            $this->config['password']
+        );
+
+        $message = (new SamanException($response))->getMessage();
+
+        return compact('response', 'message');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSupportedExtraFieldsSample()
+    {
+        return [
+            'mobile'        => '09124441122',
+            'optional_data' => [
+                'ResNum1' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+                'ResNum2' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+                'ResNum3' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+                'ResNum4' => 'دیتای اضافی که توسط سایت پذیرنده ارسال و '.
+                    'فقط هنگام گزارشگیری در پنل گزارش تراکنش قابل دسترسی می باشد. (حداکثر ۵۰ کاراکتر)',
+            ],
+        ];
     }
 }

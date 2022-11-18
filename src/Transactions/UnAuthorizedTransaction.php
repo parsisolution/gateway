@@ -2,40 +2,25 @@
 
 namespace Parsisolution\Gateway\Transactions;
 
-class UnAuthorizedTransaction extends AbstractTransaction
-{
+use Parsisolution\Gateway\Contracts\HasId;
+use Parsisolution\Gateway\Traits\HasIdField;
+use Parsisolution\Gateway\Traits\HasOrderIdField;
 
-    /**
-     * The unique identifier for the transaction.
-     *
-     * @var mixed
-     */
-    protected $id;
+class UnAuthorizedTransaction extends AbstractTransaction implements HasId
+{
+    use HasIdField, HasOrderIdField;
 
     /**
      * UnAuthorizedTransaction constructor.
      *
      * @param RequestTransaction $transaction
-     * @param mixed $id
+     * @param string $id
+     * @param string $orderId
      */
-    public function __construct(RequestTransaction $transaction, $id)
+    public function __construct(RequestTransaction $transaction, $id, $orderId)
     {
-        $this->setRaw($transaction->getRaw());
+        $this->setAttributes($transaction->getAttributes());
         $this['id'] = $id;
-        $this->map([
-            'amount' => $transaction->getAmount(),
-            'extra'  => $transaction->getExtra(),
-            'id'     => $id,
-        ]);
-    }
-
-    /**
-     * Get the unique identifier of the transaction.
-     *
-     * @return string
-     */
-    public function getId()
-    {
-        return $this->id;
+        $this['order_id'] = $orderId;
     }
 }
