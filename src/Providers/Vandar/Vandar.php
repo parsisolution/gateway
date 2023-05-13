@@ -7,7 +7,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Vandar extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -30,15 +28,6 @@ class Vandar extends AbstractProvider implements ProviderInterface
      * @var string
      */
     const GATE_URL = 'https://ipg.vandar.io/v3/';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::VANDAR;
-    }
 
     /**
      * {@inheritdoc}
@@ -57,7 +46,7 @@ class Vandar extends AbstractProvider implements ProviderInterface
             'comment'           => $transaction->getExtraField('comment'),
         ];
 
-        list($result, $http_code) = Curl::execute(self::SERVER_URL.'/send', $fields);
+        [$result, $http_code] = Curl::execute(self::SERVER_URL.'/send', $fields);
 
         if ($http_code != 200 || empty($result['status']) || $result['status'] != 1) {
             throw new VandarException($http_code, implode('; ', $result['errors']) ?? null);
@@ -95,7 +84,7 @@ class Vandar extends AbstractProvider implements ProviderInterface
             'token'   => $transaction->getToken(),
         ];
 
-        list($result, $http_code) = Curl::execute(self::SERVER_URL.'/verify', $fields);
+        [$result, $http_code] = Curl::execute(self::SERVER_URL.'/verify', $fields);
 
         if ($http_code != 200 || empty($result['status'])) {
             if (intval($result['status']) > 1) {
@@ -109,16 +98,15 @@ class Vandar extends AbstractProvider implements ProviderInterface
             throw new VandarException($http_code, implode('; ', $result['errors']) ?? null);
         }
 
-
-//        $amount = $result['amount'];
-//        $realAmount = $result['realAmount'];
-//        $wage = $result['wage'];
+        //        $amount = $result['amount'];
+        //        $realAmount = $result['realAmount'];
+        //        $wage = $result['wage'];
         $traceNumber = $result['transId'];
-//        $factorNumber = $result['factorNumber'];
-//        $mobile = $result['mobile'];
-//        $description = $result['description'];
+        //        $factorNumber = $result['factorNumber'];
+        //        $mobile = $result['mobile'];
+        //        $description = $result['description'];
         $cardNumber = $result['cardNumber'];
-//        $paymentDate = $result['paymentDate'];
+        //        $paymentDate = $result['paymentDate'];
         $cardId = $result['cid'];
         $message = $result['message'];
 
@@ -134,10 +122,6 @@ class Vandar extends AbstractProvider implements ProviderInterface
         );
     }
 
-    /**
-     * @param int $code
-     * @return string|null
-     */
     protected function getStatusMessage(int $code): ?string
     {
         $status_codes = [
@@ -161,9 +145,9 @@ class Vandar extends AbstractProvider implements ProviderInterface
             'national_code' => 'کد ملی معتبر'.
                 ' (در صورت ارسال کد ملی، کاربر فقط با کارت‌های بانکی تحت مالکیت آن کد ملی قابلیت پرداخت خواهد داشت.'.
                 ' برای بررسی کدملی در درگاه پرداخت ارسال شماره موبایل مرتبط با کد ملی نیز الزامی است.)',
-            'allowed_card'  => 'شماره کارت معتبر'.
+            'allowed_card' => 'شماره کارت معتبر'.
                 ' (در صورت ارسال شماره کارت، کاربر فقط با همان شماره کارت قابلیت پرداخت خواهد داشت.)',
-            'comment'       => 'یک یادداشت که در داشبورد شما روی تراکنش نمایش داده می شود',
+            'comment' => 'یک یادداشت که در داشبورد شما روی تراکنش نمایش داده می شود',
         ];
     }
 }

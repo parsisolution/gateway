@@ -13,14 +13,16 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class TransactionDao
 {
-
     const STATE_INIT = 0;
+
     const MESSAGE_INIT = 'تراکنش ایجاد شد.';
 
     const STATE_SUCCEEDED = 1;
+
     const MESSAGE_SUCCEEDED = 'پرداخت با موفقیت انجام شد.';
 
     const STATE_FAILED = 2;
+
     const MESSAGE_FAILED = 'عملیات پرداخت با خطا مواجه شد.';
 
     /**
@@ -54,8 +56,7 @@ class TransactionDao
     /**
      * Transaction constructor.
      *
-     * @param DatabaseManager $db
-     * @param string $table_name
+     * @param  string  $table_name
      */
     public function __construct(DatabaseManager $db, $table_name)
     {
@@ -77,9 +78,8 @@ class TransactionDao
      * Insert new transaction into transactions table
      * and return its id
      *
-     * @param RequestTransaction $transaction
-     * @param integer $provider
-     * @param null|string $client_ip
+     * @param  int  $provider
+     * @param  null|string  $client_ip
      * @return UnAuthorizedTransaction
      */
     public function create(RequestTransaction $transaction, $provider, $client_ip)
@@ -115,7 +115,7 @@ class TransactionDao
     /**
      * Update transaction reference ID
      *
-     * @param AuthorizedTransaction $transaction
+     * @param  AuthorizedTransaction  $transaction
      * @return int
      */
     public function updateTransaction($transaction)
@@ -131,8 +131,9 @@ class TransactionDao
     /**
      * find transaction by its order id
      *
-     * @param string $orderId
+     * @param  string  $orderId
      * @return AuthorizedTransaction
+     *
      * @throws NotFoundTransactionException
      * @throws RetryException
      * @throws \Exception
@@ -143,7 +144,7 @@ class TransactionDao
 
         $transaction = $this->getTable()->where('order_id', $orderId)->lockForUpdate()->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             throw new NotFoundTransactionException;
         }
 
@@ -161,7 +162,6 @@ class TransactionDao
     /**
      * Determines if transaction is spent before
      *
-     * @param SettledTransaction $transaction
      * @return bool
      */
     public function isSpent(SettledTransaction $transaction)
@@ -173,9 +173,7 @@ class TransactionDao
      * Settle transaction
      * Set status to success status
      *
-     * @param SettledTransaction $transaction
-     * @param array $additionalFields
-     *
+     * @param  array  $additionalFields
      * @return bool
      */
     public function succeeded(SettledTransaction $transaction, $additionalFields = [])
@@ -216,11 +214,9 @@ class TransactionDao
      * Failed transaction
      * Set status to failure status
      *
-     * @param HasId $transaction
-     * @param string|int $statusCode
-     * @param string $statusMessage
-     * @param null $referenceId
-     *
+     * @param  string|int  $statusCode
+     * @param  string  $statusMessage
+     * @param  null  $referenceId
      * @return bool
      */
     public function failed(HasId $transaction, $statusCode, $statusMessage, $referenceId = null)

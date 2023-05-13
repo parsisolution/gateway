@@ -19,7 +19,6 @@ use RuntimeException;
  */
 class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
 {
-
     /**
      * @var string
      */
@@ -39,8 +38,8 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
      * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies).
      * each Gateway does not support all currencies.
      *
-     * @param float $amount
-     * @param string $currency default to Iran Toman
+     * @param  float  $amount
+     * @param  string  $currency default to Iran Toman
      * <p></p>
      * (IRR) for Riyal and (IRT) for Toman
      * <p></p>
@@ -58,8 +57,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
      * 3-letter [currency code](https://developers.braintreepayments.com/reference/general/currencies).
      * each Gateway does not support all currencies.
      *
-     * @param string $currency
-     *
+     * @param  string  $currency
      * @return self
      */
     public function setCurrency($currency)
@@ -87,13 +85,12 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
      * In case of a refund, this is the refunded amount to the original payer from the payee.
      * 10 characters max with support for 2 decimal places.
      *
-     * @param float $total
-     *
+     * @param  float  $total
      * @return self
      */
     public function setTotal($total)
     {
-        if (!is_float($total)) {
+        if (! is_float($total)) {
             $total = floatval(preg_replace('/[^0-9.]/', '', $total));
         }
         $this->total = $total;
@@ -117,6 +114,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
      * return Iran currency by Riyal
      *
      * @return float
+     *
      * @throws \BadMethodCallException
      */
     public function getRiyal()
@@ -127,13 +125,14 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
             case 'IRT':
                 return floor($this->total * 10);
         }
-        throw new \BadMethodCallException("only Iran currencies can cast to Riyal");
+        throw new \BadMethodCallException('only Iran currencies can cast to Riyal');
     }
 
     /**
      * return Iran currency by Toman
      *
      * @return float
+     *
      * @throws \BadMethodCallException
      */
     public function getToman()
@@ -144,7 +143,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
             case 'IRT':
                 return floor($this->total);
         }
-        throw new \BadMethodCallException("only Iran currencies can cast to Toman");
+        throw new \BadMethodCallException('only Iran currencies can cast to Toman');
     }
 
     /**
@@ -201,7 +200,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
     /**
      * Convert the object to its JSON representation.
      *
-     * @param int $options
+     * @param  int  $options
      * @return string
      */
     public function toJson($options = 0)
@@ -219,8 +218,10 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
      * Specify data which should be serialized to JSON
      *
      * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     *
      * @return mixed data which can be serialized by <b>json_encode</b>,
      * which is a value of any type other than a resource.
+     *
      * @since 5.4.0
      */
     public function jsonSerialize()
@@ -234,6 +235,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
         if (in_array($this->getCurrency(), ['IRR', 'IRT'])) {
             $decimals = 0;
         }
-        return number_format($this->getTotal(), $decimals) . ' ' . $this->getCurrency();
+
+        return number_format($this->getTotal(), $decimals).' '.$this->getCurrency();
     }
 }

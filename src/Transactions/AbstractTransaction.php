@@ -8,7 +8,6 @@ use Parsisolution\Gateway\Contracts\Transaction;
 
 abstract class AbstractTransaction implements ArrayAccess, Transaction
 {
-
     /**
      * The transaction's attributes.
      *
@@ -19,7 +18,7 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction
     /**
      * Check if a property is set
      *
-     * @param string $name <p>
+     * @param  string  $name <p>
      * Name of the property
      * </p>
      * @return bool
@@ -32,7 +31,7 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction
     /**
      * Get access to a property
      *
-     * @param string $name <p>
+     * @param  string  $name <p>
      * Name of the property
      * </p>
      * @return mixed Property value
@@ -45,10 +44,10 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction
     /**
      * Overwrite a property
      *
-     * @param string $name <p>
+     * @param  string  $name <p>
      * Name of the property
      * </p>
-     * @param mixed $value <p>
+     * @param  mixed  $value <p>
      * New property value
      * </p>
      */
@@ -60,7 +59,7 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction
     /**
      * Remove a property
      *
-     * @param string $name <p>
+     * @param  string  $name <p>
      * Name of the property to remove
      * </p>
      */
@@ -138,7 +137,6 @@ abstract class AbstractTransaction implements ArrayAccess, Transaction
     /**
      * Set transaction's attributes.
      *
-     * @param array $attributes
      * @return self
      */
     public function setAttributes(array $attributes)

@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\ApiType;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\Amount;
@@ -20,7 +19,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Sepehr extends AbstractProvider
 {
-
     /**
      * Address of SOAP server
      *
@@ -49,19 +47,11 @@ class Sepehr extends AbstractProvider
      */
     protected $apiType;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->apiType = Arr::get($config, 'api-type', ApiType::REST);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::SEPEHR;
     }
 
     /**
@@ -153,8 +143,8 @@ class Sepehr extends AbstractProvider
     }
 
     /**
-     * @param string $digitalReceipt
      * @return mixed
+     *
      * @throws SepehrException
      * @throws \SoapFault
      */
@@ -169,9 +159,8 @@ class Sepehr extends AbstractProvider
     }
 
     /**
-     * @param string $method
-     * @param array $fields
      * @return mixed
+     *
      * @throws SepehrException
      * @throws \SoapFault
      */
@@ -187,7 +176,7 @@ class Sepehr extends AbstractProvider
         } else {
             $path = $this->getRestPathFromSoapMethod($method);
 
-            list($response, $http_code) = Curl::execute(self::SERVER_REST_URL.$path, $fields, false);
+            [$response, $http_code] = Curl::execute(self::SERVER_REST_URL.$path, $fields, false);
 
             if ($http_code != 200) {
                 throw new SepehrException($http_code);
@@ -205,7 +194,7 @@ class Sepehr extends AbstractProvider
     }
 
     /**
-     * @param string $method <p>
+     * @param  string  $method <p>
      * the soap method to call
      * </p>
      * @return string the equivalent path for rest api
@@ -227,8 +216,8 @@ class Sepehr extends AbstractProvider
     public function getSupportedExtraFieldsSample()
     {
         return [
-            'mobile'           => '09124441122',
-            'national_code'    => 'یک پارامتر اختیاری میباشد که موارد استفاده آن به این شرح میباشد:'.
+            'mobile'        => '09124441122',
+            'national_code' => 'یک پارامتر اختیاری میباشد که موارد استفاده آن به این شرح میباشد:'.
                 ' ۱. بررسی تطابق شماره کارت و کد ملی:'.
                 ' در صورت ارسال این فیلد باید شماره کارت وارد شده در صفحه پرداخت حتما متعلق به همان کد ملی باشد.'.
                 ' (استفاده از این قابلیت، با درخواست مکتوب برای پذیرندگان امکان پذیر خواهد شد)'.
@@ -236,7 +225,7 @@ class Sepehr extends AbstractProvider
                 ' (استفاده از این قابلیت، بدون نیاز به درخواست کتبی سرویس برای شما فعال میباشد)'.
                 ' چنانچه هردو قابلیت پرداخت شناسه دار و تطابق شماره کارت و کد ملی مورد نیاز پذیرنده باشد'.
                 ' با درخواست کتبی پذیرنده استفاده از هر دو قابلیت امکان پذیر میگردد',
-            'payload'          => 'برای تسهیم با مقدار متغیر یا پرداخت قبض و یا خرید شارژ و بسته‌های اینترنتی'.
+            'payload' => 'برای تسهیم با مقدار متغیر یا پرداخت قبض و یا خرید شارژ و بسته‌های اینترنتی'.
                 ' میتوان از این فیلد استفاده کرد برای اطلاعات بیشتر مستندات درگاه مطالعه شود',
             'transaction_type' => 'Pay (default) (پرداخت) || '.
                 'Bill (پرداخت قبض) || '.

@@ -18,6 +18,5 @@ use InvalidArgumentException;
  */
 class UncomparableException extends InvalidArgumentException
 {
-
     // Intentionally left blank.
 }

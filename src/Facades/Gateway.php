@@ -10,7 +10,6 @@ use Parsisolution\Gateway\Contracts\Factory;
  */
 class Gateway extends Facade
 {
-
     /**
      * Get the registered name of the component.
      *

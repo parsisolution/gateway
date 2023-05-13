@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class VandarException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *
@@ -15,17 +14,17 @@ class VandarException extends TransactionException
     protected function getErrors()
     {
         return [
-//            400 => "Bad Request",
-//            401 => "Unauthorized",
-//            403 => "Forbidden",
-//            404 => "Not Found",
-//            405 => "Method Not Allowed",
-//            406 => "Not Acceptable -- You requested a format that isn't json",
-//            410 => "Gone",
-//            422 => "Bad Request",
-//            429 => "Too Many Requests",
-//            500 => "Internal Server Error",
-//            503 => "Service Unavailable -- We're temporarially offline for maintanance. Please try again later.",
+            //            400 => "Bad Request",
+            //            401 => "Unauthorized",
+            //            403 => "Forbidden",
+            //            404 => "Not Found",
+            //            405 => "Method Not Allowed",
+            //            406 => "Not Acceptable -- You requested a format that isn't json",
+            //            410 => "Gone",
+            //            422 => "Bad Request",
+            //            429 => "Too Many Requests",
+            //            500 => "Internal Server Error",
+            //            503 => "Service Unavailable -- We're temporarially offline for maintanance. Please try again later.",
 
             400 => 'درخواست شما از سرویس وندار اشتباه است',
             401 => 'یا توکن را در درخواست خود ارسال نکردید یا توکن شما معتبر نمی باشد',

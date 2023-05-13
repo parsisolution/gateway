@@ -4,7 +4,6 @@ namespace Parsisolution\Gateway\Traits;
 
 trait HasTransaction
 {
-
     /**
      * @var mixed
      */
@@ -23,11 +22,10 @@ trait HasTransaction
     /**
      * Set the transaction
      *
-     * @param mixed $transaction
+     * @param  mixed  $transaction
      */
     public function setTransaction($transaction): void
     {
         $this->transaction = $transaction;
     }
-
 }

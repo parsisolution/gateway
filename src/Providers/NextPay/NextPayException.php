@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class NextPayException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *
@@ -73,7 +72,7 @@ class NextPayException extends TransactionException
             -93 => 'موجودی صندوق کاربری برای بازگشت مبلغ کافی نیست',
             -94 => 'کلید بازگشت مبلغ یافت نشد',
 
-            -1000 => 'خطای تعریف نشده'
+            -1000 => 'خطای تعریف نشده',
         ];
     }
 }

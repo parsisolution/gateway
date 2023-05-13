@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -15,7 +14,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class PayPing extends AbstractProvider
 {
-
     /**
      * Address of main CURL server
      *
@@ -37,15 +35,6 @@ class PayPing extends AbstractProvider
      */
     const URL_GATE = 'https://api.payping.ir/v2/pay/gotoipg/';
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::PAYPING;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -60,7 +49,7 @@ class PayPing extends AbstractProvider
             'returnUrl'     => $this->getCallback($transaction),
         ];
 
-        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL, $fields, true, [
+        [$response, $http_code, $error] = Curl::execute(self::SERVER_URL, $fields, true, [
             CURLOPT_TIMEOUT    => 45,
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
@@ -79,7 +68,7 @@ class PayPing extends AbstractProvider
             throw new PayPingException(200, 'تراکنش ناموفق بود - شرح خطا: عدم وجود کد ارجاع');
         }
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE . $response['code']);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$response['code']);
 
         return AuthorizedTransaction::make($transaction, $response['code'], null, $redirectResponse);
     }
@@ -89,12 +78,12 @@ class PayPing extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('refid')) {
+        if (! $request->has('refid')) {
             throw new InvalidRequestException();
         }
 
         $referenceId = $request->input('refid');
-        if (!$referenceId) {
+        if (! $referenceId) {
             throw new PayPingException($referenceId);
         }
 
@@ -116,7 +105,7 @@ class PayPing extends AbstractProvider
             'amount' => $transaction->getAmount()->getToman(),
         ];
 
-        list($result, $http_code, $error) = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
+        [$result, $http_code, $error] = Curl::execute(self::SERVER_VERIFY_URL, $fields, true, [
             CURLOPT_TIMEOUT    => 45,
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
@@ -134,7 +123,7 @@ class PayPing extends AbstractProvider
         if (empty($refId)) {
             throw new PayPingException(
                 200,
-                'متافسانه سامانه قادر به دریافت کد پیگیری نمی‌باشد! نتیجه درخواست: ' . $http_code
+                'متافسانه سامانه قادر به دریافت کد پیگیری نمی‌باشد! نتیجه درخواست: '.$http_code
             );
         }
 
@@ -145,15 +134,12 @@ class PayPing extends AbstractProvider
         return new SettledTransaction($transaction, $refId, $toMatch, $cardNumber, '', $extra);
     }
 
-    /**
-     * @return array
-     */
     protected function generateHeaders(): array
     {
         return [
             'Accept: application/json',
             'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->config['api-key'],
+            'Authorization: Bearer '.$this->config['api-key'],
             'Cache-Control: no-cache',
         ];
     }

@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class MellatException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *

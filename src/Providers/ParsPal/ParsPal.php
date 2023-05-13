@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -19,7 +18,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class ParsPal extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -41,9 +39,9 @@ class ParsPal extends AbstractProvider implements ProviderInterface
      */
     protected $serverUrl;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
@@ -62,27 +60,18 @@ class ParsPal extends AbstractProvider implements ProviderInterface
         }
     }
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::PARSPAL;
-    }
-
     /**
      * {@inheritdoc}
      */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'amount'      => $transaction->getAmount()->getTotal(),
-            'currency'    => $transaction->getAmount()->getCurrency(),
-            'return_url'  => $this->getCallback($transaction),
-            'reserve_id'  => $transaction->getOrderId(),
-            'order_id'    => $transaction->getOrderId(),
-            'payer'       => [
+            'amount'     => $transaction->getAmount()->getTotal(),
+            'currency'   => $transaction->getAmount()->getCurrency(),
+            'return_url' => $this->getCallback($transaction),
+            'reserve_id' => $transaction->getOrderId(),
+            'order_id'   => $transaction->getOrderId(),
+            'payer'      => [
                 'name'   => $transaction->getExtraField('name'),
                 'mobile' => $transaction->getExtraField('mobile'),
                 'email'  => $transaction->getExtraField('email'),
@@ -103,7 +92,7 @@ class ParsPal extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('status')) {
+        if (! $request->has('status')) {
             throw new InvalidRequestException();
         }
 
@@ -112,7 +101,7 @@ class ParsPal extends AbstractProvider implements ProviderInterface
             throw new ParsPalException($status);
         }
 
-//        $reserveId = $request->input('reserve_id');
+        //        $reserveId = $request->input('reserve_id');
 
         return new FieldsToMatch($request->input('order_id'), $request->input('payment_id'));
     }
@@ -147,35 +136,31 @@ class ParsPal extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $paymentId
-     * @param int $amount
-     * @return array
      * @throws ParsPalException
      */
     public function inquiry(string $paymentId, int $amount): array
     {
         return $this->callApi('inquiry', [
             'payment_id' => $paymentId,
-            'amount'     => $amount
+            'amount'     => $amount,
         ]);
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws ParsPalException
      */
     protected function callApi(string $path, array $fields)
     {
-        list($response, $http_code, $error) = Curl::execute($this->serverUrl . $path, $fields, true, [
+        [$response, $http_code, $error] = Curl::execute($this->serverUrl.$path, $fields, true, [
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
 
         if (
             $http_code != 200 ||
             empty($response['status']) ||
-            !in_array($response['status'], ['ACCEPTED', 'SUCCESSFUL', 'VERIFIED'])
+            ! in_array($response['status'], ['ACCEPTED', 'SUCCESSFUL', 'VERIFIED'])
         ) {
             throw new ParsPalException(
                 $response['error_code'] ?? $response['error_type'] ?? $http_code,
@@ -194,7 +179,7 @@ class ParsPal extends AbstractProvider implements ProviderInterface
         return [
             'Accept: application/json',
             'Content-Type: application/json',
-            'ApiKey: ' . $this->config['api-key'],
+            'ApiKey: '.$this->config['api-key'],
         ];
     }
 

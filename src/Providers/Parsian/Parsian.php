@@ -4,7 +4,6 @@ namespace Parsisolution\Gateway\Providers\Parsian;
 
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\Amount;
@@ -15,7 +14,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Parsian extends AbstractProvider
 {
-
     /**
      * Url of parsian gateway web service
      *
@@ -40,14 +38,6 @@ class Parsian extends AbstractProvider
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::PARSIAN;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $params = [
@@ -58,7 +48,7 @@ class Parsian extends AbstractProvider
             'AdditionalData' => $transaction->getExtraField('description'),
         ];
         $mobile = $transaction->getExtraField('mobile');
-        if (!empty($mobile)) {
+        if (! empty($mobile)) {
             $params['Originator'] = '98'.substr($mobile, 1);
         }
 

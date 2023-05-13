@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Payir extends AbstractProvider
 {
-
     /**
      * Address of server
      *
@@ -34,14 +32,6 @@ class Payir extends AbstractProvider
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::PAYIR;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
@@ -55,7 +45,7 @@ class Payir extends AbstractProvider
 
         $result = $this->callApi('send', $fields);
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE . $result['token']);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::URL_GATE.$result['token']);
 
         return AuthorizedTransaction::make($transaction, null, $result['token'], $redirectResponse);
     }
@@ -65,7 +55,7 @@ class Payir extends AbstractProvider
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('status')) {
+        if (! $request->has('status')) {
             throw new InvalidRequestException();
         }
 
@@ -99,15 +89,14 @@ class Payir extends AbstractProvider
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws PayirException
      */
     protected function callApi(string $path, array $fields)
     {
         $fields['api'] = $this->config['api-key'];
-        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL . $path, $fields, true, [
+        [$response, $http_code, $error] = Curl::execute(self::SERVER_URL.$path, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
         ], Curl::METHOD_GET);
 
@@ -130,7 +119,7 @@ class Payir extends AbstractProvider
             'mobile'        => '09124441122',
             'factor_number' => 'شماره فاکتور شما ( اختیاری )',
             'description'   => 'توضیحات تراکنش ( اختیاری ، حداکثر 255 کاراکتر )',
-            'allowed_card'  => 'اعلام شماره کارت مجاز برای انجام تراکنش' .
+            'allowed_card'  => 'اعلام شماره کارت مجاز برای انجام تراکنش'.
                 ' ( اختیاری، بصورت عددی (لاتین) و چسبیده بهم در 16 رقم. مثال 6219861012345678 )',
         ];
     }

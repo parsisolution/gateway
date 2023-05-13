@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -19,7 +18,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class BitPay extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -62,9 +60,9 @@ class BitPay extends AbstractProvider implements ProviderInterface
      */
     protected $gateUrl;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
@@ -85,15 +83,6 @@ class BitPay extends AbstractProvider implements ProviderInterface
         }
     }
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::BITPAY;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -111,11 +100,11 @@ class BitPay extends AbstractProvider implements ProviderInterface
 
         $id = $this->callApi('gateway-send', $fields);
 
-        if (!is_numeric($id) || $id <= 0) {
+        if (! is_numeric($id) || $id <= 0) {
             throw new BitPayException($id);
         }
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl . $id . '-get');
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$id.'-get');
 
         return AuthorizedTransaction::make($transaction, $id, null, $redirectResponse);
     }
@@ -125,7 +114,7 @@ class BitPay extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('id_get')) {
+        if (! $request->has('id_get')) {
             throw new InvalidRequestException();
         }
 
@@ -173,16 +162,15 @@ class BitPay extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws BitPayException
      */
     protected function callApi(string $path, array $fields)
     {
-        list($response, $http_code, $error) = Curl::execute($this->serverUrl . $path, $fields, true, [
-            CURLOPT_HTTPHEADER => ['Accept: application/json',],
-            CURLOPT_POSTFIELDS => $fields
+        [$response, $http_code, $error] = Curl::execute($this->serverUrl.$path, $fields, true, [
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_POSTFIELDS => $fields,
         ]);
 
         if ($http_code != 200) {
@@ -192,10 +180,6 @@ class BitPay extends AbstractProvider implements ProviderInterface
         return $response;
     }
 
-    /**
-     * @param int $code
-     * @return string|null
-     */
     protected function getStatusMessage(int $code): ?string
     {
         $status_codes = [

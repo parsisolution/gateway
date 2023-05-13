@@ -21,8 +21,6 @@ use RuntimeException;
 
 abstract class AbstractProvider implements ProviderContract
 {
-
-
     /**
      * @var \Illuminate\Container\Container
      */
@@ -71,14 +69,22 @@ abstract class AbstractProvider implements ProviderContract
     protected $transactionDao;
 
     /**
+     * Gateway's Provider ID
+     *
+     * @var int
+     */
+    protected $id;
+
+    /**
      * Create a new provider instance.
      *
-     * @param  \Illuminate\Container\Container $app
-     * @param  array $config
+     * @param  int  $id
+     * @param  array  $config
      */
-    public function __construct(Container $app, $config)
+    public function __construct(Container $app, $id, $config)
     {
         $this->app = $app;
+        $this->id = $id;
         $this->config = $config;
 
         $this->request = $app->make('request');
@@ -100,8 +106,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Gets callback url
      *
-     * @param UnAuthorizedTransaction $transaction
-     * @param bool $encode
+     * @param  bool  $encode
      * @return string
      */
     public function getCallback(UnAuthorizedTransaction $transaction, $encode = false)
@@ -120,17 +125,20 @@ abstract class AbstractProvider implements ProviderContract
      * and later use that to verify and settle
      * callback request (from transaction)
      *
-     * @return integer
+     * @return int
      */
-    abstract protected function getProviderId();
+    protected function getProviderId()
+    {
+        return $this->id;
+    }
 
     /**
      * Authorize payment request from provider's server and return
      * authorization response as AuthorizedTransaction
      * or throw an Error (most probably SoapFault)
      *
-     * @param UnAuthorizedTransaction $transaction
      * @return AuthorizedTransaction
+     *
      * @throws Exception
      */
     abstract protected function authorizeTransaction(UnAuthorizedTransaction $transaction);
@@ -168,8 +176,8 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Validate the settlement request to see if it has all necessary fields
      *
-     * @param Request $request
      * @return FieldsToMatch
+     *
      * @throws InvalidRequestException|TransactionException
      */
     abstract protected function validateSettlementRequest(Request $request);
@@ -179,9 +187,8 @@ abstract class AbstractProvider implements ProviderContract
      * settlement response as SettledTransaction
      * or throw a TransactionException
      *
-     * @param Request $request
-     * @param AuthorizedTransaction $transaction
      * @return SettledTransaction
+     *
      * @throws TransactionException
      * @throws Exception
      */
@@ -237,7 +244,6 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Set the request instance.
      *
-     * @param  \Illuminate\Http\Request $request
      * @return self
      */
     public function setRequest(Request $request)
@@ -292,7 +298,6 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Set the custom parameters of the request.
      *
-     * @param  array $parameters
      * @return self
      */
     public function with(array $parameters)
@@ -333,8 +338,7 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * Add (required) query string to a (callback) url
      *
-     * @param UnAuthorizedTransaction $transaction
-     * @param string|null $url
+     * @param  string|null  $url
      * @return string
      */
     private function makeCallback(UnAuthorizedTransaction $transaction, $url = null)
@@ -374,8 +378,8 @@ abstract class AbstractProvider implements ProviderContract
     /**
      * manipulate the given URL with the given parameters
      *
-     * @param  array $changes
-     * @param  string $url
+     * @param  array  $changes
+     * @param  string  $url
      * @return string
      */
     protected function modifyUrl($changes, $url)

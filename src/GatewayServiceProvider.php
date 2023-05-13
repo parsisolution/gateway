@@ -7,7 +7,6 @@ use Parsisolution\Gateway\Contracts\Factory;
 
 class GatewayServiceProvider extends ServiceProvider
 {
-
     /**
      * Indicates if loading of the provider is deferred.
      *
@@ -51,7 +50,7 @@ class GatewayServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $config = __DIR__ . '/../config/' . GatewayManager::CONFIG_FILE_NAME . '.php';
+        $config = __DIR__.'/../config/'.GatewayManager::CONFIG_FILE_NAME.'.php';
 
         $this->mergeConfigFrom($config, GatewayManager::CONFIG_FILE_NAME);
 

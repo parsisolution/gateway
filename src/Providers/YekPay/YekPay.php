@@ -8,7 +8,6 @@ use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -18,7 +17,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class YekPay extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -61,13 +59,12 @@ class YekPay extends AbstractProvider implements ProviderInterface
      */
     protected $gateUrl;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
-
 
     /**
      * Set server for soap transfers data
@@ -85,15 +82,6 @@ class YekPay extends AbstractProvider implements ProviderInterface
         }
     }
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::YEKPAY;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -105,28 +93,28 @@ class YekPay extends AbstractProvider implements ProviderInterface
         }
 
         $fields = [
-            'merchantId'       => $this->config['merchant-id'],
+            'merchantId' => $this->config['merchant-id'],
             // the actual currency of amount to pay
             'fromCurrencyCode' => $this->convertCurrencyCode($amount->getCurrency()),
             // the currency that payer pays with
-            'toCurrencyCode'   => $this->convertCurrencyCode(
+            'toCurrencyCode' => $this->convertCurrencyCode(
                 $transaction->getExtraField('to_currency_code', $amount->getCurrency())
             ),
-            'email'            => $transaction->getExtraField('email', 'empty@mail.com'),
-            'mobile'           => $transaction->getExtraField('mobile', '09000000000'),
-            'firstName'        => $transaction->getExtraField('first_name', 'empty'),
-            'lastName'         => $transaction->getExtraField('last_name', 'empty'),
-            'address'          => $transaction->getExtraField('address', 'empty'),
-            'postalCode'       => $transaction->getExtraField('postal_code', 'empty'),
-            'country'          => $transaction->getExtraField('country', 'empty'),
-            'city'             => $transaction->getExtraField('city', 'empty'),
-            'description'      => $transaction->getExtraField('description'),
-            'amount'           => number_format($amount->getTotal(), 2),
-            'orderNumber'      => $transaction->getOrderId(),
-            'callback'         => $this->getCallback($transaction),
+            'email'       => $transaction->getExtraField('email', 'empty@mail.com'),
+            'mobile'      => $transaction->getExtraField('mobile', '09000000000'),
+            'firstName'   => $transaction->getExtraField('first_name', 'empty'),
+            'lastName'    => $transaction->getExtraField('last_name', 'empty'),
+            'address'     => $transaction->getExtraField('address', 'empty'),
+            'postalCode'  => $transaction->getExtraField('postal_code', 'empty'),
+            'country'     => $transaction->getExtraField('country', 'empty'),
+            'city'        => $transaction->getExtraField('city', 'empty'),
+            'description' => $transaction->getExtraField('description'),
+            'amount'      => number_format($amount->getTotal(), 2),
+            'orderNumber' => $transaction->getOrderId(),
+            'callback'    => $this->getCallback($transaction),
         ];
 
-        list($result, $http_code, $error) = Curl::execute($this->serverUrl.'/request', $fields, false);
+        [$result, $http_code, $error] = Curl::execute($this->serverUrl.'/request', $fields, false);
 
         if ($http_code != 200 || empty($result->Code) || $result->Code != 100) {
             throw new YekPayException($result->Code ?? $http_code, $result->Description ?? $error ?? null);
@@ -164,7 +152,7 @@ class YekPay extends AbstractProvider implements ProviderInterface
             'authority'  => $transaction->getReferenceId(),
         ];
 
-        list($result, $http_code, $error) = Curl::execute($this->serverUrl.'/verify', $fields);
+        [$result, $http_code, $error] = Curl::execute($this->serverUrl.'/verify', $fields);
 
         // -9 code means the transaction has been verified already
         if ($http_code != 200 || empty($result['Code']) || ! in_array($result['Code'], [100, -9])) {
@@ -173,7 +161,7 @@ class YekPay extends AbstractProvider implements ProviderInterface
 
         $authority = $result['Authority'] ?? null;
         $traceNumber = $result['Tracking'] ?? $authority;
-//        $reference = $result['Reference'];
+        //        $reference = $result['Reference'];
 
         $toMatch = new FieldsToMatch($result['OrderNo'] ?? $result['Order number'] ?? null, $authority);
 
@@ -188,7 +176,7 @@ class YekPay extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param int|string $code
+     * @param  int|string  $code
      * @return int|string|null
      */
     protected function convertCurrencyCode($code)
@@ -234,14 +222,14 @@ class YekPay extends AbstractProvider implements ProviderInterface
                 ' JPY (Japanese 100 Yens) ||'.
                 ' RUB (Russian Ruble) ||'.
                 ' TRY (Turkish New Lira)',
-            'email'            => 'test@gmail.com',
-            'first_name'       => 'John',
-            'last_name'        => 'Doe',
-            'address'          => 'Alhamida st Al ras st',
-            'postal_code'      => '64785',
-            'country'          => 'United Arab Emirates',
-            'city'             => 'Dubai',
-            'description'      => 'Apple mac book air 2017',
+            'email'       => 'test@gmail.com',
+            'first_name'  => 'John',
+            'last_name'   => 'Doe',
+            'address'     => 'Alhamida st Al ras st',
+            'postal_code' => '64785',
+            'country'     => 'United Arab Emirates',
+            'city'        => 'Dubai',
+            'description' => 'Apple mac book air 2017',
         ];
     }
 }

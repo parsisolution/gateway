@@ -8,7 +8,6 @@ use SoapClient as MainSoapClient;
 
 class SoapClient
 {
-
     /**
      * Main soap class
      *
@@ -27,9 +26,9 @@ class SoapClient
     protected $attempts;
 
     /**
-     * @param string $soapServer
-     * @param array $config
-     * @param array $options
+     * @param  string  $soapServer
+     * @param  array  $config
+     * @param  array  $options
      */
     public function __construct($soapServer, $config, $options = [])
     {
@@ -43,10 +42,9 @@ class SoapClient
     /**
      * Try soap codes for multiple times
      *
-     * @param int $attempts
-     * @param \Closure $statements
-     *
+     * @param  int  $attempts
      * @return mixed
+     *
      * @throws \SoapFault
      */
     protected function attempt($attempts, Closure $statements)
@@ -67,10 +65,9 @@ class SoapClient
     }
 
     /**
-     * @param string $name
-     * @param array $arguments
-     *
+     * @param  string  $name
      * @return mixed
+     *
      * @throws \SoapFault
      */
     public function __call($name, array $arguments)

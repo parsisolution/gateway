@@ -8,7 +8,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\Providers\Pasargad\Utilities\RSAProcessor;
 use Parsisolution\Gateway\Providers\Pasargad\Utilities\XMLGenerator;
 use Parsisolution\Gateway\RedirectResponse;
@@ -20,7 +19,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Pasargad extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -34,15 +32,6 @@ class Pasargad extends AbstractProvider implements ProviderInterface
      * @var string
      */
     const GATE_URL = 'https://pep.shaparak.ir/payment.aspx';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::PASARGAD;
-    }
 
     /**
      * {@inheritdoc}
@@ -89,7 +78,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         }
 
         $url = self::SERVER_URL.'/GetToken';
-        list($result, $http_code, $http_error) = Curl::executeArgs($this->generateCurlArguments($url, $fields));
+        [$result, $http_code, $http_error] = Curl::executeArgs($this->generateCurlArguments($url, $fields));
 
         if ($http_code != 200 || empty($result) || $result['IsSuccess'] == false) {
             throw new PasargadException($http_code, $result['Message'] ?? $http_error ?? null);
@@ -127,7 +116,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-//        $invoiceDate = $request->input('iD');
+        //        $invoiceDate = $request->input('iD');
         $transactionReferenceId = $request->input('tref');
 
         $fields = [
@@ -139,7 +128,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         ];
 
         $url = self::SERVER_URL.'/CheckTransactionResult';
-        list($result, $http_code, $http_error) = Curl::executeArgs($this->generateCurlArguments($url, $fields));
+        [$result, $http_code, $http_error] = Curl::executeArgs($this->generateCurlArguments($url, $fields));
 
         if ($http_code != 200 || empty($result) || $result['IsSuccess'] == false) {
             throw new PasargadException($http_code, $result['Message'] ?? $http_error ?? null);
@@ -150,7 +139,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         $transactionDate = $result['TransactionDate'];
         $transactionReferenceId = $result['TransactionReferenceID'];
         $invoiceNumber = $result['InvoiceNumber'];
-//        $invoiceDate = $result['InvoiceDate'];
+        //        $invoiceDate = $result['InvoiceDate'];
         $amount = $result['Amount'];
 
         $fields = [
@@ -163,7 +152,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         ];
 
         $url = self::SERVER_URL.'/VerifyPayment';
-        list($result, $http_code, $http_error) = Curl::executeArgs($this->generateCurlArguments($url, $fields));
+        [$result, $http_code, $http_error] = Curl::executeArgs($this->generateCurlArguments($url, $fields));
 
         if ($http_code != 200 || empty($result) || $result['IsSuccess'] == false) {
             throw new PasargadException($http_code, $result['Message'] ?? $http_error ?? null);
@@ -193,8 +182,9 @@ class Pasargad extends AbstractProvider implements ProviderInterface
     /**
      * Refunds Payment
      *
-     * @param AuthorizedTransaction|SettledTransaction $transaction
+     * @param  AuthorizedTransaction|SettledTransaction  $transaction
      * @return array
+     *
      * @throws PasargadException
      */
     public function refund($transaction)
@@ -209,7 +199,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         ];
 
         $url = self::SERVER_URL.'/RefundPayment';
-        list($result, $http_code, $http_error) = Curl::executeArgs($this->generateCurlArguments($url, $fields));
+        [$result, $http_code, $http_error] = Curl::executeArgs($this->generateCurlArguments($url, $fields));
 
         if ($http_code != 200 || empty($result)) {
             throw new PasargadException($http_code, $http_error ?? null);
@@ -221,9 +211,8 @@ class Pasargad extends AbstractProvider implements ProviderInterface
     /**
      * Update Invoice's Sub Payment
      *
-     * @param string $invoiceUID
-     * @param array $actions
      * @return array
+     *
      * @throws PasargadException
      */
     public function updateInvoiceSubPayment(string $invoiceUID, array $actions)
@@ -236,7 +225,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         ];
 
         $url = self::SERVER_URL.'/UpdateInvoiceSubPayment';
-        list($result, $http_code, $http_error) = Curl::executeArgs($this->generateCurlArguments($url, $fields));
+        [$result, $http_code, $http_error] = Curl::executeArgs($this->generateCurlArguments($url, $fields));
 
         if ($http_code != 200 || empty($result)) {
             throw new PasargadException($http_code, $http_error ?? null);
@@ -248,9 +237,8 @@ class Pasargad extends AbstractProvider implements ProviderInterface
     /**
      * Get Invoice's Sub Payments Report
      *
-     * @param string $startDate
-     * @param string $endDate
      * @return array
+     *
      * @throws PasargadException
      */
     public function getSubPaymentsReport(string $startDate, string $endDate)
@@ -264,7 +252,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         ];
 
         $url = self::SERVER_URL.'/GetSubPaymentsReport';
-        list($result, $http_code, $http_error) = Curl::executeArgs($this->generateCurlArguments($url, $fields));
+        [$result, $http_code, $http_error] = Curl::executeArgs($this->generateCurlArguments($url, $fields));
 
         if ($http_code != 200 || empty($result)) {
             throw new PasargadException($http_code, $http_error ?? null);
@@ -273,11 +261,6 @@ class Pasargad extends AbstractProvider implements ProviderInterface
         return $result;
     }
 
-    /**
-     * @param $url
-     * @param $fields
-     * @return array
-     */
     protected function generateCurlArguments($url, $fields): array
     {
         $options = (Arr::get($this->config, 'ssl-verification', true) ? [] : [CURLOPT_SSL_VERIFYPEER => false]) +
@@ -292,7 +275,6 @@ class Pasargad extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $data
      * @return string[]
      */
     protected function generateHeaders(string $data): array
@@ -307,8 +289,7 @@ class Pasargad extends AbstractProvider implements ProviderInterface
     /**
      * Sign data using RSA key
      *
-     * @var string $data
-     * @return string
+     * @var string
      */
     protected function sign(string $data): string
     {
@@ -327,13 +308,13 @@ class Pasargad extends AbstractProvider implements ProviderInterface
     public function getSupportedExtraFieldsSample(): array
     {
         return [
-            'mobile'             => '09124441122',
-            'email'              => 'test@gmail.com',
-            'merchant_name'      => 'فروشگاه پاسارگاد',
-            'selected_language'  => 'En || Fa',
-            'pidn'               => 'شناسه پرداخت (پیوست ۵ در مستندات پاسارگاد مطالعه شود)',
-            'sub_payment_mode'   => '(bool) true || false (default is false) (درگاه چند پرداختی - تسهیم از طریق IPG)',
-            'sub_payments'       => [
+            'mobile'            => '09124441122',
+            'email'             => 'test@gmail.com',
+            'merchant_name'     => 'فروشگاه پاسارگاد',
+            'selected_language' => 'En || Fa',
+            'pidn'              => 'شناسه پرداخت (پیوست ۵ در مستندات پاسارگاد مطالعه شود)',
+            'sub_payment_mode'  => '(bool) true || false (default is false) (درگاه چند پرداختی - تسهیم از طریق IPG)',
+            'sub_payments'      => [
                 [
                     'SubPayID'    => 1,
                     'Amount'      => 5000000,

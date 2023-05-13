@@ -8,7 +8,6 @@ use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -18,7 +17,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Zarinpal extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of germany SOAP server
      *
@@ -96,13 +94,12 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
      */
     protected $type = null;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
-
 
     /**
      * Set server for soap transfers data
@@ -134,7 +131,7 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
     /**
      * Set ZarinPal gate transaction type (test or production | server location)
      *
-     * @param string $type
+     * @param  string  $type
      * @return Zarinpal
      */
     public function setType($type)
@@ -147,7 +144,6 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
     /**
      * Set Description
      *
-     * @param $description
      * @return void
      */
     public function setDescription($description)
@@ -158,7 +154,6 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
     /**
      * Set Payer Email Address
      *
-     * @param $email
      * @return void
      */
     public function setEmail($email)
@@ -169,20 +164,11 @@ class Zarinpal extends AbstractProvider implements ProviderInterface
     /**
      * Set Payer Mobile Number
      *
-     * @param $number
      * @return void
      */
     public function setMobileNumber($number)
     {
         $this->mobileNumber = $number;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::ZARINPAL;
     }
 
     /**

@@ -7,7 +7,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -17,7 +16,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Milyoona extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -31,15 +29,6 @@ class Milyoona extends AbstractProvider implements ProviderInterface
      * @var string
      */
     const GATE_URL = 'https://api.milyoona.com/ipg/';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::MILYOONA;
-    }
 
     /**
      * {@inheritdoc}
@@ -58,7 +47,7 @@ class Milyoona extends AbstractProvider implements ProviderInterface
 
         $result = $this->callApi('token', $fields);
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL . $result['token']);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL.$result['token']);
 
         return AuthorizedTransaction::make($transaction, $result['request_id'], $result['token'], $redirectResponse);
     }
@@ -68,7 +57,7 @@ class Milyoona extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('status')) {
+        if (! $request->has('status')) {
             throw new InvalidRequestException();
         }
 
@@ -108,8 +97,6 @@ class Milyoona extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $token
-     * @return array
      * @throws MilyoonaException
      */
     public function trace(string $token): array
@@ -118,20 +105,19 @@ class Milyoona extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws MilyoonaException
      */
     protected function callApi(string $path, array $fields)
     {
         $fields['terminal'] = $this->config['terminal-id'];
-        list($response, $http_code) = Curl::execute(self::SERVER_URL . $path, $fields);
+        [$response, $http_code] = Curl::execute(self::SERVER_URL.$path, $fields);
 
-        if ($http_code != 200 || !isset($response['status']) || !in_array($response['status'], [0, 5])) {
+        if ($http_code != 200 || ! isset($response['status']) || ! in_array($response['status'], [0, 5])) {
             throw new MilyoonaException(
                 $response['status'] ?? $http_code,
-                !empty($response['errors']) ? json_encode($response['errors'], JSON_UNESCAPED_UNICODE) : null
+                ! empty($response['errors']) ? json_encode($response['errors'], JSON_UNESCAPED_UNICODE) : null
             );
         }
 
@@ -145,11 +131,11 @@ class Milyoona extends AbstractProvider implements ProviderInterface
     {
         return [
             'mobile'        => '09124441122',
-            'national_code' => '(اختیاری) در صورت ارسال کدملی پرداخت کننده،' .
+            'national_code' => '(اختیاری) در صورت ارسال کدملی پرداخت کننده،'.
                 ' شماره کارت پرداخت کننده می‌بایست متعلق به کد ملی ارسالی باشد.',
-            'allowed_card'  => '(اختیاری) در صورت ارسال شماره کارت،' .
+            'allowed_card' => '(اختیاری) در صورت ارسال شماره کارت،'.
                 ' کاربر تنها قادر به پرداخت وجه با آن شماره کارت خواهد بود.',
-            'description'   => '(اختیاری) توضیحات ارسالی در پنل کاربری میلیونا به شما نمایش داده خواهد شد.',
+            'description' => '(اختیاری) توضیحات ارسالی در پنل کاربری میلیونا به شما نمایش داده خواهد شد.',
         ];
     }
 }

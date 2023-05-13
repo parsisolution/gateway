@@ -6,11 +6,8 @@ use Illuminate\Support\Arr;
 
 class RequestTransaction extends AbstractTransaction
 {
-
     /**
      * RequestTransaction constructor.
-     *
-     * @param Amount $amount
      */
     public function __construct(Amount $amount)
     {
@@ -20,7 +17,7 @@ class RequestTransaction extends AbstractTransaction
     /**
      * Set the amount of transaction.
      *
-     * @param Amount $amount
+     * @param  Amount  $amount
      * @return self
      */
     public function setAmount($amount)
@@ -33,7 +30,7 @@ class RequestTransaction extends AbstractTransaction
     /**
      * Set the extra information about the transaction.
      *
-     * @param array $extra
+     * @param  array  $extra
      * @return self
      */
     public function setExtra($extra)
@@ -46,8 +43,8 @@ class RequestTransaction extends AbstractTransaction
     /**
      * Set the extra information field about the transaction.
      *
-     * @param string $key
-     * @param mixed $value
+     * @param  string  $key
+     * @param  mixed  $value
      * @return self
      */
     public function setExtraField($key, $value)

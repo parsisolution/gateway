@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Mellat;
 use DateTime;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -15,7 +14,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Mellat extends AbstractProvider
 {
-
     /**
      * Address of main SOAP server
      *
@@ -29,14 +27,6 @@ class Mellat extends AbstractProvider
      * @var string
      */
     const GATE_URL = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat';
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::MELLAT;
-    }
 
     /**
      * {@inheritdoc}
@@ -58,11 +48,11 @@ class Mellat extends AbstractProvider
             'payerId'        => $transaction->getExtraField('payer_id', 0),
             // following fields exist in SOAP reference but are not documented in Behpardakht documentation
             // it seams corresponding fields send to gateway throw post fields in redirect
-//            'mobileNo'       => '',
-//            'encPan'         => '',
-//            'panHiddenMode'  => '',
-//            'cartItem'       => '',
-//            'enc'            => '',
+            //            'mobileNo'       => '',
+            //            'encPan'         => '',
+            //            'panHiddenMode'  => '',
+            //            'cartItem'       => '',
+            //            'enc'            => '',
         ];
 
         $soap = new SoapClient(self::SERVER_URL, $this->soapConfig());
@@ -82,23 +72,23 @@ class Mellat extends AbstractProvider
         ];
 
         $mobile = $transaction->getExtraField('mobile');
-        if (!empty($mobile)) {
+        if (! empty($mobile)) {
             $data['MobileNo'] = '98'.substr($mobile, 1);
         }
 
         $cartItem = $transaction->getExtraField('cart_item');
-        if (!empty($cartItem)) {
+        if (! empty($cartItem)) {
             $data['CartItem'] = $cartItem;
         }
 
         $inputPan = $transaction->getExtraField('allowed_card');
-        if (!empty($inputPan)) {
+        if (! empty($inputPan)) {
             $data['HiddenMode'] = ($transaction->getExtraField('hidden_mode', true) == true ? 0 : 1);
             $data['EncPan'] = $this->encrypt($inputPan);
         }
 
         $nationalCode = $transaction->getExtraField('national_code');
-        if (!empty($nationalCode)) {
+        if (! empty($nationalCode)) {
             $data['ENC'] = $this->encrypt($nationalCode, false);
         }
 
@@ -166,10 +156,6 @@ class Mellat extends AbstractProvider
 
     /**
      * Encrypts data with predefined gateway's key
-     *
-     * @param string $data
-     * @param bool $no_padding
-     * @return string
      */
     protected function encrypt(string $data, bool $no_padding = true): string
     {
@@ -193,13 +179,12 @@ class Mellat extends AbstractProvider
     public function getSupportedExtraFieldsSample()
     {
         return [
-            'mobile'        => '09124441122',
-            'description'   => 'send to additionalData filed (maximum 1000 characters)',
-            'payer_id'      => '(long) شناسه پرداخت کننده',
-            'cart_item'     => 'چنانچه پذيرنده بخواهد توضيحات اضافه‌تری را در صفحه دروازه پرداخت نمايش دهد',
-            'allowed_card'  => 'شماره کارت دارنده حساب مثال: 6037991020304050',
-            'hidden_mode'   =>
-                '(bool) true || false (اگر فعال باشد'.
+            'mobile'       => '09124441122',
+            'description'  => 'send to additionalData filed (maximum 1000 characters)',
+            'payer_id'     => '(long) شناسه پرداخت کننده',
+            'cart_item'    => 'چنانچه پذيرنده بخواهد توضيحات اضافه‌تری را در صفحه دروازه پرداخت نمايش دهد',
+            'allowed_card' => 'شماره کارت دارنده حساب مثال: 6037991020304050',
+            'hidden_mode'  => '(bool) true || false (اگر فعال باشد'.
                 ' صرفا ۴ شماره آخر شماره کارت ارسالی در درگاه پرداخت بصورت ReadOnly نمايش داده خواهد شد'.
                 ' در غیر این صورت شماره کارت ارسالی در درگاه پرداخت به صورت کامل و ReadOnly نمایش داده خواهد شد)',
             'national_code' => 'کد ملي دارنده حساب مثال: 1233445566',

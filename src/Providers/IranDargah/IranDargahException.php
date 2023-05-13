@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class IranDargahException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *

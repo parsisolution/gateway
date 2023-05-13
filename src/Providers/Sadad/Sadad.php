@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Sadad extends AbstractProvider
 {
-
     /**
      * Url of sadad gateway web service
      *
@@ -30,14 +28,6 @@ class Sadad extends AbstractProvider
      * @var string
      */
     const GATE_URL = 'https://sadad.shaparak.ir/Purchase?Token=';
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::SADAD;
-    }
 
     /**
      * {@inheritdoc}
@@ -61,11 +51,11 @@ class Sadad extends AbstractProvider
             'ApplicationName'  => $transaction->getExtraField('application_name'),
         ];
         $mobile = $transaction->getExtraField('mobile');
-        if (!empty($mobile)) {
+        if (! empty($mobile)) {
             $fields['UserId'] = '98'.substr($mobile, 1);
         }
 
-        list($response) = Curl::execute(self::SERVER_URL.'/Request/PaymentRequest', $fields, false);
+        [$response] = Curl::execute(self::SERVER_URL.'/Request/PaymentRequest', $fields, false);
 
         if ($response->ResCode != 0) {
             throw new SadadException($response->ResCode, $response->Description);
@@ -82,7 +72,7 @@ class Sadad extends AbstractProvider
     protected function validateSettlementRequest(Request $request)
     {
         $ResCode = $request->input('ResCode');
-//        $SwitchResCode = $request->input('SwitchResCode');
+        //        $SwitchResCode = $request->input('SwitchResCode');
 
         if ($ResCode != 0) {
             throw new InvalidRequestException();
@@ -107,7 +97,7 @@ class Sadad extends AbstractProvider
             'SignData' => $this->encryptPKCS7($transaction->getToken(), $this->config['terminal-key']),
         ];
 
-        list($response) = Curl::execute(self::SERVER_URL.'/Advice/Verify', $fields);
+        [$response] = Curl::execute(self::SERVER_URL.'/Advice/Verify', $fields);
 
         if ($response['ResCode'] != 0) {
             throw new SadadException($response['ResCode'], $response['Description']);
@@ -132,14 +122,14 @@ class Sadad extends AbstractProvider
     /**
      * Create signed data (TripleDES(ECB,PKCS7))
      *
-     * @param string $str
-     * @param string $key
+     * @param  string  $str
+     * @param  string  $key
      * @return string
      */
     private function encryptPKCS7($str, $key)
     {
         $key = base64_decode($key);
-        $cipherText = OpenSSL_encrypt($str, 'DES-EDE3', $key, OPENSSL_RAW_DATA);
+        $cipherText = openssl_encrypt($str, 'DES-EDE3', $key, OPENSSL_RAW_DATA);
 
         return base64_encode($cipherText);
     }
@@ -154,19 +144,18 @@ class Sadad extends AbstractProvider
             'description'       => 'اطلاعات اضافی تراکنش',
             'multiplexing_data' => [
                 'Type'             => 'Amount || Percentage',
-                'MultiplexingRows' =>
+                'MultiplexingRows' => [
                     [
-                        [
-                            'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
-                            'Value'      => '(integer) مبلغ يا درصد',
-                        ],
-                        [
-                            'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
-                            'Value'      => '(integer) مبلغ يا درصد',
-                        ],
+                        'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
+                        'Value'      => '(integer) مبلغ يا درصد',
                     ],
+                    [
+                        'IbanNumber' => 'رديف يا شماره شبا حساب همراه IR',
+                        'Value'      => '(integer) مبلغ يا درصد',
+                    ],
+                ],
             ],
-            'application_name'  => 'نام اپلیکیشن درخواست کننده - '.
+            'application_name' => 'نام اپلیکیشن درخواست کننده - '.
                 'اختیاری (برای گزارشات لازم است که اين فیلد مقدار دهی شود)',
         ];
     }

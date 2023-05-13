@@ -21,10 +21,9 @@ class AuthorizedTransaction extends AbstractTransaction implements HasId
     /**
      * create new AuthorizedTransaction.
      *
-     * @param UnAuthorizedTransaction $transaction
-     * @param string $referenceId
-     * @param string $token
-     * @param RedirectResponse $redirect
+     * @param  string  $referenceId
+     * @param  string  $token
+     * @param  RedirectResponse  $redirect
      * @return self
      */
     public static function make(
@@ -45,7 +44,7 @@ class AuthorizedTransaction extends AbstractTransaction implements HasId
     /**
      * Create new instance from DB transaction table
      *
-     * @param array $transaction
+     * @param  array  $transaction
      * @return self
      */
     public static function makeFromDB($transaction)

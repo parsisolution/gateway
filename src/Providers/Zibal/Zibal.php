@@ -7,7 +7,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -17,7 +16,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Zibal extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -31,15 +29,6 @@ class Zibal extends AbstractProvider implements ProviderInterface
      * @var string
      */
     const GATE_URL = 'https://gateway.zibal.ir/start/';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::ZIBAL;
-    }
 
     /**
      * {@inheritdoc}
@@ -62,7 +51,7 @@ class Zibal extends AbstractProvider implements ProviderInterface
             'multiplexingInfos' => $transaction->getExtraField('multiplexing_infos'),
         ];
 
-        list($response, $http_code) = Curl::execute(self::SERVER_URL.'request', $fields);
+        [$response, $http_code] = Curl::execute(self::SERVER_URL.'request', $fields);
 
         if ($http_code != 200 || empty($response['result']) || $response['result'] != 100) {
             throw new ZibalException($response['result'] ?? $http_code, $response['message'] ?? null);
@@ -105,7 +94,7 @@ class Zibal extends AbstractProvider implements ProviderInterface
             'trackId'  => $transaction->getReferenceId(),
         ];
 
-        list($response, $http_code) = Curl::execute(self::SERVER_URL.'verify', $fields);
+        [$response, $http_code] = Curl::execute(self::SERVER_URL.'verify', $fields);
 
         if ($http_code != 200 || empty($response['result']) || ! in_array($response['result'], [100, 202])) {
             throw new ZibalException($response['result'] ?? $http_code, $response['message'] ?? null);
@@ -131,20 +120,20 @@ class Zibal extends AbstractProvider implements ProviderInterface
     public function getSupportedExtraFieldsSample()
     {
         return [
-            'mobile'             => '09124441122',
-            'description'        => 'توضیحات مربوط به سفارش (در گزارشات مختلف نشان‌داده خواهند شد)',
-            'allowed_card'       => '(string[] list)'.
+            'mobile'       => '09124441122',
+            'description'  => 'توضیحات مربوط به سفارش (در گزارشات مختلف نشان‌داده خواهند شد)',
+            'allowed_card' => '(string[] list)'.
                 ' چنانچه تمایل دارید کاربر فقط از شماره کارت‌های مشخصی بتواند پرداخت کند'.
                 ' لیست کارت(های) 16 رقمی را ارسال کنید',
-            'link_to_pay'        => '(bool) true || false'.
+            'link_to_pay' => '(bool) true || false'.
                 ' در صورتی که درگاه شما دسترسی ارسال لینک کوتاه پرداخت را داشته باشد،'.
                 ' با قراردادن این متغیر برابر با true لینک کوتاه پرداخت برای این تراکنش ساخته می‌شود.'.
                 ' لازم به ذکر است در این حالت callbackUrl میتواند ارسال نشود',
-            'sms'                => '(bool) true || false '.
+            'sms' => '(bool) true || false '.
                 ' با قراردادن این متغیر برابر با true لینک کوتاه پرداخت به شماره mobile ارسال خواهد شد',
-            'percent_mode'       => '(bool) true || false (default is false)'.
+            'percent_mode' => '(bool) true || false (default is false)'.
                 ' در صورتی که نحوه تسهیم مبلغ شما به‌صورت درصدی می‌باشد، این مقدار را true ارسال کنید',
-            'fee_mode'           => '(integer) 0 (کسر از تراکنش) ||'.
+            'fee_mode' => '(integer) 0 (کسر از تراکنش) ||'.
                 ' 1 (کسر کارمزد از کیف پول متصل به درگاه (در پرداختیاری پشتیبانی نمی شود)) ||'.
                 ' 2 (افزوده شدن مبلغ کارمزد به مبلغ پرداختی توسط مشتری)',
             'multiplexing_infos' => 'لیستی از شی آیتم تسهیم - برای اطلاعات بیشتر مستندات درگاه مطالعه شود',

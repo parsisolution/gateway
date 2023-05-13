@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -19,7 +18,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class IranDargah extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -69,9 +67,9 @@ class IranDargah extends AbstractProvider implements ProviderInterface
      */
     protected $merchantId;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
@@ -97,14 +95,6 @@ class IranDargah extends AbstractProvider implements ProviderInterface
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::IRANDARGAH;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
@@ -116,23 +106,23 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             'description' => $transaction->getExtraField('description'),
         ];
         $cardNumber = $transaction->getExtraField('allowed_card');
-        if (!empty($cardNumber)) {
+        if (! empty($cardNumber)) {
             // by sending cardnumber , your user can not pay with another card number // OPTIONAL
             $fields['cardNumber'] = $cardNumber;
         }
 
-        list($result, $http_code) = Curl::execute($this->serverUrl . '/payment', $fields, false, [
-            # if you get SSL error (curl error 60) add 2 lines below
+        [$result, $http_code] = Curl::execute($this->serverUrl.'/payment', $fields, false, [
+            // if you get SSL error (curl error 60) add 2 lines below
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_SSL_VERIFYPEER => false,
-            # end SSL error
+            // end SSL error
         ]);
 
-        if (!isset($result->status) || $result->status != '200') {
+        if (! isset($result->status) || $result->status != '200') {
             throw new IranDargahException($result->status ?? $http_code, $result->message);
         }
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl . $result->authority);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$result->authority);
 
         return AuthorizedTransaction::make($transaction, $result->authority, null, $redirectResponse);
     }
@@ -142,7 +132,7 @@ class IranDargah extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('code')) {
+        if (! $request->has('code')) {
             throw new InvalidRequestException();
         }
 
@@ -170,11 +160,11 @@ class IranDargah extends AbstractProvider implements ProviderInterface
             'orderId'    => $transaction->getOrderId(),
         ];
 
-        list($result) = Curl::execute($this->serverUrl . '/verification', $fields, false, [
-            # if you get SSL error (curl error 60) add 2 lines below
+        [$result] = Curl::execute($this->serverUrl.'/verification', $fields, false, [
+            // if you get SSL error (curl error 60) add 2 lines below
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_SSL_VERIFYPEER => false,
-            # end SSL error
+            // end SSL error
         ]);
 
         $status = $result->status;
@@ -195,8 +185,8 @@ class IranDargah extends AbstractProvider implements ProviderInterface
         return [
             'mobile'       => '09124441122',
             'description'  => 'توضیحات تراکنش',
-            'allowed_card' => 'شماره کارت پرداخت‌کننده است' .
-                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود' .
+            'allowed_card' => 'شماره کارت پرداخت‌کننده است'.
+                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود'.
                 ' و درصورتی که یکسان نباشد، مبلغ تراکنش به حساب پرداخت‌کننده برمی‌گردد.',
         ];
     }

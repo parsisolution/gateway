@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class AqayePardakhtException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *

@@ -7,7 +7,6 @@ use Illuminate\Support\Arr;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\Amount;
@@ -18,7 +17,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Sizpay extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of SOAP server
      *
@@ -36,29 +34,21 @@ class Sizpay extends AbstractProvider implements ProviderInterface
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::SIZPAY;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $appExtraInformation = [
-            "PayTyp"      => $transaction->getExtraField('pay_type', 0),
-            "PayTypID"    => $transaction->getExtraField('pay_type_id', 0),
-            "PayerNm"     => $transaction->getExtraField('name', ''),
-            "PayerMobile" => $transaction->getExtraField('mobile', ''),
-            "PayerEmail"  => $transaction->getExtraField('email', ''),
-            "PayerIP"     => $this->request->getClientIp(),
-            "Descr"       => $transaction->getExtraField('description', ''),
-            "PayTitle"    => $transaction->getExtraField('pay_title', ''),
-            "PayTitleID"  => $transaction->getExtraField('pay_title_id', 0),
-            "PayerAppTyp" => $transaction->getExtraField('payer_app_type'),
-            "PayerAppID"  => $transaction->getExtraField('payer_app_id'),
-            "PayerAppNm"  => $transaction->getExtraField('payer_app_name'),
+            'PayTyp'      => $transaction->getExtraField('pay_type', 0),
+            'PayTypID'    => $transaction->getExtraField('pay_type_id', 0),
+            'PayerNm'     => $transaction->getExtraField('name', ''),
+            'PayerMobile' => $transaction->getExtraField('mobile', ''),
+            'PayerEmail'  => $transaction->getExtraField('email', ''),
+            'PayerIP'     => $this->request->getClientIp(),
+            'Descr'       => $transaction->getExtraField('description', ''),
+            'PayTitle'    => $transaction->getExtraField('pay_title', ''),
+            'PayTitleID'  => $transaction->getExtraField('pay_title_id', 0),
+            'PayerAppTyp' => $transaction->getExtraField('payer_app_type'),
+            'PayerAppID'  => $transaction->getExtraField('payer_app_id'),
+            'PayerAppNm'  => $transaction->getExtraField('payer_app_name'),
         ];
 
         $fields = [
@@ -133,21 +123,21 @@ class Sizpay extends AbstractProvider implements ProviderInterface
         $response = $soap->Confirm2($fields);
 
         $result = json_decode($response->Confirm2Result, JSON_OBJECT_AS_ARRAY);
-        $CardNo = $result["CardNo"];
-        $TraceNo = $result["TraceNo"];
-//        $TransDate = $result["TransDate"];
-        $TransNo = $result["TransNo"];
-//        $MerchantID = $result["MerchantID"];
-//        $TerminalID = $result["TerminalID"];
-        $OrderID = $result["OrderID"];
-        $RefNo = $result["RefNo"];
-        $Amount = $result["Amount"];
-//        $InvoiceNo = $result["InvoiceNo"];
-//        $ExtraInf = $result["ExtraInf"];
-//        $AppExtraInf = $result["AppExtraInf"];
-        $Token = $result["Token"];
-        $ResCod = $result["ResCod"];
-        $Message = $result["Message"];
+        $CardNo = $result['CardNo'];
+        $TraceNo = $result['TraceNo'];
+        //        $TransDate = $result["TransDate"];
+        $TransNo = $result['TransNo'];
+        //        $MerchantID = $result["MerchantID"];
+        //        $TerminalID = $result["TerminalID"];
+        $OrderID = $result['OrderID'];
+        $RefNo = $result['RefNo'];
+        $Amount = $result['Amount'];
+        //        $InvoiceNo = $result["InvoiceNo"];
+        //        $ExtraInf = $result["ExtraInf"];
+        //        $AppExtraInf = $result["AppExtraInf"];
+        $Token = $result['Token'];
+        $ResCod = $result['ResCod'];
+        $Message = $result['Message'];
 
         if ($ResCod != '0' && $ResCod != '00') {
             throw new SizpayException($ResCod, $Message);

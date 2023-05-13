@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\SabaPay;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -14,7 +13,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class SabaPay extends AbstractProvider
 {
-
     /**
      * Address of main CURL server
      *
@@ -36,15 +34,6 @@ class SabaPay extends AbstractProvider
      */
     const URL_GATE = 'http://pay.sabanovin.com/invoice/pay/';
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::SABAPAY;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -56,7 +45,7 @@ class SabaPay extends AbstractProvider
             'return_url' => $this->getCallback($transaction, true),
         ];
 
-        list($response) = Curl::execute(self::SERVER_URL, $fields, true, [
+        [$response] = Curl::execute(self::SERVER_URL, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
         ], Curl::METHOD_GET);
 
@@ -100,7 +89,7 @@ class SabaPay extends AbstractProvider
             'api_key' => $this->config['api-key'],
         ];
 
-        list($response) = Curl::execute(self::SERVER_VERIFY_URL.$transaction->getReferenceId(), $fields, true, [
+        [$response] = Curl::execute(self::SERVER_VERIFY_URL.$transaction->getReferenceId(), $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
         ], Curl::METHOD_GET);
 

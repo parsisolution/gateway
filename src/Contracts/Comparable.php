@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Parsisolution\Gateway\Contracts;
 
 use Parsisolution\Gateway\Exceptions\UncomparableException;
@@ -14,7 +13,6 @@ use Parsisolution\Gateway\Exceptions\UncomparableException;
  */
 interface Comparable
 {
-
     /**
      * Compare this object with the specified value for order.
      *
@@ -33,11 +31,12 @@ interface Comparable
      * clearly indicate this fact. The recommended language is "Note: this class has a natural ordering that is
      * inconsistent with equals."
      *
-     * @param mixed $value
+     * @param  mixed  $value
      *     Value to compare to.
-     * @return integer
+     * @return int
      *     Negative integer, zero, or a positive integer as this object is less than, equal to, or greater than the
      *     specified value.
+     *
      * @throws UncomparableException
      *     If the implementor is unable to compare the given value with itself.
      */

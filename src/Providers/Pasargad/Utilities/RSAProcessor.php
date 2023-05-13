@@ -5,11 +5,15 @@ namespace Parsisolution\Gateway\Providers\Pasargad\Utilities;
 class RSAProcessor
 {
     const XML_FILE = 0;
+
     const XML_STRING = 1;
 
     private $public_key = null;
+
     private $private_key = null;
+
     private $modulus = null;
+
     private $key_length = 1024;
 
     public function __construct($xmlRsaKey = null, $type = RSAProcessor::XML_FILE)

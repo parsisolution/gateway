@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Irankish;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -15,7 +14,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Irankish extends AbstractProvider
 {
-
     /**
      * Address of main server
      *
@@ -40,38 +38,30 @@ class Irankish extends AbstractProvider
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::IRANKISH;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
-            'request'                => [
-                'acceptorId'        => $this->config['acceptor-id'],
-                'amount'            => $transaction->getAmount()->getRiyal(),
-                'billInfo'          => null,
-                'requestId'         => $transaction->getOrderId(),
-                'paymentId'         => $transaction->getOrderId(),
-                'requestTimestamp'  => time(),
-                'revertUri'         => $this->getCallback($transaction),
-                'terminalId'        => $this->config['terminal-id'],
-                'transactionType'   => 'Purchase',
+            'request' => [
+                'acceptorId'       => $this->config['acceptor-id'],
+                'amount'           => $transaction->getAmount()->getRiyal(),
+                'billInfo'         => null,
+                'requestId'        => $transaction->getOrderId(),
+                'paymentId'        => $transaction->getOrderId(),
+                'requestTimestamp' => time(),
+                'revertUri'        => $this->getCallback($transaction),
+                'terminalId'       => $this->config['terminal-id'],
+                'transactionType'  => 'Purchase',
             ],
             'authenticationEnvelope' => $this->generateAuthenticationEnvelope($transaction->getAmount()->getRiyal()),
         ];
         $mobile = $transaction->getExtraField('mobile');
-        if (!empty($mobile)) {
+        if (! empty($mobile)) {
             $fields['request']['cmsPreservationId'] = '98'.substr($mobile, 1);
         }
 
-        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL, $fields);
+        [$response, $http_code, $error] = Curl::execute(self::SERVER_URL, $fields);
 
-        if (!($response['result'] ?? false)) {
+        if (! ($response['result'] ?? false)) {
             throw new IrankishException($response['responseCode'] ?? $http_code, $response['description'] ?? $error);
         }
 
@@ -112,7 +102,7 @@ class Irankish extends AbstractProvider
             'tokenIdentity'            => $request->input('token'),
         ];
 
-        list($response) = Curl::execute(self::SERVER_VERIFY_URL, $fields);
+        [$response] = Curl::execute(self::SERVER_VERIFY_URL, $fields);
 
         if ($response['responseCode'] != '0' && $response['responseCode'] != '00') {
             throw new IrankishException($response['responseCode']);
@@ -138,10 +128,6 @@ class Irankish extends AbstractProvider
         );
     }
 
-    /**
-     * @param float $amount
-     * @return array
-     */
     protected function generateAuthenticationEnvelope(float $amount): array
     {
         $data = $this->config['terminal-id'].$this->config['password'].str_pad($amount, 12, '0', STR_PAD_LEFT).'00';

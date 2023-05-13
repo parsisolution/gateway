@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\ApiType;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\Amount;
@@ -20,13 +19,13 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class AsanPardakht extends AbstractProvider
 {
-
     /**
      * Address of main SOAP server
      *
      * @var string
      */
     const SERVER_SOAP_URL = 'https://ipgsoap.asanpardakht.ir/paygate/merchantservices.asmx?wsdl';
+
     const SERVER_UTILS = 'https://ipgsoap.asanpardakht.ir/paygate/internalutils.asmx?wsdl';
 
     /**
@@ -50,19 +49,11 @@ class AsanPardakht extends AbstractProvider
      */
     protected $apiType;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->apiType = Arr::get($config, 'api-type', ApiType::SOAP);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::ASANPARDAKHT;
     }
 
     /**
@@ -113,7 +104,7 @@ class AsanPardakht extends AbstractProvider
                 $fields['settlementPortions'] = $settlementPortions;
             }
 
-            list($referenceId, $http_code) = Curl::execute(self::SERVER_REST_URL.'/Token', $fields, true, [
+            [$referenceId, $http_code] = Curl::execute(self::SERVER_REST_URL.'/Token', $fields, true, [
                 CURLOPT_HTTPHEADER => $this->generateHeaders(),
             ]);
 
@@ -143,7 +134,7 @@ class AsanPardakht extends AbstractProvider
 
         $ReturningParams = $request->input('ReturningParams');
 
-        list($amount, $orderId, $referenceId) = explode(',', $this->decrypt($ReturningParams));
+        [$amount, $orderId, $referenceId] = explode(',', $this->decrypt($ReturningParams));
 
         return new FieldsToMatch($orderId, $referenceId, null, new Amount($amount, 'IRR'));
     }
@@ -156,7 +147,7 @@ class AsanPardakht extends AbstractProvider
         if ($this->apiType == ApiType::SOAP) {
             $ReturningParams = $request->input('ReturningParams');
 
-            list($Amount, $SaleOrderId, $RefId, $ResCode, $ResMessage, $PayGateTranID, $RRN, $LastFourDigitOfPAN) =
+            [$Amount, $SaleOrderId, $RefId, $ResCode, $ResMessage, $PayGateTranID, $RRN, $LastFourDigitOfPAN] =
                 explode(',', $this->decrypt($ReturningParams));
 
             $cardNumber = '************'.$LastFourDigitOfPAN;
@@ -200,7 +191,7 @@ class AsanPardakht extends AbstractProvider
                 'localInvoiceId'          => $transaction->getOrderId(),
             ];
 
-            list($result, $http_code) = Curl::execute(self::SERVER_REST_URL.'/TranResult', $fields, true, [
+            [$result, $http_code] = Curl::execute(self::SERVER_REST_URL.'/TranResult', $fields, true, [
                 CURLOPT_HTTPHEADER => $this->generateHeaders(true),
             ], Curl::METHOD_GET);
 
@@ -219,7 +210,7 @@ class AsanPardakht extends AbstractProvider
                 'payGateTranId'           => $PayGateTranID,
             ];
 
-            list(, $http_code) = Curl::execute(self::SERVER_REST_URL.'/Verify', $fields, true, [
+            [, $http_code] = Curl::execute(self::SERVER_REST_URL.'/Verify', $fields, true, [
                 CURLOPT_HTTPHEADER => $this->generateHeaders(),
             ]);
 
@@ -227,7 +218,7 @@ class AsanPardakht extends AbstractProvider
                 throw new AsanPardakhtRestException($http_code);
             }
 
-            list(, $http_code) = Curl::execute(self::SERVER_REST_URL.'/Settlement', $fields, true, [
+            [, $http_code] = Curl::execute(self::SERVER_REST_URL.'/Settlement', $fields, true, [
                 CURLOPT_HTTPHEADER => $this->generateHeaders(),
             ]);
 
@@ -244,7 +235,7 @@ class AsanPardakht extends AbstractProvider
     /**
      * Encrypt string by key and iv from config
      *
-     * @param string $string
+     * @param  string  $string
      * @return string
      */
     private function encrypt($string = '')
@@ -272,7 +263,7 @@ class AsanPardakht extends AbstractProvider
     /**
      * Decrypt string by key and iv from config
      *
-     * @param string $string
+     * @param  string  $string
      * @return string
      */
     private function decrypt($string = '')
@@ -297,7 +288,6 @@ class AsanPardakht extends AbstractProvider
     }
 
     /**
-     * @param bool $forGetRequest
      * @return string[]
      */
     protected function generateHeaders(bool $forGetRequest = false): array
@@ -321,8 +311,8 @@ class AsanPardakht extends AbstractProvider
     public function getSupportedExtraFieldsSample()
     {
         return [
-            'mobile'              => '09124441122',
-            'description'         => 'اطلاعات اضافی تراكنش را در این فیلد ارسال فرمائید.'.
+            'mobile'      => '09124441122',
+            'description' => 'اطلاعات اضافی تراكنش را در این فیلد ارسال فرمائید.'.
                 ' این اطلاعات حداكثر می‌بایست طولی برابر ١٠٠ كاراكتر داشته باشند و در غیر اینصورت Truncate خواهند شد',
             'settlement_portions' => 'قسمت آماده سازی رشته در حالت تمایل به تقسیم وجوه در مستندات آپ مطالعه شود',
         ];

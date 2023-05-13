@@ -7,7 +7,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -17,22 +16,12 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Jibimo extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
      * @var string
      */
     const SERVER_URL = 'https://api.jibimo.com/v2/ipg/';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::JIBIMO;
-    }
 
     /**
      * {@inheritdoc}
@@ -53,7 +42,7 @@ class Jibimo extends AbstractProvider implements ProviderInterface
             $fields['authorized_card_numbers'] = $allowedCards;
         }
 
-        list($result, $http_code) = Curl::execute(self::SERVER_URL.'request', $fields, true, [
+        [$result, $http_code] = Curl::execute(self::SERVER_URL.'request', $fields, true, [
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
 
@@ -92,7 +81,7 @@ class Jibimo extends AbstractProvider implements ProviderInterface
             'trx' => $transaction->getReferenceId(),
         ];
 
-        list($result, $http_code) = Curl::execute(self::SERVER_URL.'verify', $fields, true, [
+        [$result, $http_code] = Curl::execute(self::SERVER_URL.'verify', $fields, true, [
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
 
@@ -114,10 +103,6 @@ class Jibimo extends AbstractProvider implements ProviderInterface
         ]);
     }
 
-    /**
-     * @param string $transactionId
-     * @return array
-     */
     public function inquiry(string $transactionId): array
     {
         return Curl::execute(self::SERVER_URL.'trx/'.$transactionId, [], true, [
@@ -126,7 +111,6 @@ class Jibimo extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param bool $isGetRequest
      * @return string[]
      */
     protected function generateHeaders(bool $isGetRequest = false): array
@@ -154,7 +138,7 @@ class Jibimo extends AbstractProvider implements ProviderInterface
                 'در صورتی که نیاز دارید که کد ملی دارنده کارت با کد ملی مربوط به صاحب شماره موبایل مطابقت داده شود'.
                 ' و در صورت عدم تطابق، تراکنش انجام نگردد مقدار این فیلد را true ارسال نمایید.'.
                 ' در صورتی که این فیلد true ارسال شود، شماره موبایل هم اجباری خواهد شد.',
-            'allowed_card'        => '(string[] list)'.
+            'allowed_card' => '(string[] list)'.
                 'در صورتی که نیاز دارید تراکنش کاربر فقط با شماره کارت‌های مشخصی امکان پذیر باشد'.
                 ' و در غیر این صورت تراکنش انجام نگردد، این شماره کارت‌ها به صورت آرایه‌ای از طریق این فیلد ارسال گردد',
         ];

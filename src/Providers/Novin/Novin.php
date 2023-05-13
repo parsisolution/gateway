@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\ApiType;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\Amount;
@@ -20,7 +19,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Novin extends AbstractProvider
 {
-
     /**
      * Address of SOAP server
      *
@@ -56,19 +54,11 @@ class Novin extends AbstractProvider
      */
     protected $sessionId;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->apiType = Arr::get($config, 'api-type', ApiType::SOAP);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::NOVIN;
     }
 
     /**
@@ -168,8 +158,8 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param $token
      * @return mixed
+     *
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -184,9 +174,8 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param $token
-     * @param $refNum
      * @return mixed
+     *
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -202,23 +191,23 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param array $fields
      * @return mixed
+     *
      * @throws NovinException
      * @throws \SoapFault
      */
     public function getTransactionReport(array $fields)
     {
         $fields = $fields + [
-                'WSContext' => $this->generateWSContext(),
-            ];
+            'WSContext' => $this->generateWSContext(),
+        ];
 
         return $this->callApi('getTransactionReport', $fields);
     }
 
     /**
-     * @param string $userId
      * @return mixed
+     *
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -232,10 +221,6 @@ class Novin extends AbstractProvider
         return $this->callApi('GetCardInfo', $fields);
     }
 
-    /**
-     * @param string $sessionId
-     * @return Novin
-     */
     public function setSessionId(string $sessionId): self
     {
         $this->sessionId = $sessionId;
@@ -244,7 +229,6 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @return array
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -263,7 +247,6 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @return string
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -275,8 +258,6 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param string $sessionId
-     * @return string
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -288,9 +269,8 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param string $method
-     * @param array $fields
      * @return mixed
+     *
      * @throws NovinException
      * @throws \SoapFault
      */
@@ -303,7 +283,7 @@ class Novin extends AbstractProvider
         } else {
             $path = $this->getRestPathFromSoapMethod($method);
 
-            list($response, $http_code) = Curl::execute(self::SERVER_REST_URL.$path, $fields, false);
+            [$response, $http_code] = Curl::execute(self::SERVER_REST_URL.$path, $fields, false);
 
             if ($http_code != 200) {
                 throw new NovinException($http_code);
@@ -318,7 +298,7 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param string $method <p>
+     * @param  string  $method <p>
      * the soap method to call
      * </p>
      * @return string the equivalent path for rest api
@@ -342,7 +322,6 @@ class Novin extends AbstractProvider
     }
 
     /**
-     * @param $data
      * @return mixed
      */
     protected function sign($data)
@@ -381,14 +360,14 @@ class Novin extends AbstractProvider
     public function getSupportedExtraFieldsSample()
     {
         return [
-            'mobile'                     => '09124441122',
-            'email'                      => 'test@gmail.com',
-            'trans_type'                 => 'EN_GOODS (خرید) (is default) || '.
+            'mobile'     => '09124441122',
+            'email'      => 'test@gmail.com',
+            'trans_type' => 'EN_GOODS (خرید) (is default) || '.
                 'EN_BILL_PAY (پرداخت قبض) || '.
                 'EN_VOCHER (وچر) || '.
                 'EN_TOP_UP (تاپ آپ) || '.
                 'EN_THP_PAY (سرویس پرداخت ویژه)',
-            'product_id'                 => 'کد محصول (اختیاری)'.
+            'product_id' => 'کد محصول (اختیاری)'.
                 ' (برای خرید وچر این داده اجباری میباشد و مقادیر مجاز آن به فروشنده اعلام میگردد)',
             'goods_reference_id'         => 'شناسه خرید (اختیاری)',
             'merchant_good_reference_id' => 'شناسه خرید پذیرنده (اختیاری)',
@@ -406,8 +385,8 @@ class Novin extends AbstractProvider
                     'ServiceDesc' => 'توضیحات خدمت (اختیاری)',
                 ],
             ],
-            'thp_service_id'             => '(اختیاری)',
-            'additional_info_list'       => [
+            'thp_service_id'       => '(اختیاری)',
+            'additional_info_list' => [
                 [
                     'Key'   => 'کلید داده (اجباری)',
                     'Value' => 'مقدار داده (اجباری)',
@@ -417,7 +396,7 @@ class Novin extends AbstractProvider
                     'Value' => 'مقدار داده (اجباری)',
                 ],
             ],
-            'is_government_pay'          => '(bool) true || false تسویه آفلاین شاپرک (اختیاری)'.
+            'is_government_pay' => '(bool) true || false تسویه آفلاین شاپرک (اختیاری)'.
                 'اگر فعال باشد فایل تسویه به صورت آفلاین به شاپرک ارسال میشود. در این صورت شناسه تسهیم اجباری است',
             'apportionment_account_list' => [
                 [
@@ -425,17 +404,17 @@ class Novin extends AbstractProvider
                     'Amount'                   => 'مبلغ (اجباری)',
                     'ApportionmentAccountType' => 'enMain (اصلی) || enOther (سایر)'.
                         ' (نوع تسهیم) (اجباری)',
-                    'SettelmentPayID'          => 'شناسه تسهیم (اختیاری)',
+                    'SettelmentPayID' => 'شناسه تسهیم (اختیاری)',
                 ],
                 [
                     'AccountIBAN'              => 'کد شبا (اجباری)',
                     'Amount'                   => 'مبلغ (اجباری)',
                     'ApportionmentAccountType' => 'enMain (اصلی) || enOther (سایر)'.
                         ' (نوع تسهیم) (اجباری)',
-                    'SettelmentPayID'          => 'شناسه تسهیم (اختیاری)',
+                    'SettelmentPayID' => 'شناسه تسهیم (اختیاری)',
                 ],
             ],
-            'thp_pay_data_list'          => [
+            'thp_pay_data_list' => [
                 [
                     'ItemId'    => '',
                     'ItemValue' => '',
@@ -445,12 +424,12 @@ class Novin extends AbstractProvider
                     'ItemValue' => '',
                 ],
             ],
-            'user_id'                    => 'برای امکان ذخیره‌ی شماره کارت مشتریان است،'.
+            'user_id' => 'برای امکان ذخیره‌ی شماره کارت مشتریان است،'.
                 ' که میتواند شماره موبایل مشتری و یا هر کد یکتای دیگری باشد'.
                 ' و برای ذخیره‌ی اطلاعات کارت (شماره کارت و تاریخ انقضا)‌ در درگاه ارسال می‌شود،'.
                 ' قابل ذکر است در هر تراکنش شماره کارت با آن user_id ارسال شده در درگاه نمایش داده می‌شود'.
                 ' (در صورتی که وجود نداشته باشد به صورت پیش‌فرض از مقدار mobile برای آن استفاده میشود)',
-            'language'                   => 'fa || en',
+            'language' => 'fa || en',
         ];
     }
 }

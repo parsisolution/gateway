@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
     private function getTableName()
     {
         return config(\Parsisolution\Gateway\GatewayManager::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
@@ -20,7 +19,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create($this->getTableName(), function (Blueprint $table) {
-            $table->engine = "innoDB";
+            $table->engine = 'innoDB';
             $table->unsignedBigInteger('id', true);
             $table->unsignedTinyInteger('provider');
             $table->decimal('amount', 15, 2);

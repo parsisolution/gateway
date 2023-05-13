@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class ShepaException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *

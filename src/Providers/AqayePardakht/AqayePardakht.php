@@ -7,7 +7,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class AqayePardakht extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -37,15 +35,6 @@ class AqayePardakht extends AbstractProvider implements ProviderInterface
      * @var string
      */
     const GATE_SANDBOX_URL = 'https://panel.aqayepardakht.ir/startpay/sandbox/';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::AQAYEPARDAKHT;
-    }
 
     /**
      * {@inheritdoc}
@@ -122,14 +111,13 @@ class AqayePardakht extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param $path
-     * @param $fields
      * @return mixed
+     *
      * @throws AqayePardakhtException
      */
     protected function callApi(string $path, array $fields)
     {
-        list($response, $http_code) = Curl::execute(self::SERVER_URL.$path, $fields);
+        [$response, $http_code] = Curl::execute(self::SERVER_URL.$path, $fields);
 
         if ($http_code != 200 || empty($response['status']) || $response['status'] != 'success') {
             throw new AqayePardakhtException($response['code'] ?? $http_code);

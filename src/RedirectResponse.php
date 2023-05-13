@@ -2,7 +2,6 @@
 
 namespace Parsisolution\Gateway;
 
-
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -10,18 +9,20 @@ use RuntimeException;
 
 class RedirectResponse implements Arrayable, Jsonable, JsonSerializable
 {
-
     const TYPE_GET = 'Get';
+
     const TYPE_POST = 'Post';
 
     /**
      * @var string
      */
     private $type;
+
     /**
      * @var string
      */
     private $url;
+
     /**
      * @var array
      */
@@ -30,9 +31,9 @@ class RedirectResponse implements Arrayable, Jsonable, JsonSerializable
     /**
      * RedirectResponse constructor.
      *
-     * @param string $type
-     * @param string $url
-     * @param array $data
+     * @param  string  $type
+     * @param  string  $url
+     * @param  array  $data
      */
     public function __construct($type, $url, array $data = null)
     {
@@ -68,7 +69,7 @@ class RedirectResponse implements Arrayable, Jsonable, JsonSerializable
     /**
      * Redirect the user of the application to the provider's payment screen.
      *
-     * @param \Illuminate\Container\Container $app
+     * @param  \Illuminate\Container\Container  $app
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Illuminate\Contracts\View\View
      */
     public function redirect($app)
@@ -88,10 +89,10 @@ class RedirectResponse implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the evaluated view contents for the given view.
      *
-     * @param \Illuminate\Container\Container $app
-     * @param  string $view
-     * @param  array $data
-     * @param  array $mergeData
+     * @param  \Illuminate\Container\Container  $app
+     * @param  string  $view
+     * @param  array  $data
+     * @param  array  $mergeData
      * @return \Illuminate\View\View
      */
     protected function view($app, $view = null, $data = [], $mergeData = [])
@@ -122,7 +123,7 @@ class RedirectResponse implements Arrayable, Jsonable, JsonSerializable
     /**
      * Convert the object to its JSON representation.
      *
-     * @param  int $options
+     * @param  int  $options
      * @return string
      */
     public function toJson($options = 0)
@@ -140,8 +141,10 @@ class RedirectResponse implements Arrayable, Jsonable, JsonSerializable
      * Specify data which should be serialized to JSON
      *
      * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     *
      * @return mixed data which can be serialized by <b>json_encode</b>,
      * which is a value of any type other than a resource.
+     *
      * @since 5.4.0
      */
     public function jsonSerialize()

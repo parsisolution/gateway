@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Cache;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -17,15 +16,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class DigiPay extends AbstractProvider implements ProviderInterface
 {
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::DIGIPAY;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -48,7 +38,7 @@ class DigiPay extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('result')) {
+        if (! $request->has('result')) {
             throw new InvalidRequestException();
         }
 
@@ -85,9 +75,6 @@ class DigiPay extends AbstractProvider implements ProviderInterface
         );
     }
 
-    /**
-     * @return DigiPayGateway
-     */
     protected function initDP(): DigiPayGateway
     {
         $settings = [
@@ -98,7 +85,7 @@ class DigiPay extends AbstractProvider implements ProviderInterface
             'client_secret' => $this->config['client-secret'],
             'access_token'  => Cache::get('dp_access_token'),
             'refresh_token' => Cache::get('dp_refresh_token'),
-            'live_api'      => !$this->config['sandbox'],
+            'live_api'      => ! $this->config['sandbox'],
         ];
 
         return new DigiPayGateway($settings, function ($accessToken, $refreshToken) {

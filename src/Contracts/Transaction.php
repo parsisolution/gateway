@@ -4,7 +4,6 @@ namespace Parsisolution\Gateway\Contracts;
 
 interface Transaction
 {
-
     /**
      * Get the amount of transaction.
      *
@@ -22,8 +21,8 @@ interface Transaction
     /**
      * Get the extra field information about the transaction.
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  string  $key
+     * @param  mixed  $default
      * @return mixed
      */
     public function getExtraField($key, $default = null);

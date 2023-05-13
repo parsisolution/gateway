@@ -13,13 +13,12 @@ class SettledTransaction extends AbstractTransaction implements HasId
     /**
      * SettledTransaction constructor.
      *
-     * @param AuthorizedTransaction $transaction
-     * @param string $traceNumber
-     * @param FieldsToMatch $toMatch
-     * @param string $cardNumber
-     * @param string $RRN
-     * @param array $extraFields
-     * @param string $referenceId
+     * @param  string  $traceNumber
+     * @param  FieldsToMatch  $toMatch
+     * @param  string  $cardNumber
+     * @param  string  $RRN
+     * @param  array  $extraFields
+     * @param  string  $referenceId
      */
     public function __construct(
         AuthorizedTransaction $transaction,

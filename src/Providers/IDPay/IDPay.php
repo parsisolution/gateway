@@ -7,7 +7,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -17,22 +16,12 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class IDPay extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
      * @var string
      */
     const SERVER_URL = 'https://api.idpay.ir/v1.1/payment';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::IDPAY;
-    }
 
     /**
      * {@inheritdoc}
@@ -49,8 +38,8 @@ class IDPay extends AbstractProvider implements ProviderInterface
             'callback' => $this->getCallback($transaction),
         ];
 
-        list($result, $http_code) = Curl::execute(self::SERVER_URL, $fields, true, [
-            CURLOPT_HTTPHEADER => $this->generateHeaders()
+        [$result, $http_code] = Curl::execute(self::SERVER_URL, $fields, true, [
+            CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
 
         if ($http_code != 201 || empty($result) || empty($result['id']) || empty($result['link'])) {
@@ -88,21 +77,21 @@ class IDPay extends AbstractProvider implements ProviderInterface
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-//        $request->input('status');
-//        $request->input('track_id');
-//        $request->input('id');
-//        $request->input('order_id');
-//        $request->input('amount');
-//        $request->input('card_no');
-//        $request->input('hashed_card_no');
-//        $request->input('date');
+        //        $request->input('status');
+        //        $request->input('track_id');
+        //        $request->input('id');
+        //        $request->input('order_id');
+        //        $request->input('amount');
+        //        $request->input('card_no');
+        //        $request->input('hashed_card_no');
+        //        $request->input('date');
 
         $fields = [
             'id'       => $transaction->getReferenceId(),
             'order_id' => $transaction->getOrderId(),
         ];
 
-        list($result, $http_code) = Curl::execute(self::SERVER_URL.'/verify', $fields, true, [
+        [$result, $http_code] = Curl::execute(self::SERVER_URL.'/verify', $fields, true, [
             CURLOPT_HTTPHEADER => $this->generateHeaders(),
         ]);
 
@@ -138,10 +127,6 @@ class IDPay extends AbstractProvider implements ProviderInterface
         ];
     }
 
-    /**
-     * @param int $code
-     * @return string|null
-     */
     protected function getStatusMessage(int $code): ?string
     {
         $status_codes = [

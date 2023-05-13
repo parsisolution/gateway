@@ -6,8 +6,6 @@ use Parsisolution\Gateway\Contracts\Transaction;
 
 class FieldsToMatch
 {
-
-
     /**
      * The order id for the transaction.
      *
@@ -36,13 +34,6 @@ class FieldsToMatch
      */
     protected $amount;
 
-
-    /**
-     * @param string|null $order_id
-     * @param string|null $reference_id
-     * @param string|null $token
-     * @param Amount|null $amount
-     */
     public function __construct(
         ?string $order_id = null,
         ?string $reference_id = null,
@@ -55,10 +46,6 @@ class FieldsToMatch
         $this->amount = $amount;
     }
 
-    /**
-     * @param Transaction $transaction
-     * @return bool
-     */
     public function matches(Transaction $transaction): bool
     {
         foreach ($this->asArray() as $key => $value) {
@@ -72,9 +59,6 @@ class FieldsToMatch
         return true;
     }
 
-    /**
-     * @return array
-     */
     public function asArray(): array
     {
         $fields = [];

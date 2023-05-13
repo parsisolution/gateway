@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -19,7 +18,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Shepa extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -41,9 +39,9 @@ class Shepa extends AbstractProvider implements ProviderInterface
      */
     protected $serverUrl;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
@@ -60,15 +58,6 @@ class Shepa extends AbstractProvider implements ProviderInterface
         } else {
             $this->serverUrl = self::SERVER_URL;
         }
-    }
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::SHEPA;
     }
 
     /**
@@ -142,14 +131,13 @@ class Shepa extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param $path
-     * @param $fields
      * @return mixed
+     *
      * @throws ShepaException
      */
     protected function callApi(string $path, array $fields)
     {
-        list($response, $http_code, $error) = Curl::execute($this->serverUrl.$path, $fields);
+        [$response, $http_code, $error] = Curl::execute($this->serverUrl.$path, $fields);
 
         if ($http_code != 200 || empty($response['success']) || ! $response['success']) {
             throw new ShepaException(

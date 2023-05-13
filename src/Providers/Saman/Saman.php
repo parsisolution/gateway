@@ -5,7 +5,6 @@ namespace Parsisolution\Gateway\Providers\Saman;
 use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\SoapClient;
 use Parsisolution\Gateway\Transactions\Amount;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Saman extends AbstractProvider
 {
-
     /**
      * Url of parsian gateway web service
      *
@@ -41,14 +39,6 @@ class Saman extends AbstractProvider
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::SAMAN;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
@@ -62,7 +52,7 @@ class Saman extends AbstractProvider
 
         $fields = array_merge($fields, $transaction->getExtraField('optional_data', []));
 
-        list($result) = Curl::execute(self::SERVER_URL, $fields);
+        [$result] = Curl::execute(self::SERVER_URL, $fields);
 
         if ($result['status'] != 1) {
             throw new SamanException($result['errorCode'], $result['errorDesc']);
@@ -111,7 +101,7 @@ class Saman extends AbstractProvider
         $response = intval($response);
 
         if ($response == $transaction->getAmount()->getRiyal()) {
-//            $toMatch = new FieldsToMatch(null, null, null, new Amount($response, 'IRR'));
+            //            $toMatch = new FieldsToMatch(null, null, null, new Amount($response, 'IRR'));
             $toMatch = new FieldsToMatch();
 
             $trace_number = $request->input('TraceNo');
@@ -146,8 +136,6 @@ class Saman extends AbstractProvider
     }
 
     /**
-     * @param string $refNum
-     * @return array
      * @throws \SoapFault
      */
     public function reverse(string $refNum): array

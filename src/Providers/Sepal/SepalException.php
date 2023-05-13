@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class SepalException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *
@@ -15,7 +14,7 @@ class SepalException extends TransactionException
     protected function getErrors()
     {
         return [
-            0 => 'خطای تعریف نشده'
+            0 => 'خطای تعریف نشده',
         ];
     }
 }

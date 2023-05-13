@@ -6,12 +6,7 @@ use XMLWriter;
 
 class XMLGenerator
 {
-
-    /**
-     * @param array $paymentItems
-     * @return string
-     */
-    public static function generateMultiPayment(array $paymentItems): string
+    public static function generateMultiPayment(array $paymentItems): ?string
     {
         $xmlWriter = new XMLWriter();
         $xmlWriter->openMemory();
@@ -30,7 +25,6 @@ class XMLGenerator
                 $xmlWriter->text($item['IBAN']);
                 $xmlWriter->endElement();
                 // </iban>
-
 
                 // <type>
                 $xmlWriter->startElement('type');
@@ -56,11 +50,7 @@ class XMLGenerator
         return null;
     }
 
-    /**
-     * @param array $subPayments
-     * @return string
-     */
-    public static function generateSubPaymentList(array $subPayments): string
+    public static function generateSubPaymentList(array $subPayments): ?string
     {
         $xmlWriter = new XMLWriter();
         $xmlWriter->openMemory();
@@ -128,12 +118,7 @@ class XMLGenerator
         return null;
     }
 
-    /**
-     * @param string $invoiceUID
-     * @param array $actions
-     * @return string
-     */
-    public static function generateInvoiceUpdateList(string $invoiceUID, array $actions): string
+    public static function generateInvoiceUpdateList(string $invoiceUID, array $actions): ?string
     {
         $xmlWriter = new XMLWriter();
         $xmlWriter->openMemory();

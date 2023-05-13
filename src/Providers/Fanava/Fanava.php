@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Fanava extends AbstractProvider
 {
-
     /**
      * Address of server
      *
@@ -30,14 +28,6 @@ class Fanava extends AbstractProvider
      * @var string
      */
     const GATE_URL = 'https://fanava.shaparak.ir/IPG';
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::FANAVA;
-    }
 
     /**
      * {@inheritdoc}
@@ -112,8 +102,8 @@ class Fanava extends AbstractProvider
     }
 
     /**
-     * @param string $digitalReceipt
      * @return mixed
+     *
      * @throws FanavaException
      */
     public function rollback(string $digitalReceipt)
@@ -127,14 +117,13 @@ class Fanava extends AbstractProvider
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws FanavaException
      */
     protected function callApi(string $path, array $fields)
     {
-        list($response, $http_code) = Curl::execute(self::SERVER_URL.$path, $fields, false);
+        [$response, $http_code] = Curl::execute(self::SERVER_URL.$path, $fields, false);
 
         $code = explode(';', $response->RespCode)[0];
         if ($http_code != 200 || $code != 0 || $code != 1) {

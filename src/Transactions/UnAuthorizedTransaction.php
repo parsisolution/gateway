@@ -13,9 +13,8 @@ class UnAuthorizedTransaction extends AbstractTransaction implements HasId
     /**
      * UnAuthorizedTransaction constructor.
      *
-     * @param RequestTransaction $transaction
-     * @param string $id
-     * @param string $orderId
+     * @param  string  $id
+     * @param  string  $orderId
      */
     public function __construct(RequestTransaction $transaction, $id, $orderId)
     {

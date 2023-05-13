@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class TiPoulException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *
@@ -15,7 +14,7 @@ class TiPoulException extends TransactionException
     protected function getErrors()
     {
         return [
-            -1 => 'خطای عمومی'
+            -1 => 'خطای عمومی',
         ];
     }
 }

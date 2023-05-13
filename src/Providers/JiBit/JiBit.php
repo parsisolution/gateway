@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\TransactionException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -16,7 +15,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class JiBit extends AbstractProvider
 {
-
     /**
      * Address of main CURL server
      *
@@ -35,14 +33,6 @@ class JiBit extends AbstractProvider
     /**
      * {@inheritdoc}
      */
-    protected function getProviderId()
-    {
-        return GatewayManager::JIBIT;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     protected function authorizeTransaction(UnAuthorizedTransaction $transaction)
     {
         $fields = [
@@ -54,7 +44,7 @@ class JiBit extends AbstractProvider
             'description'     => $transaction->getExtraField('description'),
         ];
 
-        list($response) = Curl::execute(self::SERVER_URL.self::URL_PATH_INITIATE, $fields, true, [
+        [$response] = Curl::execute(self::SERVER_URL.self::URL_PATH_INITIATE, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER     => $this->generateHeaders(),
         ]);
@@ -87,7 +77,7 @@ class JiBit extends AbstractProvider
      */
     protected function settleTransaction(Request $request, AuthorizedTransaction $transaction)
     {
-        list($response) = Curl::execute(
+        [$response] = Curl::execute(
             self::SERVER_URL.self::URL_PATH_VERIFY.$transaction->getReferenceId(),
             [],
             true,
@@ -116,14 +106,14 @@ class JiBit extends AbstractProvider
     /**
      * Inquiry the transaction's status and return its response
      *
-     * @param AuthorizedTransaction $transaction
      * @return array
+     *
      * @throws TransactionException
      * @throws Exception
      */
     protected function inquiryTransaction(AuthorizedTransaction $transaction)
     {
-        list($response) = Curl::execute(
+        [$response] = Curl::execute(
             self::SERVER_URL.self::URL_PATH_INQUIRY.$transaction->getReferenceId(),
             [],
             true,
@@ -137,7 +127,6 @@ class JiBit extends AbstractProvider
     }
 
     /**
-     * @return array
      * @throws JiBitException
      */
     protected function generateHeaders(): array
@@ -163,7 +152,7 @@ class JiBit extends AbstractProvider
             'password' => $this->config['api-secret'],
         ];
 
-        list($response) = Curl::execute(self::SERVER_URL.self::URL_PATH_AUTHENTICATE, $fields, true, [
+        [$response] = Curl::execute(self::SERVER_URL.self::URL_PATH_AUTHENTICATE, $fields, true, [
             CURLOPT_SSL_VERIFYPEER => false,
         ]);
 

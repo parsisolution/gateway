@@ -6,7 +6,6 @@ use Parsisolution\Gateway\Exceptions\TransactionException;
 
 class SadadException extends TransactionException
 {
-
     /**
      * returns an associative array of `code` => `message`
      *
@@ -63,8 +62,8 @@ class SadadException extends TransactionException
             1105 => 'تراکنش بازگشت داده شده است(مهلت زمانی به پايان رسیده است)',
 
             // verify errors
-            -1   => 'پارامترهای ارسالی صحیح نیست و يا تراکنش در سیستم وجود ندارد.',
-            101  => 'مهلت ارسال تراکنش به پايان رسیده است',
+            -1  => 'پارامترهای ارسالی صحیح نیست و يا تراکنش در سیستم وجود ندارد.',
+            101 => 'مهلت ارسال تراکنش به پايان رسیده است',
         ];
     }
 }

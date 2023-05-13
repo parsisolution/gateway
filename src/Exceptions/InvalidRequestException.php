@@ -9,5 +9,6 @@ class InvalidRequestException extends GatewayException
     use HasTransaction;
 
     protected $code = -102;
+
     protected $message = 'Request parameters are not valid.';
 }

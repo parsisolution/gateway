@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -18,7 +17,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Bahamta extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -40,9 +38,9 @@ class Bahamta extends AbstractProvider implements ProviderInterface
      */
     protected $serverUrl;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
@@ -61,15 +59,6 @@ class Bahamta extends AbstractProvider implements ProviderInterface
         }
     }
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::BAHAMTA;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -83,8 +72,8 @@ class Bahamta extends AbstractProvider implements ProviderInterface
             'trusted_pan'  => $transaction->getExtraField('allowed_card'),
         ];
         $mobile = $transaction->getExtraField('mobile');
-        if (!empty($mobile)) {
-            $fields['payer_mobile'] = '98' . substr($mobile, 1);
+        if (! empty($mobile)) {
+            $fields['payer_mobile'] = '98'.substr($mobile, 1);
         }
 
         $result = $this->callApi('create_request', $fields);
@@ -99,7 +88,7 @@ class Bahamta extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('state')) {
+        if (! $request->has('state')) {
             throw new InvalidRequestException();
         }
 
@@ -126,7 +115,7 @@ class Bahamta extends AbstractProvider implements ProviderInterface
 
         if ($result['state'] != 'paid') {
             throw new BahamtaException($result['state']);
-        };
+        }
 
         $traceNumber = $result['pay_trace'];
         $cardNumber = $result['pay_pan'];
@@ -150,20 +139,19 @@ class Bahamta extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param $path
-     * @param $fields
      * @return mixed
+     *
      * @throws BahamtaException
      */
     protected function callApi($path, $fields)
     {
-        list($response, $http_code, $error) =
-            Curl::execute($this->serverUrl . $path, $fields, true, [], Curl::METHOD_GET);
+        [$response, $http_code, $error] =
+            Curl::execute($this->serverUrl.$path, $fields, true, [], Curl::METHOD_GET);
 
-        if (!isset($response['ok'])) {
+        if (! isset($response['ok'])) {
             throw new BahamtaException($http_code, $error);
         }
-        if (!$response['ok']) {
+        if (! $response['ok']) {
             throw new BahamtaException($response['error'] ?? 'UNKNOWN_ERROR');
         }
 
@@ -178,8 +166,8 @@ class Bahamta extends AbstractProvider implements ProviderInterface
         return [
             'mobile'       => '09124441122',
             'description'  => 'توضیحات تراکنش',
-            'allowed_card' => 'شماره کارت پرداخت‌کننده است' .
-                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود' .
+            'allowed_card' => 'شماره کارت پرداخت‌کننده است'.
+                ' که این شماره کارت بعد از انجام عملیات پرداخت با شماره کارت دریافتی از بانک تطابق داده می‌شود'.
                 ' و درصورتی که یکسان نباشد، مبلغ تراکنش به حساب پرداخت‌کننده برمی‌گردد.',
         ];
     }

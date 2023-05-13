@@ -8,7 +8,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\Amount;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
@@ -18,7 +17,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class TiPoul extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -39,15 +37,6 @@ class TiPoul extends AbstractProvider implements ProviderInterface
      * @var string
      */
     const GATE_URL_FOR_POST = 'https://api.tipoul.com/pay/v1/start';
-
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::TIPOUL;
-    }
 
     /**
      * {@inheritdoc}
@@ -77,14 +66,15 @@ class TiPoul extends AbstractProvider implements ProviderInterface
         $token_track_number = $result['tipoulTrackNumber']; // request specific (not unique in transaction lifetime)
 
         if (Arr::get($this->config, 'redirect-method', RedirectResponse::TYPE_GET) == RedirectResponse::TYPE_GET) {
-            $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL_FOR_GET . $tokenHashed);
+            $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, self::GATE_URL_FOR_GET.$tokenHashed);
         } else {
             $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_POST, self::GATE_URL_FOR_POST, [
-                'TipoulAccessToken' => $token
+                'TipoulAccessToken' => $token,
             ]);
         }
 
         $transaction['extra'] = $transaction->getExtra() + compact('token_track_number');
+
         return AuthorizedTransaction::make($transaction, $traceNumber, $tokenHashed, $redirectResponse);
     }
 
@@ -93,7 +83,7 @@ class TiPoul extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('RespCode')) {
+        if (! $request->has('RespCode')) {
             throw new InvalidRequestException();
         }
 
@@ -137,17 +127,16 @@ class TiPoul extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws TiPoulException
      */
     protected function callApi(string $path, array $fields)
     {
         $fields['GateToken'] = $this->config['token'];
-        list($response, $http_code, $error) = Curl::execute(self::SERVER_URL . $path, $fields);
+        [$response, $http_code, $error] = Curl::execute(self::SERVER_URL.$path, $fields);
 
-        if ($http_code != 200 || !isset($response['code']) || $response['code'] != 0) {
+        if ($http_code != 200 || ! isset($response['code']) || $response['code'] != 0) {
             throw new TiPoulException(
                 $response['code'] ?? $http_code,
                 $response['message'] ?? $error ?? null
@@ -171,11 +160,11 @@ class TiPoul extends AbstractProvider implements ProviderInterface
             'blank_for_payer'       => 'فیلد گزارشی برای پرداخت کننده',
             'blank_for_transaction' => 'فیلد گزارشی برای تراکنش',
             'description'           => 'توضیحات تراکنش',
-            'ipg'                   => 'IRK (ایران کیش) || ' .
-                'Sepehr (سپهر)' .
-                ' - تیپول به صورت پیشفرض تراکنش های درخواستی را با استفاده از سیستم سویچینگ و' .
-                ' هدایت هوشمند تراکنش های خود به بهترین، مناسب ترین و در دسترس ترین درگاه شاپرک یا PSP ارسال میکند،' .
-                ' لیکن چنانچه در نظر دارید تراکنش های شما از PSP مشخص یا خاصی انجام شود،' .
+            'ipg'                   => 'IRK (ایران کیش) || '.
+                'Sepehr (سپهر)'.
+                ' - تیپول به صورت پیشفرض تراکنش های درخواستی را با استفاده از سیستم سویچینگ و'.
+                ' هدایت هوشمند تراکنش های خود به بهترین، مناسب ترین و در دسترس ترین درگاه شاپرک یا PSP ارسال میکند،'.
+                ' لیکن چنانچه در نظر دارید تراکنش های شما از PSP مشخص یا خاصی انجام شود،'.
                 ' این فیلد را با کلید مربوط به PSP به صورت زیر ارسال نمایید',
         ];
     }

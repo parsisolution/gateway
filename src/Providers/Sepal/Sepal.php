@@ -9,7 +9,6 @@ use Parsisolution\Gateway\AbstractProvider;
 use Parsisolution\Gateway\Contracts\Provider as ProviderInterface;
 use Parsisolution\Gateway\Curl;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
-use Parsisolution\Gateway\GatewayManager;
 use Parsisolution\Gateway\RedirectResponse;
 use Parsisolution\Gateway\Transactions\AuthorizedTransaction;
 use Parsisolution\Gateway\Transactions\FieldsToMatch;
@@ -18,7 +17,6 @@ use Parsisolution\Gateway\Transactions\UnAuthorizedTransaction;
 
 class Sepal extends AbstractProvider implements ProviderInterface
 {
-
     /**
      * Address of server
      *
@@ -61,9 +59,9 @@ class Sepal extends AbstractProvider implements ProviderInterface
      */
     protected $gateUrl;
 
-    public function __construct(Container $app, array $config)
+    public function __construct(Container $app, $id, $config)
     {
-        parent::__construct($app, $config);
+        parent::__construct($app, $id, $config);
 
         $this->setServer();
     }
@@ -84,15 +82,6 @@ class Sepal extends AbstractProvider implements ProviderInterface
         }
     }
 
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getProviderId()
-    {
-        return GatewayManager::SEPAL;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -111,7 +100,7 @@ class Sepal extends AbstractProvider implements ProviderInterface
 
         $result = $this->callApi('request.json', $fields);
 
-        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl . $result['paymentNumber']);
+        $redirectResponse = new RedirectResponse(RedirectResponse::TYPE_GET, $this->gateUrl.$result['paymentNumber']);
 
         return AuthorizedTransaction::make($transaction, $result['paymentNumber'], null, $redirectResponse);
     }
@@ -121,7 +110,7 @@ class Sepal extends AbstractProvider implements ProviderInterface
      */
     protected function validateSettlementRequest(Request $request)
     {
-        if (!$request->has('status')) {
+        if (! $request->has('status')) {
             throw new InvalidRequestException();
         }
 
@@ -153,15 +142,14 @@ class Sepal extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @param string $path
-     * @param array $fields
      * @return mixed
+     *
      * @throws SepalException
      */
     protected function callApi(string $path, array $fields)
     {
         $fields['apiKey'] = $this->config['api-key'];
-        list($response, $http_code, $error) = Curl::execute($this->serverUrl . $path, $fields);
+        [$response, $http_code, $error] = Curl::execute($this->serverUrl.$path, $fields);
 
         if ($http_code != 200 || empty($response['status'])) {
             throw new SepalException(

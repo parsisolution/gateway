@@ -20,8 +20,8 @@ abstract class TransactionException extends \Exception
     /**
      * Get error code's associate message if exist and code itself otherwise
      *
-     * @param mixed $code
-     * @param null|string $message
+     * @param  mixed  $code
+     * @param  null|string  $message
      * @return string
      */
     protected function getMessageFromCode($code, $message)
@@ -38,9 +38,8 @@ abstract class TransactionException extends \Exception
     /**
      * TransactionException constructor.
      *
-     * @param mixed $code
-     * @param null|string $message
-     * @param Throwable|null $previous
+     * @param  mixed  $code
+     * @param  null|string  $message
      */
     public function __construct($code = 0, $message = null, Throwable $previous = null)
     {
