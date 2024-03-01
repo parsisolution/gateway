@@ -140,9 +140,7 @@ class TransactionDao
      */
     public function find($orderId)
     {
-        $this->db->connection()->beginTransaction();
-
-        $transaction = $this->getTable()->where('order_id', $orderId)->lockForUpdate()->first();
+        $transaction = $this->getTable()->where('order_id', $orderId)->first();
 
         if (! $transaction) {
             throw new NotFoundTransactionException;
@@ -205,8 +203,6 @@ class TransactionDao
 
         $result = $this->getTable()->where('id', $transaction->getId())->update($fields);
 
-        $this->db->connection()->commit();
-
         return $result;
     }
 
@@ -243,8 +239,6 @@ class TransactionDao
         $transaction->setAttributes($attributes);
 
         $result = $this->getTable()->where('id', $transaction->getId())->update($fields);
-
-        $this->db->connection()->commit();
 
         return $result;
     }

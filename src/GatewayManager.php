@@ -2,7 +2,9 @@
 
 namespace Parsisolution\Gateway;
 
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -10,6 +12,7 @@ use Parsisolution\Gateway\Exceptions\GatewayException;
 use Parsisolution\Gateway\Exceptions\InvalidRequestException;
 use Parsisolution\Gateway\Exceptions\InvalidStateException;
 use Parsisolution\Gateway\Exceptions\NullConfigException;
+use Parsisolution\Gateway\Exceptions\RetryException;
 use Parsisolution\Gateway\Providers\AqayePardakht\AqayePardakht;
 use Parsisolution\Gateway\Providers\AsanPardakht\AsanPardakht;
 use Parsisolution\Gateway\Providers\Bahamta\Bahamta;
@@ -222,17 +225,13 @@ class GatewayManager extends Manager implements Contracts\Factory
     }
 
     /**
-     * retrieve respective transaction from request
-     *
      * @param  bool  $stateless
-     * @return \Parsisolution\Gateway\Transactions\AuthorizedTransaction
+     * @return string|null
      *
      * @throws \Parsisolution\Gateway\Exceptions\InvalidRequestException
      * @throws \Parsisolution\Gateway\Exceptions\InvalidStateException
-     * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
-     * @throws \Parsisolution\Gateway\Exceptions\RetryException
      */
-    public function transactionFromSettleRequest($stateless = false)
+    public function getOrderIdFromSettleRequest($stateless = false)
     {
         $request = app()['request'];
         $parameters = [];
@@ -266,6 +265,20 @@ class GatewayManager extends Manager implements Contracts\Factory
             $orderId = $parameters['iN'];
         }
 
+        return $orderId;
+    }
+
+    /**
+     * retrieve transaction from order id
+     *
+     * @param string $orderId
+     * @return \Parsisolution\Gateway\Transactions\AuthorizedTransaction
+     *
+     * @throws \Parsisolution\Gateway\Exceptions\NotFoundTransactionException
+     * @throws \Parsisolution\Gateway\Exceptions\RetryException
+     */
+    public function getTransaction($orderId)
+    {
         $db = app()['db'];
         $transactionDao = new TransactionDao($db, $this->getTable());
 
@@ -289,14 +302,34 @@ class GatewayManager extends Manager implements Contracts\Factory
      */
     public function settle($stateless = false, $fieldsToUpdateOnSuccess = [])
     {
-        $authorizedTransaction = $this->transactionFromSettleRequest($stateless);
+        $orderId = $this->getOrderIdFromSettleRequest($stateless);
 
-        $driver = $this->of($this->getDriverName($authorizedTransaction['provider']));
-        if ($stateless) {
-            $driver->stateless();
+        $lock = Cache::lock($this->getCachePrefix() . $orderId, 10);
+
+        $settledTransaction = $authorizedTransaction = null;
+
+        try {
+            $lock->block(5);
+
+            $authorizedTransaction = $this->getTransaction($orderId);
+
+            $driver = $this->of($this->getDriverName($authorizedTransaction['provider']));
+            if ($stateless) {
+                $driver->stateless();
+            }
+
+            $settledTransaction = $driver->settle($authorizedTransaction, $fieldsToUpdateOnSuccess);
+        } catch (LockTimeoutException $e) {
+            $exception = new RetryException($e->getMessage(), 0, $e);
+            $exception->setTransaction($authorizedTransaction);
+            throw $exception;
+        } finally {
+            if (!empty($lock)) {
+                $lock->release();
+            }
         }
 
-        return $driver->settle($authorizedTransaction, $fieldsToUpdateOnSuccess);
+        return $settledTransaction;
     }
 
     /**
@@ -691,6 +724,16 @@ class GatewayManager extends Manager implements Contracts\Factory
     private function getTable()
     {
         return Arr::get(app()['config'], self::CONFIG_FILE_NAME.'.table', 'gateway_transactions');
+    }
+
+    /**
+     * Get transactions cache prefix
+     *
+     * @return string
+     */
+    private function getCachePrefix()
+    {
+        return Arr::get(app()['config'], self::CONFIG_FILE_NAME.'.cache_prefix', 'gateway_transactions_');
     }
 
     /**
