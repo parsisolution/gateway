@@ -48,7 +48,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
     public function __construct($amount, $currency = 'IRT')
     {
         $this->setTotal($amount);
-        $this->currency = $currency;
+        $this->currency = strtoupper($currency);
     }
 
     /**
@@ -62,7 +62,7 @@ class Amount implements Comparable, Arrayable, Jsonable, JsonSerializable
      */
     public function setCurrency($currency)
     {
-        $this->currency = $currency;
+        $this->currency = strtoupper($currency);
 
         return $this;
     }
